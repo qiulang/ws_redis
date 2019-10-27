@@ -4,7 +4,7 @@
   "description": "try redis pubsub",
   "main": "index.js",
   "scripts": {
-    "test": "DEBUG=app:* node basic.js"
+    "test": "DEBUG=app:* node pubsub.js"
   },
   "author": "qiulang",
   "license": "ISC",

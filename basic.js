@@ -21,6 +21,7 @@ redis.get("foo", function(err, result) {
     log(result);
   }
 });
+log("del foo")
 redis.del("foo");
 
 // Or using a promise if the last argument isn't a function
@@ -37,3 +38,8 @@ redis.set("key", 100, "EX", 10);
 
 // Change the server configuration
 redis.config("set", "notify-keyspace-events", "KEA");
+
+setTimeout(() => {
+  log('close the connection after 250ms')
+  redis.disconnect()
+}, 250);
