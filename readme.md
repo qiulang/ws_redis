@@ -11,3 +11,12 @@ redis nodejs 客户端我们用ioredis,  https://github.com/NodeRedis/node_redis
 > They are only buffered in the socket buffers, and immediately sent to the subscribers in the same event loop iteration as the publication.
 >
 > If a subscriber fails to read a message, this message is lost for the subscriber.
+
+
+
+Socket.io + redis pubsub
+
+1. https://stackoverflow.com/questions/10557826/node-js-socket-io-redis-pub-sub-high-volume-low-latency-difficulties?rq=1
+2. https://stackoverflow.com/questions/6192177/redis-pub-sub-with-reliability?rq=1
+3. https://stackoverflow.com/questions/5903328/pub-sub-implementation-in-nodejs?rq=1
+
