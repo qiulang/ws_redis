@@ -4,11 +4,12 @@
   "description": "try redis pubsub",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "DEBUG=app:* node basic.js"
   },
   "author": "qiulang",
   "license": "ISC",
   "dependencies": {
+    "debug": "^4.1.1",
     "ioredis": "^4.14.1"
   }
 }
