@@ -22,7 +22,6 @@ redis.on('message', function(channel, message) {
   // Receive message Hello again! from channel music
   subDebug('Receive message %s from channel %s', message, channel)
   if (channel == 'request') {
-    subDebug('got request')
     if (message == 'exit') {
       setTimeout(() => {
         subDebug('close the connection after 2500ms')
@@ -43,6 +42,7 @@ async function promiseVer() {
   let count = await redis.subscribe('status', 'response', 'request')
   subDebug(`in promise verion subscribe ${count} channels`)
   pubDebug('publish to request')
+  pubDebug('publish to request exit message to make process exit')
   num = pub.publish('request', 'update my status')
   // setTimeout(() => {
   //   subDebug('close the connection after 2500ms')

@@ -4,8 +4,8 @@
   "description": "try socketio & redis pubsub",
   "main": "index.js",
   "scripts": {
-    "pubsub": "DEBUG=app:* node pubsub.js",
-    "basic": "DEBUG=app:* node basic.js",
+    "pubsub": "DEBUG=app:* node spec/pubsub.js",
+    "basic": "DEBUG=app:* node spec/basic.js",
     "start": "DEBUG=websocket nodemon index.js"
   },
   "author": "qiulang",
