@@ -5,12 +5,18 @@
   "main": "index.js",
   "scripts": {
     "pubsub": "DEBUG=app:* node pubsub.js",
-    "basic": "DEBUG=app:* node basic.js"
+    "basic": "DEBUG=app:* node basic.js",
+    "start": "DEBUG=websocket node index.js"
   },
   "author": "qiulang",
   "license": "ISC",
   "dependencies": {
     "debug": "^4.1.1",
-    "ioredis": "^4.14.1"
+    "express": "^4.17.1",
+    "ioredis": "^4.14.1",
+    "socket.io": "^2.3.0"
+  },
+  "devDependencies": {
+    "nodemon": "^1.19.4"
   }
 }

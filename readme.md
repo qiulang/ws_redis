@@ -22,4 +22,8 @@ Socket.io + redis pubsub
 
 
 
-开始写socket.io + redis pubsub 如果需要可以借鉴下 https://github.com/steffenwt/nodejs-pub-sub-chat-demo
+开始写socket.io + redis pubsub 如果需要可以借鉴下 
+1. https://github.com/steffenwt/nodejs-pub-sub-chat-demo
+2. https://scalegrid.io/blog/using-redis-with-node-js-and-socket-io/
+
+
