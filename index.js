@@ -13,8 +13,8 @@ app.use(express.urlencoded({ extended: false }))
 app.use(express.static(path.join(__dirname, 'public')))
 
 io.on('connection', function(socket) {
-  //   debug('a user connected')
-  //   socket.emit('news', { hello: 'world' })
+  debug('a user connected')
+  socket.emit('news', { hello: 'world' })
   socket.on('chat message', function(msg) {
     io.emit('chat message', msg)
   })

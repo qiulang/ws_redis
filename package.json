@@ -6,7 +6,7 @@
   "scripts": {
     "pubsub": "DEBUG=app:* node pubsub.js",
     "basic": "DEBUG=app:* node basic.js",
-    "start": "DEBUG=websocket node index.js"
+    "start": "DEBUG=websocket nodemon index.js"
   },
   "author": "qiulang",
   "license": "ISC",
