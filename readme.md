@@ -27,3 +27,5 @@ Socket.io + redis pubsub
 2. https://scalegrid.io/blog/using-redis-with-node-js-and-socket-io/
 
 
+
+chat 例子一开始没跑起应该 socket.io client版本问题。另，开了蓝灯也没问题。
