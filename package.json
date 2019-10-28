@@ -1,10 +1,10 @@
 {
   "name": "pubsub",
   "version": "1.0.0",
-  "description": "try redis pubsub",
+  "description": "try socketio & redis pubsub",
   "main": "index.js",
   "scripts": {
-    "test": "DEBUG=app:* node pubsub.js",
+    "pubsub": "DEBUG=app:* node pubsub.js",
     "basic": "DEBUG=app:* node basic.js"
   },
   "author": "qiulang",

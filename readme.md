@@ -20,3 +20,6 @@ Socket.io + redis pubsub
 2. https://stackoverflow.com/questions/6192177/redis-pub-sub-with-reliability?rq=1
 3. https://stackoverflow.com/questions/5903328/pub-sub-implementation-in-nodejs?rq=1
 
+
+
+开始写socket.io + redis pubsub 如果需要可以借鉴下 https://github.com/steffenwt/nodejs-pub-sub-chat-demo
