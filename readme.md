@@ -37,3 +37,12 @@ chat 例子一开始没跑起应该 socket.io client版本问题。另，开了�
 每个client连接在它自己缺省的 room，连接后发登录消息，服务器收到登录消息往这个房间发一个确认。
 
 重刷浏览器，或者服务器重启，浏览器端 socket.id 会变，服务器端需要有一个方法能唯一标识浏览器端，即同一个坐席
+
+[ 用户关闭页面，断网都会触发disconnect消息](https://stackoverflow.com/questions/16293520/how-to-detect-that-users-connection-is-lost-or-he-closed-the-browser-window-in)
+
+`emit` 缺省是群发
+
+[socket.io 所有事件](https://stackoverflow.com/questions/24224287/list-of-socket-io-events) 总结的是1.3版本 现在2.3版本 服务器端有disconnect
+
+
+
