@@ -29,3 +29,9 @@ Socket.io + redis pubsub
 
 
 chat 例子一开始没跑起应该 socket.io client版本问题。另，开了蓝灯也没问题。
+
+
+
+###实现socket.io 
+
+每个client连接在它自己缺省的 room，连接后发登录消息，服务器收到登录消息往这个房间发一个确认。
