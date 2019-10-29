@@ -5,7 +5,8 @@ var debug = require('debug')
 var debugw = debug('websocket')
 var debugr = debug('redis')
 var app = express()
-var redis = new Redis()
+var redis = new Redis() //aslo as sub party
+var pub = new Redis() //pub party
 //https://stackoverflow.com/questions/26921117/http-createserverapp-v-http-serverapp
 var http = require('http').Server(app)
 //https://stackoverflow.com/questions/27492101/what-is-happening-when-requirehttp-server-is-evaluated-with-an-express-app
@@ -18,13 +19,16 @@ app.use(express.static(path.join(__dirname, 'public')))
 //重启服务器时候情况 socket.io 到user的映射表，因为客户端会重来上来
 redis.del('socket_user')
 
-io.on('connection', function(socket) {
+io.on('connection', async function(socket) {
   //TODO 重刷浏览器 socket.id 会变，服务器端需要有一个方法能唯一标识浏览器端
-  socket.on('login', function(user_id) {
+  socket.on('login', async function(user_id) {
     debugw(`user ${user_id} has login using socket ${socket.id}`)
     //需要设在两个hash table里
     redis.hset(user_id, 'socketid', socket.id)
     redis.hset('socket_user', socket.id, user_id)
+    let exist = await redis.exists(user_id)
+    debugr(`Does ${user_id} exit ? ${exist}`)
+    //TODO if not exist pubish to this channel first
     debugr(`store in hash table user_socket ${user_id} => ${socket.id}`)
     io.to(socket.id).emit('loginAck', `I see you ${user_id}`)
   })

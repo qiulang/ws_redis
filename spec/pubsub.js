@@ -39,7 +39,8 @@ redis.on('messageBuffer', function(channel, message) {
 })
 
 async function promiseVer() {
-  let count = await redis.subscribe('status', 'response', 'request')
+  //重复订购测试
+  let count = await redis.subscribe('status', 'music', 'request')
   subDebug(`in promise verion subscribe ${count} channels`)
   pubDebug('publish to request')
   pubDebug('publish to request exit message to make process exit')

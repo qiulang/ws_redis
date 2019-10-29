@@ -51,14 +51,15 @@ chat 例子一开始没跑起应该 socket.io client版本问题。另，开了�
 **redis 数据**
 
 1. `socket_user ` 哈希表 存 `socket.id` 到 `user_id`映射 ： 客户端成功连接到服务器就发`login`事件（自定义事件），消息内容是 `user_id`, 服务器收到 `login`事件，在redis的`socket_user `表添加一对key:value对 `socket.id`： `user_id`
-
 2. 维护`socket_user `哈希表目的是 当断线时候, 服务器会收到disconnet事件（包括网络问题、关闭页面）从 `socket.id` 知道相应`user_id`，更新 `user_id` 哈希表的相关数据
-
 3. 每个用户登录后为它创建哈希表 key 是 `user_id`, 用它来存所有跟这个用户相关信息。每个用户有自己的哈希表。
-
 4. 下一步加入pubsub，为每个坐席建立一个通道，而外有一个公告通道用来和 web 服务器交互
 
-   
+
+
+pubsub 必须要两个redis示例，因为 `(node:80054) UnhandledPromiseRejectionWarning: Error: Connection in subscriber mode, only subscriber commands may be used` 
+
+
 
 **socket.io 事件**
 
