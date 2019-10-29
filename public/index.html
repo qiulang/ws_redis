@@ -65,13 +65,30 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
   <script>
     $(function () {
-      var socket = io({ transports: ['websocket'] });
       $('form').submit(function () {
         socket.emit('chat message', $('#m').val());
         $('#m').val('');
         return false;
       });
-      socket.on('chat message', function (msg) {
+      var socket = io({ transports: ['websocket'] });
+      console.log(socket.id);
+      //socket.io系统消息
+      socket.on('connect', () => {
+        console.log(`connect to server with id ${socket.id}`);
+      });
+      //刷新浏览器 socket.id会变，但不是reconnect消息
+      socket.on('reconnect', (attemptNumber) => {
+        console.log(`attemptNumber ${attemptNumber} with id ${socket.id}`);
+      });
+      socket.on('disconnect', (reason) => {
+        console.log(`disconnect reason ${reason}`)
+      })
+      //socket.io 我们自定义消息, welcome 和 ack
+      socket.on('welcome', (msg) => {
+        console.log(`what welcome message we got from server ${msg}`);
+        socket.emit('login', socket.id, 'give me something to do')
+      })
+      socket.on('ack', (msg) => {
         $('#messages').append($('<li>').text(msg));
         window.scrollTo(0, document.body.scrollHeight);
       });

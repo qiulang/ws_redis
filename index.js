@@ -13,10 +13,11 @@ app.use(express.urlencoded({ extended: false }))
 app.use(express.static(path.join(__dirname, 'public')))
 
 io.on('connection', function(socket) {
-  debug('a user connected')
-  socket.emit('news', { hello: 'world' })
-  socket.on('chat message', function(msg) {
-    io.emit('chat message', msg)
+  //重刷浏览器 socket.id 会变，服务器端需要有一个方法能唯一标识浏览器端
+  io.to(socket.id).emit('welcome', 'hey there')
+  socket.on('login', function(id, msg) {
+    debug(`what id ${id} and message ${msg} do I got`)
+    io.to(id).emit('ack', 'I see you')
   })
   socket.on('disconnect', function() {
     io.emit('user disconnected')
