@@ -5,7 +5,8 @@ var debug = require('debug')
 var debugw = debug('websocket')
 var debugr = debug('redis')
 var app = express()
-var redis = new Redis() //aslo as sub party
+var redis = new Redis()
+var sub = new Redis()
 var pub = new Redis() //pub party
 //https://stackoverflow.com/questions/26921117/http-createserverapp-v-http-serverapp
 var http = require('http').Server(app)
@@ -26,9 +27,8 @@ io.on('connection', async function(socket) {
     //需要设在两个hash table里
     redis.hset(user_id, 'socketid', socket.id)
     redis.hset('socket_user', socket.id, user_id)
-    let exist = await redis.exists(user_id)
-    debugr(`Does ${user_id} exit ? ${exist}`)
-    //TODO if not exist pubish to this channel first
+    await sub.subscribe(user_id)
+    debugr(`subscribe to ${user_id} channel`)
     debugr(`store in hash table user_socket ${user_id} => ${socket.id}`)
     io.to(socket.id).emit('loginAck', `I see you ${user_id}`)
   })
@@ -50,6 +50,15 @@ io.on('connection', async function(socket) {
     let user_id = await redis.hget('socket_user', socket.id)
     redis.hset(user_id, 'chat-message', msg)
   })
+})
+
+sub.on('message', async function(channel, message) {
+  debugr('Receive message %s from channel %s', message, channel)
+  let exist = await redis.exists(channel)
+  debugr(`Does ${channel} exit ? ${exist}`)
+  if (exist ==0) return
+  let socketid = await redis.hget(channel, 'socketid')
+  io.to(socketid).emit('incoming_msg', message)
 })
 
 http.listen(port, function() {

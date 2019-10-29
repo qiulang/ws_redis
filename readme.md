@@ -14,6 +14,18 @@ redis nodejs 客户端我们用ioredis,  https://github.com/NodeRedis/node_redis
 
 
 
+[channel 也不需要专门做创建和删除](https://www.redisgreen.net/blog/pubsub-howto/)
+
+> Channels exist on the system only when a subscriber is listening to messages on it, so there is no need to ever “create” or “remove” channels – they exist only while a subscriber is listening. 
+
+
+
+连别的服务器
+
+```shell
+redis-cli -h host -p port -a password
+```
+
 Socket.io + redis pubsub
 
 1. https://stackoverflow.com/questions/10557826/node-js-socket-io-redis-pub-sub-high-volume-low-latency-difficulties?rq=1
