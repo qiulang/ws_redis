@@ -5,7 +5,8 @@ var app = express()
 var http = require('http').Server(app)
 var io = require('socket.io')(http)
 var port = process.env.PORT || 3000
-var { redis, pub, sub, debugr } = require('./redisDB')
+var { redis, pub, sub, debugr } = require('./database/redis')
+var indexRouter = require('./routes/index')
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
@@ -61,3 +62,5 @@ sub.on('message', async function(channel, message) {
 http.listen(port, function() {
   debugw('server starts, listening on *:' + port)
 })
+
+app.use('/', indexRouter)

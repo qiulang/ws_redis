@@ -70,37 +70,40 @@
         $('#m').val('');
         return false;
       });
-      var browser = navigator.userAgent.split('/')[2];
-      var userid = "5001_" + browser;//模拟一个userid
-      var socket = io({ transports: ['websocket'] });
-      console.log(socket.id);
-      //socket.io系统消息
-      socket.on('connect', () => {
-        console.log(`connect to server with id ${socket.id} , send my user id 5001`);
-        //socket.io 我们自定义消息, login
-        socket.emit('login', userid)//login with my user_id
-      });
-      //刷新浏览器 socket.id会变，但不是reconnect消息
-      //reconnect成功后会再触发connect消息
-      socket.on('reconnect', (attemptNumber) => {
-        let status = socket.connected ? "connect" : "disconnect"
-        console.log(`attemptNumber ${attemptNumber} with id ${socket.id}, 
+      fetch('login').then(response => response.json()).then(data => {
+        console.log(data.user)
+        var browser = navigator.userAgent.split('/')[2];
+        var userid = "5001_" + browser;//模拟一个userid
+        var socket = io({ transports: ['websocket'] });
+        console.log(socket.id);
+        //socket.io系统消息
+        socket.on('connect', () => {
+          console.log(`connect to server with id ${socket.id} , send my user id 5001`);
+          //socket.io 我们自定义消息, login
+          socket.emit('login', userid)//login with my user_id
+        });
+        //刷新浏览器 socket.id会变，但不是reconnect消息
+        //reconnect成功后会再触发connect消息
+        socket.on('reconnect', (attemptNumber) => {
+          let status = socket.connected ? "connect" : "disconnect"
+          console.log(`attemptNumber ${attemptNumber} with id ${socket.id}, 
          current status ${status}`);
-      });
-      socket.on('disconnect', (reason) => {
-        console.log(`disconnect reason ${reason}`)
-      })
-      //socket.io 我们自定义消息 ack
-      socket.on('loginAck', (msg, fn) => {
-        $('#messages').append($('<li>').text(msg));
-        window.scrollTo(0, document.body.scrollHeight);
-        // fn('loginACK reply')
-      });
-      socket.on('incoming_msg', (msg, fn) => {
-        let m = "incoming message " + msg
-        $('#messages').append($('<li>').text(m));
-        window.scrollTo(0, document.body.scrollHeight);
-        fn(`${msg} received`)
+        });
+        socket.on('disconnect', (reason) => {
+          console.log(`disconnect reason ${reason}`)
+        })
+        //socket.io 我们自定义消息 ack
+        socket.on('loginAck', (msg, fn) => {
+          $('#messages').append($('<li>').text(msg));
+          window.scrollTo(0, document.body.scrollHeight);
+          // fn('loginACK reply')
+        });
+        socket.on('incoming_msg', (msg, fn) => {
+          let m = "incoming message " + msg
+          $('#messages').append($('<li>').text(m));
+          window.scrollTo(0, document.body.scrollHeight);
+          fn(`${msg} received`)
+        });
       });
     });
   </script>
