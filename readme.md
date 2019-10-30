@@ -89,6 +89,7 @@ pubsub 必须要两个redis示例，因为 `(node:80054) UnhandledPromiseRejecti
 
 1. socket.io系统事件要处理
 2. 我们自定义事件如果需要请求相应对, 命名规则就是相应消息+'Ack'，比如 `login` 和`loginAck`
+3. emit ack不成功是因为不能通过socket.io 发（广播），必须通过socket发
 
    
 

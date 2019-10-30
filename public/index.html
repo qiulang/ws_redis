@@ -81,6 +81,7 @@
         socket.emit('login', userid)//login with my user_id
       });
       //刷新浏览器 socket.id会变，但不是reconnect消息
+      //reconnect成功后会再触发connect消息
       socket.on('reconnect', (attemptNumber) => {
         let status = socket.connected ? "connect" : "disconnect"
         console.log(`attemptNumber ${attemptNumber} with id ${socket.id}, 
@@ -90,15 +91,16 @@
         console.log(`disconnect reason ${reason}`)
       })
       //socket.io 我们自定义消息 ack
-      socket.on('loginAck', (msg) => {
+      socket.on('loginAck', (msg, fn) => {
         $('#messages').append($('<li>').text(msg));
         window.scrollTo(0, document.body.scrollHeight);
+        // fn('loginACK reply')
       });
-      socket.on('incoming_msg', (msg) => {
-        let m = "incoming message " +msg 
+      socket.on('incoming_msg', (msg, fn) => {
+        let m = "incoming message " + msg
         $('#messages').append($('<li>').text(m));
         window.scrollTo(0, document.body.scrollHeight);
-        //fn(`${msg} received`)
+        fn(`${msg} received`)
       });
     });
   </script>

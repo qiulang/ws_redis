@@ -14,16 +14,16 @@ app.use(express.static(path.join(__dirname, 'public')))
 redis.del('websocket:socket_user')
 
 io.on('connection', async function(socket) {
-  //TODO 重刷浏览器 socket.id 会变，服务器端需要有一个方法能唯一标识浏览器端
+  //客户端连接成功后会主动发login消息，redis记录 user 到 socketio.id的对应
   socket.on('login', async function(user_id) {
     debugw(`user ${user_id} has login using socket ${socket.id}`)
-    //需要设在两个hash table里
     redis.hset(`websocket:${user_id}`, 'socketid', socket.id)
     redis.hset('websocket:socket_user', socket.id, user_id)
     await sub.subscribe(user_id)
     debugr(`subscribe to ${user_id} channel`)
     debugr(`store in hash table user_socket ${user_id} => ${socket.id}`)
-    io.to(socket.id).emit('loginAck', `I see you ${user_id}`)
+    // io.to(socket.id).emit('loginAck', `I see you ${user_id}`, reply => {
+    socket.emit('loginAck', `I see you ${user_id}`)
   })
   //用户关闭页面，断网都会触发disconnect消息
   socket.on('disconnect', async function(reason) {
@@ -44,13 +44,18 @@ io.on('connection', async function(socket) {
   })
 })
 
+//订购 redis 消息处理，一般是web服务器发给我们的
 sub.on('message', async function(channel, message) {
   debugr('Receive message %s from channel %s', message, channel)
   let exist = await redis.exists(`websocket:${channel}`)
   debugr(`Does ${channel} exist ? ${exist}`)
   if (exist == 0) return
   let socketid = await redis.hget(`websocket:${channel}`, 'socketid')
-  io.to(socketid).emit('incoming_msg', message)
+  // io.to(socketid).emit('incoming_msg', message)
+  let socket = io.sockets.connected[socketid]
+  socket.emit('incoming_msg', message, reply => {
+    debugw(`what reply we got ${reply} `)
+  })
 })
 
 http.listen(port, function() {
