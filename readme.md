@@ -58,6 +58,16 @@ chat 例子一开始没跑起应该 socket.io client版本问题。另，开了�
 
 
 
+关于socket.io启动 http server 和 express的不同
+
+1. https://stackoverflow.com/questions/26921117/http-createserverapp-v-http-serverapp
+
+2. https://stackoverflow.com/questions/27492101/what-is-happening-when-requirehttp-server-is-evaluated-with-an-express-app
+
+关于关闭页面，断网 socket.io的处理
+
+1. https://stackoverflow.com/questions/16293520/how-to-detect-that-users-connection-is-lost-or-he-closed-the-browser-window-in
+
 #### 目前socket.io 的设计
 
 **redis 数据**
@@ -70,6 +80,8 @@ chat 例子一开始没跑起应该 socket.io client版本问题。另，开了�
 
 
 pubsub 必须要两个redis示例，因为 `(node:80054) UnhandledPromiseRejectionWarning: Error: Connection in subscriber mode, only subscriber commands may be used` 
+
+连别的redis最简单办法 在 他的redis-cli 运行 `CONFIG SET protected-mode no` 
 
 
 
