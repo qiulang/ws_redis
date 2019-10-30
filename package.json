@@ -7,7 +7,7 @@
     "pubsub": "DEBUG=app:* node spec/pubsub.js",
     "basic": "DEBUG=app:* node spec/basic.js",
     "prestart": "shell/redis_check.sh",
-    "start": "DEBUG=websocket,redis nodemon index.js"
+    "start": "DEBUG=app:* nodemon index.js"
   },
   "author": "qiulang",
   "license": "ISC",

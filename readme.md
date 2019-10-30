@@ -73,23 +73,27 @@ chat 例子一开始没跑起应该 socket.io client版本问题。另，开了�
 **redis 数据**
 
 1. `socket_user ` 哈希表 存 `socket.id` 到 `user_id`映射 ： 客户端成功连接到服务器就发`login`事件（自定义事件），消息内容是 `user_id`, 服务器收到 `login`事件，在redis的`socket_user `表添加一对key:value对 `socket.id`： `user_id`
-2. 维护`socket_user `哈希表目的是 当断线时候, 服务器会收到disconnet事件（包括网络问题、关闭页面）从 `socket.id` 知道相应`user_id`，更新 `user_id` 哈希表的相关数据
-3. 每个用户登录后为它创建哈希表 key 是 `user_id`, 用它来存所有跟这个用户相关信息。每个用户有自己的哈希表。
-4. 下一步加入pubsub，为每个坐席建立一个通道，而外有一个公告通道用来和 web 服务器交互
+2. 维护`socket_user `哈希表目的是 当断线时候, 服务器会收到`disconnet`事件（包括网络问题、关闭页面）从 `socket.id` 知道相应`user_id`，更新 `user_id` 哈希表的相关数据
+3. 每个坐席登录后为它创建哈希表 key 是 `user_id`, 用它来存所有跟这个坐席相关信息。每个坐席有自己的哈希表。
+4. redis的pubsub 目前只用了sub，订阅从web服务器发来消息，为每个坐席建立一个通道。暂时还没有设置额外的公告通道用来和 web 服务器交互。
+5. redis的pub目前没用是因为web服务器希望上传消息直接从浏览器调用http接口，而不是通过 websocket服务器pub方式通知web服务器。
 
 
 
-pubsub 必须要两个redis示例，因为 `(node:80054) UnhandledPromiseRejectionWarning: Error: Connection in subscriber mode, only subscriber commands may be used` 
+注：
 
-连别的redis最简单办法 在 他的redis-cli 运行 `CONFIG SET protected-mode no` 
+1. pubsub 必须要两个redis示例，因为 `(node:80054) UnhandledPromiseRejectionWarning: Error: Connection in subscriber mode, only subscriber commands may be used` 
+
+2. 连别的机器redis最简单办法 在他的redis-cli 运行 `CONFIG SET protected-mode no` 
 
 
 
 **socket.io 事件**
 
 1. socket.io系统事件要处理
-2. 我们自定义事件如果需要请求相应对, 命名规则就是相应消息+'Ack'，比如 `login` 和`loginAck`
-3. emit ack不成功是因为不能通过socket.io 发（广播），必须通过socket发
+2. 我们自定义事件目前只有两个： `login`（客户端发，服务器收） 和 `cr_msg` （服务器发，客户端收）
+3. `login`在客户端websocket连到服务器后发送，服务器负责监听，作用是把`userid`发给服务器，以便服务器把`userid` 和`socketid` 做绑定。 服务器处理login消息之后会给客户端一个相应。
+4. 客户端需要监听`cr_msg`事件，收到的消息体是服务器下发给浏览器各种消息。
 
    
 

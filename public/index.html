@@ -78,7 +78,15 @@
         socket.on('connect', () => {
           console.log(`connect to server with id ${socket.id} , send my user id 5001`);
           //socket.io 我们自定义消息, login
-          socket.emit('login', userid)//login with my user_id
+          socket.emit('login', userid, reply => {
+            console.log(`只有收到服务器确认客户端才能确认login成功:${reply}`)
+            //这里只是一个简单示例，服务器返回userid,客户端作比较
+            if (reply == userid) {
+              console.log('服务器成功处理login')
+            } else {
+              console.log('服务器返回值不对!')
+            }
+          })//login with my user_id
         });
         //刷新浏览器 socket.id会变，但不是reconnect消息
         //reconnect成功后会再触发connect消息
@@ -90,12 +98,15 @@
         socket.on('disconnect', (reason) => {
           console.log(`disconnect reason ${reason}`)
         })
-        //socket.io 我们自定义消息 ack
-        socket.on('loginAck', (msg, fn) => {
-          $('#messages').append($('<li>').text(msg));
-          window.scrollTo(0, document.body.scrollHeight);
-          // fn('loginACK reply')
+        socket.on('cr_msg', (msg, fn) => {
+          console.log(`收到服务器消息 ${msg}`)
+          const data = JSON.parse(msg)
+          let m = `超级企业 ${data.seid} 企业 ${data.ccgeid} 坐席${data.uid} 消息类型 ${data.op_code}
+          具体数据 ${JSON.stringify(data.data)}`
+          //data.data是需要具体分析
+          $('#messages').append($('<li>').text(m));
         });
+        //这个现在示例作用不大了，可以不用
         socket.on('incoming_msg', (msg, fn) => {
           let m = "incoming message " + msg
           $('#messages').append($('<li>').text(m));

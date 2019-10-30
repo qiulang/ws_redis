@@ -1,6 +1,6 @@
 require('dotenv-flow').config()
 var Redis = require('ioredis')
-var debug = require('debug')('redis')
+var debug = require('debug')('app:redis')
 const setting = {
   port: process.env.REDIS_PORT || 6379,
   host: process.env.REDIS_HOST || 'localhost'
