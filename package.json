@@ -6,6 +6,7 @@
   "scripts": {
     "pubsub": "DEBUG=app:* node spec/pubsub.js",
     "basic": "DEBUG=app:* node spec/basic.js",
+    "prestart": "./redis_check.sh",
     "start": "DEBUG=websocket,redis nodemon index.js"
   },
   "author": "qiulang",
