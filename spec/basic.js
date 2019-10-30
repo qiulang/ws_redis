@@ -4,6 +4,7 @@ var Redis = require('ioredis')
 var debug = require('debug')
 var error = debug('app:error')
 var log = debug('app:log')
+const uuidv1 = require('uuid/v1')
 
 /* 
   https://github.com/luin/ioredis#connect-to-redis
@@ -23,6 +24,7 @@ redis.get('foo', function(err, result) {
 })
 log('del foo')
 redis.del('foo')
+log(uuidv1())
 
 // Or using a promise if the last argument isn't a function
 redis.get('foo').then(function(result) {

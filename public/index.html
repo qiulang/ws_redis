@@ -71,9 +71,7 @@
         return false;
       });
       fetch('login').then(response => response.json()).then(data => {
-        console.log(data.user)
-        var browser = navigator.userAgent.split('/')[2];
-        var userid = "5001_" + browser;//模拟一个userid
+        var userid = data.user;//模拟一个userid
         var socket = io({ transports: ['websocket'] });
         console.log(socket.id);
         //socket.io系统消息
