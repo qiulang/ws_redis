@@ -1,5 +1,4 @@
 var express = require('express')
-var path = require('path')
 var debugw = require('debug')('app:websocket')
 var app = express()
 var http = require('http').Server(app)
@@ -10,7 +9,8 @@ var indexRouter = require('./routes/index')
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
-app.use(express.static(path.join(__dirname, 'public')))
+// 试验让 nginx来给
+// app.use(express.static('public'))
 //重启服务器时候情况 socket.io 到user的映射表，因为客户端会重来上来
 redis.del('websocket:socket_user')
 
@@ -18,12 +18,13 @@ io.on('connection', async function(socket) {
   //客户端连接成功后会主动发login消息，redis记录 user 到 socketio.id的对应
   socket.on('login', async function(user_id, fn) {
     debugw(`user ${user_id} has login using socket ${socket.id}`)
-    await sub.subscribe(user_id)
     redis.hset(`websocket:${user_id}`, 'socketid', socket.id)
     redis.hset('websocket:socket_user', socket.id, user_id)
-    debugr(`subscribe to ${user_id} channel`)
     debugr(`store in hash table user_socket ${user_id} => ${socket.id}`)
     fn(`${user_id}`)
+    debugw(`send ack to user ${user_id}`)
+    await sub.subscribe(user_id)
+    debugr(`subscribe to ${user_id} channel`)
   })
   //用户关闭页面，断网都会触发disconnect消息
   socket.on('disconnect', async function(reason) {

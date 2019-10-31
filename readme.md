@@ -12,6 +12,9 @@ redis nodejs 客户端我们用ioredis,  https://github.com/NodeRedis/node_redis
 >
 > If a subscriber fails to read a message, this message is lost for the subscriber.
 
+[Redis Best Practices pubsub](https://redislabs.com/redis-best-practices/communication-patterns/pub-sub/)   **"These messages are fire-and-forget"**  Once subscribed to a channel, the client is put into subscriber mode and no commands can be issued by the client. In this way, the client has become read-only. 
+
+
 
 
 [channel 也不需要专门做创建和删除](https://www.redisgreen.net/blog/pubsub-howto/)
@@ -91,11 +94,52 @@ chat 例子一开始没跑起应该 socket.io client版本问题。另，开了�
 **socket.io 事件**
 
 1. socket.io系统事件要处理
+
 2. 我们自定义事件目前只有两个： `login`（客户端发，服务器收） 和 `cr_msg` （服务器发，客户端收）
+
 3. `login`在客户端websocket连到服务器后发送，服务器负责监听，作用是把`userid`发给服务器，以便服务器把`userid` 和`socketid` 做绑定。 服务器处理login消息之后会给客户端一个相应。
+
 4. 客户端需要监听`cr_msg`事件，收到的消息体是服务器下发给浏览器各种消息。
 
-   
+  
+
+http 服务器和websocket 服务器监听不同端口的方法暂时没试出来，但目前也不需要
+
+
+
+### 部署方案和nginx设置
+
+客户端的 io创建 `io([url][, options])` , url (String) (defaults to **window.location**)
+
+1. 和前端起在一起，共用前端nginx. 前端的socket.io client 连到和页面一样同一个web 服务器（前端的nginx），配置最简单。但需对nginx转发规则做专门配置？
+2. 和后端起在一起，共用后端nginx. [Ratchet的推荐方式](http://socketo.me/docs/deploy) 前端的socket.io client 连到和页面**不同的**一个web 服务器。
+3. 自己单独起，甚至可以不用nginx 来转发，可能比第二种更麻烦，因为不仅前端的socket.io client 连到和页面**不同的**一个web 服务器，[可以参照url options](https://socket.io/docs/client-api/#io-url-options)  “if the `url` is `http://localhost/users`, a transport connection will be established to `http://localhost` and a Socket.IO connection will be established to `/users`.”  但暂时没时间试。
+
+所以决定采用和前端在一个容器里，下一步难点：
+
+1. 如何生成前端docker 镜像。
+2. nginx.conf配置， 静态文件 通过nginx还是express输出？`location` 转发规则？
+3. 保证和后端共用一个redis
+
+
+
+ socket.io client 能连和express 服务器不同的端口吗？ **不能**
+
+[what port does the socketIO client listen to by default?](https://stackoverflow.com/questions/25778414/what-port-does-the-socketio-client-listen-to-by-default) 从这个答复再加参看源代码，socket.io client连服务器监听端口， 所以nginx的转发规划要怎么做？！
+
+根据这两个问答，终于找到解决办法 
+
+[Express + Nginx. Can't serve static files](https://stackoverflow.com/questions/46692341/express-nginx-cant-serve-static-files)
+
+[Serve both static website & SPA (node.js) with NGINX](https://stackoverflow.com/questions/54422629/serve-both-static-website-spa-node-js-with-nginx)
+
+关键是  https://serverfault.com/questions/738452/what-does-the-at-sign-mean-in-nginx-location-blocks
+
+```shell
+    location / {
+        try_files $uri $uri/ @websocket; #注意 @必须
+    }
+```
 
 
 
