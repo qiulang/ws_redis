@@ -1,6 +1,7 @@
 var express = require('express')
 var debugw = require('debug')('app:websocket')
 var app = express()
+var cors = require('cors')
 var http = require('http').Server(app)
 var io = require('socket.io')(http)
 var port = process.env.PORT || 3000
@@ -9,6 +10,7 @@ var indexRouter = require('./routes/index')
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
+app.use(cors())
 // 试验让 nginx来给
 // app.use(express.static('public'))
 //重启服务器时候情况 socket.io 到user的映射表，因为客户端会重来上来
