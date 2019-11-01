@@ -145,3 +145,11 @@ http 服务器和websocket 服务器监听不同端口的方法暂时没试出�
 
 
 
+### nginx 配置规则要的
+
+
+
+1. 两个SPA放在一起通过路径区分，必须要配，[vue.config.js 要配置 publicPath](https://cli.vuejs.org/zh/config/#publicpath) 
+2. [root 和 alias 区分很重要](https://stackoverflow.com/questions/10631933/nginx-static-file-serving-confusion-with-root-alias) 我们必须用alias, 并针对 publicPath的值设置。
+3. 虽然可以单独对 socket.io 做规则过滤，[但是还是只能用hash mode不能用history mode](https://router.vuejs.org/guide/essentials/history-mode.html#example-server-configurations)， history mode 的url 没法设置规则，因为他们都要回到index.hml （可以再研究下）。所以单独对 socket.io 过滤的意义就不大。
+
