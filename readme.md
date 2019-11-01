@@ -154,4 +154,5 @@ http 服务器和websocket 服务器监听不同端口的方法暂时没试出�
 3. 可以单独对 socket.io 设置 location，这样就不需要 `@websocket ` 做 fallback。
 4. 如果单独对 socket.io 设置location， [SPA就可以用history mode](https://router.vuejs.org/guide/essentials/history-mode.html#example-server-configurations) 用 `index.html` 做 fallback
 5. 但调试时候 express 还可以提供别的api 接口，所以最好用它做fallback, SPA 就要用 hash mode
+6. `@webpack` 做fallback websocket连不上!
 
