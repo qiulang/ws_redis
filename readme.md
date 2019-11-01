@@ -150,7 +150,7 @@ http 服务器和websocket 服务器监听不同端口的方法暂时没试出�
 
 
 1. 当两个SPA放在一起通过路径区分时，必须要在[vue.config.js 要配置 publicPath](https://cli.vuejs.org/zh/config/#publicpath) . 延伸阅读 https://stackoverflow.com/questions/2005079/absolute-vs-relative-urls , 但即使把index.html路劲手动修正确，SPA一样不显示。不值得研究了。
-2. [root 和 alias 区分很重要](https://stackoverflow.com/questions/10631933/nginx-static-file-serving-confusion-with-root-alias) 我们必须用alias, 并针对 publicPath的值设置。
+2. [root 和 alias 区分很重要](https://stackoverflow.com/questions/10631933/nginx-static-file-serving-confusion-with-root-alias) 我们必须用alias, 并针对 publicPath的值设置。子路径用 alias不用root 但 "/" **必须是root!!**
 3. 可以单独对 socket.io 设置 location，这样就不需要 `@websocket ` 做 fallback。
 4. 如果单独对 socket.io 设置location， [SPA就可以用history mode](https://router.vuejs.org/guide/essentials/history-mode.html#example-server-configurations) 用 `index.html` 做 fallback
 5. 但调试时候 express 还可以提供别的api 接口，所以最好用它做fallback, SPA 就要用 hash mode
