@@ -143,6 +143,10 @@ http 服务器和websocket 服务器监听不同端口的方法暂时没试出�
 
 
 
+静态文件还是用nginx转发更有效，[参见nginx对 socket.io描述的官方文档](https://www.nginx.com/blog/nginx-nodejs-websockets-socketio/)
+
+[socket.io 官方文档关于 sticky session描述](https://socket.io/docs/using-multiple-nodes/#NginX-configuration) 现阶段只起一个nodejs还不需要 sticky session.
+
 
 
 ### nginx 配置规则要点
@@ -150,9 +154,18 @@ http 服务器和websocket 服务器监听不同端口的方法暂时没试出�
 
 
 1. 当两个SPA放在一起通过路径区分时，必须要在[vue.config.js 要配置 publicPath](https://cli.vuejs.org/zh/config/#publicpath) . 延伸阅读 https://stackoverflow.com/questions/2005079/absolute-vs-relative-urls , 但即使把index.html路劲手动修正确，SPA一样不显示。不值得研究了。
+
 2. [root 和 alias 区分很重要](https://stackoverflow.com/questions/10631933/nginx-static-file-serving-confusion-with-root-alias) 我们必须用alias, 并针对 publicPath的值设置。子路径用 alias不用root 但 "/" **必须是root!!**
-3. 可以单独对 socket.io 设置 location，这样就不需要 `@websocket ` 做 fallback。
-4. 如果单独对 socket.io 设置location， [SPA就可以用history mode](https://router.vuejs.org/guide/essentials/history-mode.html#example-server-configurations) 用 `index.html` 做 fallback
-5. 但调试时候 express 还可以提供别的api 接口，所以最好用它做fallback, SPA 就要用 hash mode
-6. `@webpack` 做fallback websocket连不上!
+
+3. [location 一些规则](https://www.digitalocean.com/community/tutorials/understanding-nginx-server-and-location-block-selection-algorithms)
+
+4. 可以单独对 socket.io 设置 location，这样就不需要 `@websocket ` 做 fallback。
+
+5. 如果单独对 socket.io 设置location， [SPA就可以用history mode](https://router.vuejs.org/guide/essentials/history-mode.html#example-server-configurations) 用 `index.html` 做 fallback. 
+
+6. [location 做 path match的时候， websocket连不上，暂时无解](https://stackoverflow.com/questions/58668373/socket-io-with-nginx-location-path-match-hit-the-error-during-websocket-handsha)
+
+   
+
+   
 

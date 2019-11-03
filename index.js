@@ -4,6 +4,7 @@ var app = express()
 var cors = require('cors')
 var http = require('http').Server(app)
 var io = require('socket.io')(http)
+// var io = require('socket.io')(http, { path: 'rep' })
 var port = process.env.PORT || 3000
 var { redis, pub, sub, debugr } = require('./database/redis')
 var indexRouter = require('./routes/index')
