@@ -167,5 +167,16 @@ http 服务器和websocket 服务器监听不同端口的方法暂时没试出�
 
    
 
-   
+### dockerfile 难点
+
+
+
+我们需要在一个容器里部署 websocket 服务器，两个 SPA 应用， dockerfile如何生成？ 
+
+网上查不到有用资料，[最近接就是一个nodejs服务器+一个SPA](https://stackoverflow.com/questions/54996835/docker-design-for-multiple-apps)。 先从两个SPA做起或者是一个SPA和一个nodejs做起。
+
+如何能访问两个项目文件，git subtree ？
+
+
+
 
