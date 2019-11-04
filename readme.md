@@ -175,7 +175,9 @@ http 服务器和websocket 服务器监听不同端口的方法暂时没试出�
 
 网上查不到有用资料，[最近接就是一个nodejs服务器+一个SPA](https://stackoverflow.com/questions/54996835/docker-design-for-multiple-apps)。 先从两个SPA做起或者是一个SPA和一个nodejs做起。
 
-如何能访问两个项目文件，git subtree ？
+如何能访问两个项目文件? 目前决定用 `git subtree`.
+
+父仓库如何取到 subtree 仓库最新代码，或者切换分支？
 
 
 
