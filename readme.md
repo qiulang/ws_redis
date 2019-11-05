@@ -175,9 +175,35 @@ http 服务器和websocket 服务器监听不同端口的方法暂时没试出�
 
 网上查不到有用资料，[最近接就是一个nodejs服务器+一个SPA](https://stackoverflow.com/questions/54996835/docker-design-for-multiple-apps)。 先从两个SPA做起或者是一个SPA和一个nodejs做起。
 
-如何能访问两个项目文件? 目前决定用 `git subtree`.
+如何能访问两个项目文件? 目前决定用 `git subtree`. 父仓库如何取到 subtree 仓库最新代码，或者切换分支？
 
-父仓库如何取到 subtree 仓库最新代码，或者切换分支？
+已经验证可以跑起来两个 SPA，下一步把nodejs也加下
+
+
+
+#### 如何把nginx 和 nodejs 放在一个容器里 ？
+
+如果用 `docker-compose.yml` 设置 nginx 容器 `depends_on`  , docker-compose建立的虚拟网络里, nginx 容器就可以通域名nodejs ，所以 nginx.conf 可以直接写 `proxy_pass http://nodejs:8080;` 
+
+k8s 是不是也能这样，我现在不清楚。
+
+
+
+但是要把 nginx 和 nodejs编在一个容器里，网上没看到资料。就直接在nginx容器里安装nodejs吧，注意 alpine的安装方法：
+
+1. https://www.sandtable.com/reduce-docker-image-sizes-using-alpine/
+
+2. https://stackoverflow.com/questions/49118579/alpine-dockerfile-advantages-of-no-cache-vs-rm-var-cache-apk
+
+3. 安装使用阿里镜像快很多 `RUN apk add --no-cache --repository https://mirrors.aliyun.com/alpine/v3.9/main/ nodejs npm`
+
+   
+
+
+
+
+
+
 
 
 
