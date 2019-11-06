@@ -2,6 +2,10 @@
   "name": "pubsub",
   "version": "1.0.0",
   "description": "try socketio & redis pubsub",
+  "repository": {
+    "type": "git",
+    "url": "ssh://git@git.emicloud.com:22221/webcc/socket_test.git"
+  },
   "main": "index.js",
   "scripts": {
     "pubsub": "DEBUG=app:* node spec/pubsub.js",
