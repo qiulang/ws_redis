@@ -5,15 +5,21 @@ var cors = require('cors')
 var http = require('http').Server(app)
 var io = require('socket.io')(http)
 // var io = require('socket.io')(http, { path: 'rep' })
-var port = process.env.PORT || 3000
 var { redis, pub, sub, debugr } = require('./database/redis')
 var indexRouter = require('./routes/index')
+var port = process.env.PORT || 3000
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
 app.use(cors())
 // 试验让 nginx来给
-// app.use(express.static('public'))
+if (process.env.NGINX) {
+  debugw('use nginx to provide static file, e.g. index.html')
+} else {
+  debugw('use express to provide static file, e.g. index.html')
+  app.use(express.static('public'))
+}
+
 //重启服务器时候情况 socket.io 到user的映射表，因为客户端会重来上来
 redis.del('websocket:socket_user')
 
