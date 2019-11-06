@@ -80,6 +80,7 @@ chat 例子一开始没跑起应该 socket.io client版本问题。另，开了�
 3. 每个坐席登录后为它创建哈希表 key 是 `user_id`, 用它来存所有跟这个坐席相关信息。每个坐席有自己的哈希表。
 4. redis的pubsub 目前只用了sub，订阅从web服务器发来消息，为每个坐席建立一个通道。暂时还没有设置额外的公告通道用来和 web 服务器交互。
 5. redis的pub目前没用是因为web服务器希望上传消息直接从浏览器调用http接口，而不是通过 websocket服务器pub方式通知web服务器。
+6. redis-cli里发送json数据要这样 `publish 134_243_1000998392 '{"op_code":"change_status","ccgeid":243,"seid":134,"uid":1000056188,"data":{"number":"1056","status":1}}'`  最外面是单引号，每个json的key值是双引号。
 
 
 
@@ -200,6 +201,12 @@ k8s 是不是也能这样，我现在不清楚。
    
 
 `pm2`   `git subtree` 都还要再找时间复习下
+
+#### vscode debug
+
+好久没用有些设置又变了  https://code.visualstudio.com/docs/nodejs/nodejs-debugging
+
+
 
 
 

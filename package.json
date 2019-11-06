@@ -11,7 +11,8 @@
     "pubsub": "DEBUG=app:* node spec/pubsub.js",
     "basic": "DEBUG=app:* node spec/basic.js",
     "prestart": "shell/redis_check.sh",
-    "start": "DEBUG=app:* nodemon index.js",
+    "start": "DEBUG=app:* node index.js",
+    "debug": "DEBUG=app:* node --nolazy --inspect-brk=9229 index.js",
     "prod": "pm2 start index.js"
   },
   "author": "qiulang",
