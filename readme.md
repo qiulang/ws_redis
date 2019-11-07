@@ -228,16 +228,66 @@ k8s 是不是也能这样，我现在不清楚。
 
 - [x] repo 改名  https://stackoverflow.com/questions/2041993/how-do-i-rename-a-git-repository
 - [ ] nginx log 和时区的设置还要确认
+- [ ] 用密码方式访问 redis
 
 
 
+### 启动 redi-server 几个注意点 
+
+1. 启动 `redis-server` 不带任何参数，启动后输出：
+
+   ```shell
+   Warning: no config file specified, using the default config. In order to specify a config file use redis-server /path/to/redis.conf
+   
+   /* the default config*/ 所以redis处在 protected-mode 并且不使用密码
+   
+   127.0.0.1:6379> config get protected-mode
+   1) "protected-mode"
+   2) "yes"
+   127.0.0.1:6379> config get requirepass
+   1) "requirepass"
+   2) ""
+   
+   127.0.0.1:6379> info server //看基本配置
+   # Server
+   redis_version:5.0.3
+   ...
+   config_file:/usr/local/etc/redis.conf
+   
+   // config rewrite 是先 config set 然后直接输入 config rewrite
+   127.0.0.1:6379> config set requirepass "jiajia"
+   OK
+   127.0.0.1:6379> config rewrite
+   OK
+   
+   However if the server was started without a configuration file at all, the CONFIG REWRITE will just return an error.
+   ```
+
+2. protect-mode  https://redis.io/topics/security#protected-mode  3.2.0 才有的功能
+
+   > since version 3.2.0, when Redis is executed with the default configuration (binding all the interfaces) and without any password in order to access it, it enters a special mode called **protected mode**. In this mode Redis only replies to queries from the loopback interfaces, and reply to other clients connecting from other addresses with an error, explaining what is happening and how to configure Redis properly.
+
+protect-mode 是针对没有设置密码时候提供的**额外保护**，这时只能从本机访问。
+
+如果设置了密码，即便有 protect-mode, 别的机器通过auth也能访问
+
+```
+redis ➤ redis-cli                                                                            127.0.0.1:6379> config set requirepass "tongtong"
+OK
+127.0.0.1:6379> config rewrite
+(error) NOAUTH Authentication required.
+127.0.0.1:6379> config get protected-mode
+(error) NOAUTH Authentication required.
+127.0.0.1:6379> auth "tongtong"
+OK
+127.0.0.1:6379> config get protected-mode
+1) "protected-mode"
+2) "no"
+```
 
 
 
-
-
-
-
+3. 配置文件如果设置 `bind 127.0.0.1 ::1` 就只能本机访问， 别的机器访问会提示 "Connection refused"
 
 
 
