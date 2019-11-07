@@ -207,23 +207,28 @@ k8s 是不是也能这样，我现在不清楚。
 
 #### vscode debug
 
-好久没用有些设置又变了  https://code.visualstudio.com/docs/nodejs/nodejs-debugging
+- [x] 好久没用有些设置又变了  https://code.visualstudio.com/docs/nodejs/nodejs-debugging
 
-[pm2 的log](https://pm2.keymetrics.io/docs/usage/log-management/)
 
-pm2 没法和debug 一起，网上能找到几个资料都不行。估计要暂时放弃pm2
+- [ ] [pm2 的log](https://pm2.keymetrics.io/docs/usage/log-management/)
 
-1. https://stackoverflow.com/questions/46117380/how-to-start-pm2-process-with-debug-option
+- [ ] pm2 没法和debug 一起，网上能找到几个资料都不行。估计要暂时放弃pm2
 
-2. https://github.com/visionmedia/debug/issues/503
 
-3. https://github.com/Unitech/pm2/issues/1757
+      1. https://stackoverflow.com/questions/46117380/how-to-start-pm2-process-with-debug-option
+    
+      2. https://github.com/visionmedia/debug/issues/503
+    
+      3. https://github.com/Unitech/pm2/issues/1757
 
 注：目前新暂时放弃 pm2的使用
 
-JSON.parse异常处理
+- [x] JSON.parse异常处理
 
-repo 改名  https://stackoverflow.com/questions/2041993/how-do-i-rename-a-git-repository
+
+- [x] repo 改名  https://stackoverflow.com/questions/2041993/how-do-i-rename-a-git-repository
+- [ ] nginx log 和时区的设置还要确认
+
 
 
 
