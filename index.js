@@ -61,17 +61,21 @@ sub.on('message', async function(channel, message) {
 
   //{"op_code":"change_status","ccgeid":243,"seid":134,"uid":1000056188,
   //"data":{"number":"1056","status":1}}
-  let pushData = JSON.parse(message)
-  debugr(
-    `message type: ${pushData.op_code}, data content:${JSON.stringify(
-      pushData.data
-    )}`
-  )
-  debugr(
-    `校验ccgeid: ${pushData.ccgeid}, seid:${pushData.seid}, uid:${pushData.uid}`
-  )
-  let socketid = await redis.hget(`websocket:${channel}`, 'socketid')
-  io.to(socketid).emit('cr_msg', message)
+  try {
+    let pushData = JSON.parse(message)
+    debugr(
+      `message type: ${pushData.op_code}, data content:${JSON.stringify(
+        pushData.data
+      )}`
+    )
+    debugr(
+      `校验ccgeid: ${pushData.ccgeid}, seid:${pushData.seid}, uid:${pushData.uid}`
+    )
+    let socketid = await redis.hget(`websocket:${channel}`, 'socketid')
+    io.to(socketid).emit('cr_msg', message)
+  } catch (err) {
+    debugr(`${message} is not a valid JSON string so we did not sent to client`)
+  }
 
   //下面是需要浏览器确认的调用方法
   // let socket = io.sockets.connected[socketid]
