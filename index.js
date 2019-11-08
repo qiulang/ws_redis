@@ -38,11 +38,22 @@ io.on('connection', async function(socket) {
   //用户关闭页面，断网都会触发disconnect消息
   socket.on('disconnect', async function(reason) {
     debugw(`socket id ${socket.id} has disconnect with reason ${reason}`)
-    debugr(`${socket.id} has disconnect, need to clear up its related data.`)
     let user_id = await redis.hget('websocket:socket_user', socket.id)
-    debugr(`delete ${socket.id} related data ${user_id}`)
-    redis.hdel(`websocket:${user_id}`, 'socketid')
     redis.hdel('websocket:socket_user', socket.id)
+    debugr(
+      `${socket.id} has disconnect, delete its websocket:socket_user data.`
+    )
+    let socket_id = await redis.hget(`websocket:${user_id}`, 'socketid')
+    if (socket_id == socket.id) {
+      redis.hdel(`websocket:${user_id}`, 'socketid')
+      debugr(`delete ${socket.id} related data ${user_id}`)
+      return
+    }
+    if (socket_id) {
+      debugr(`${user_id}'s socket has update from ${socket.id} to ${socket_id}`)
+    } else {
+      debugr(`${socket.id} related data has been cleared up`)
+    }
   })
   //chat-message这个现在意义不大，可以不用了
   socket.on('chat-message', async msg => {

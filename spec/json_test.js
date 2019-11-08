@@ -13,9 +13,14 @@ const msg =
 //   '{op_code:change_status,ccgeid:243,seid:134,uid:1000056188,data:{number:1056,status:1}}'
 
 try {
-  let pushData = JSON.parse(msg)
+  var pushData = JSON.parse(msg)
 } catch (err) {
   console.log('not a valid json string')
 }
 
 console.log(pushData.data)
+
+const Moudles = ['app', 'phone-bar']
+
+let debug = Moudles.reduce((a, b) => `${b}*,${a}`, '')
+console.log(`${debug}`)
