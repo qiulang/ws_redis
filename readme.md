@@ -293,7 +293,7 @@ OK
 
 ### 11.08 发现几个问题
 
-今天提交的客户端代码， 重新刷新页面 socket.io 有时候不通！重启socket.io服务器可以连上。
-
-查了半天发现 `socket.on('connect' ...` 的代码必须和 `socket = io()`  在同一个文件
+1. 今天提交的客户端代码， 重新刷新页面 socket.io 有时候不通！重启socket.io服务器可以连上。查了半天发现 `socket.on('connect' ...` 的代码必须和 `socket = io()`  在同一个文件
+2. 基于 alpine 的docker容器的时区问题， CST
+3. 32服务器部署要打开防火墙，不然websocket 不通；阿里云部署 wss不需要专门配置
 
