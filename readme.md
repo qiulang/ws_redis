@@ -296,6 +296,8 @@ OK
 1. 今天提交的客户端代码， 重新刷新页面 socket.io 有时候不通！重启socket.io服务器可以连上。查了半天发现 `socket.on('connect' ...` 的代码必须和 `socket = io()`  在同一个文件
 2. 基于 alpine 的docker容器的时区问题， CST
 3. 32服务器部署要打开防火墙，不然websocket 不通；阿里云部署 wss不需要专门配置
+- [ ] 4. 测试问题，同一账户在不同机器登录，消息会发到哪个浏览器，需要测试。我感觉是最后一个
+- [ ] 5. 需要支持 IE 11
 
 
 
@@ -307,5 +309,5 @@ OK
 4. `DEBUG=app:* pm2 start index.js`  但是写到package.json 的脚本 debug设置必须写在ecosystem里；
 5. 使用debugjs有几个问题：
    1. [日志写到 index-error.log](https://github.com/visionmedia/debug/issues/503) 
-   2. 时区设置
+   2. 时区设置, 非 tty时候，debug 缺省用 Date#toISOString() ，不知道怎么设置本地时区，发现我很久前就给它[开过问题单](https://github.com/visionmedia/debug/issues/574)，没答复。 另一个问题单说可以[定制输出格式，包括时区](https://github.com/visionmedia/debug/issues/582) 但我试了半天没试验出来干脆不要它的时间戳，用pm2的
 

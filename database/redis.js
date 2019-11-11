@@ -30,6 +30,7 @@ var pub = new Redis(setting)
 
 redis.on('error', err => {
   if (err.message.includes('invalid password')) {
+    //By default debug will log to stderr.
     debug('Invalid password so redis fails to work, so just exit')
     process.exit(1)
   }
@@ -42,6 +43,5 @@ redis.on('error', err => {
 module.exports = {
   redis,
   pub,
-  sub,
-  debugr: debug
+  sub
 }

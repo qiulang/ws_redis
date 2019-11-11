@@ -1,6 +1,6 @@
 var express = require('express')
 const uuidv1 = require('uuid/v1')
-var debug = require('debug')('app:routers')
+var debug = require('debug')('routers:app')
 var router = express.Router()
 
 /* GET home page. */

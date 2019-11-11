@@ -8,11 +8,13 @@ module.exports = {
       autorestart: true,
       watch: false,
       max_memory_restart: '500M',
-      // 用debug有时间戳，不用再设置，但debug的时区要设置
-      // log_date_format: 'YYYY-MM-DD HH:mm Z',
+      // 用debug有时间戳，但它只能是Date#toISOString()，差了8小时，不知道怎么设置本地时间
+      // 找了很多方法也不行，干脆不要它输出时间格式了 DEBUG_HIDE_DATE
+      log_date_format: 'YYYY-MM-DD HH:mm',
       env: {
         NODE_ENV: 'development',
-        DEBUG: 'app:*'
+        DEBUG: 'app:*',
+        DEBUG_HIDE_DATE: true
       },
       env_production: {
         NODE_ENV: 'production'

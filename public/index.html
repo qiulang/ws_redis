@@ -66,15 +66,15 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
   <script>
     $(function () {
-      $('form').submit(function () {
-        socket.emit('chat-message', $('#m').val());
-        $('#m').val('');
-        return false;
-      });
       fetch('login').then(response => response.json()).then(data => {
         var userid = data.user;//模拟一个userid
         var socket = io({ transports: ['websocket'] });
         console.log(socket.id);
+        $('form').submit(function () {
+          socket.emit('chat-message', $('#m').val());
+          $('#m').val('');
+          return false;
+        });
         //socket.io系统消息
         socket.on('connect', () => {
           console.log(`connect to server with id ${socket.id} , send my user id 5001`);
