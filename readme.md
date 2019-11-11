@@ -297,3 +297,15 @@ OK
 2. 基于 alpine 的docker容器的时区问题， CST
 3. 32服务器部署要打开防火墙，不然websocket 不通；阿里云部署 wss不需要专门配置
 
+
+
+### pm2 使用
+
+1. 使用 ecosystem 文件
+2. 启动带 `--env development` 反而有[输出警告](https://github.com/Unitech/pm2/issues/3698) 
+3. 清理日志 `pm2 flush` 
+4. `DEBUG=app:* pm2 start index.js`  但是写到package.json 的脚本 debug设置必须写在ecosystem里；
+5. 使用debugjs有几个问题：
+   1. [日志写到 index-error.log](https://github.com/visionmedia/debug/issues/503) 
+   2. 时区设置
+
