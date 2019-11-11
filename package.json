@@ -14,7 +14,7 @@
     "start": "DEBUG=app:* nodemon index.js",
     "debug": "DEBUG=app:* node --nolazy --inspect-brk=9229 index.js",
     "preprod": "shell/redis_check.sh",
-    "prod": "pm2 start index.js",
+    "prod": "pm2 start ecosystem.config.js --env production",
     "pm2.5": "pm2 start ecosystem.config.js"
   },
   "author": "qiulang",

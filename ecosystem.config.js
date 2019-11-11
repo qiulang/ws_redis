@@ -17,7 +17,9 @@ module.exports = {
         DEBUG_HIDE_DATE: true
       },
       env_production: {
-        NODE_ENV: 'production'
+        NODE_ENV: 'production',
+        DEBUG: 'app:*',
+        DEBUG_HIDE_DATE: true
       }
     }
   ]
