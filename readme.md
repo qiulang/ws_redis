@@ -297,7 +297,7 @@ OK
 2. 基于 alpine 的docker容器的时区问题， CST
 3. 32服务器部署要打开防火墙，不然websocket 不通；阿里云部署 wss不需要专门配置
 - [ ] 4. 测试问题，同一账户在不同机器登录，消息会发到哪个浏览器，需要测试。我感觉是最后一个
-- [ ] 5. 需要支持 IE 11
+- [ ] 5. 需要支持 IE 11 [参考](https://segmentfault.com/a/1190000019525892) 和 这个 [git issue](https://github.com/socketio/socket.io-client/issues/1328)
 
 
 
@@ -306,8 +306,8 @@ OK
 1. 使用 ecosystem 文件
 2. 启动带 `--env development` 反而有[输出警告](https://github.com/Unitech/pm2/issues/3698) 
 3. 清理日志 `pm2 flush` 
-4. `DEBUG=app:* pm2 start index.js`  但是写到package.json 的脚本 debug设置必须写在ecosystem里；
+4. `DEBUG=app:* pm2 start index.js`  但是写到package.json 的脚本 [debug设置必须写在ecosystem里](https://stackoverflow.com/questions/46117380/how-to-start-pm2-process-with-debug-option/58798320#58798320)；
 5. 使用debugjs有几个问题：
    1. [日志写到 index-error.log](https://github.com/visionmedia/debug/issues/503) 
-   2. 时区设置, 非 tty时候，debug 缺省用 Date#toISOString() ，不知道怎么设置本地时区，发现我很久前就给它[开过问题单](https://github.com/visionmedia/debug/issues/574)，没答复。 另一个问题单说可以[定制输出格式，包括时区](https://github.com/visionmedia/debug/issues/582) 但我试了半天没试验出来干脆不要它的时间戳，用pm2的
-
+   2. 时区设置, 非 tty时候，debug 缺省用 Date#toISOString() ，不知道怎么设置本地时区，发现我很久前就给它[开过问题单](https://github.com/visionmedia/debug/issues/574)，没答复。 另一个问题单说可以[定制输出格式，包括时区](https://github.com/visionmedia/debug/issues/582) 但我试了半天[没试验出来，原来是作者还未实现](https://github.com/visionmedia/debug/issues/708), 干脆不要它的时间戳，用pm2的
+6. pm2 log rotate设置
