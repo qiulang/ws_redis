@@ -201,7 +201,9 @@ k8s 是不是也能这样，我现在不清楚。
 
 3. 安装使用阿里镜像快很多 `RUN apk add --no-cache --repository https://mirrors.aliyun.com/alpine/v3.9/main/ nodejs npm`
 
-   
+4. alphine [容器带 cron job](https://medium.com/@allanlei/running-cron-in-docker-the-easy-way-4f779bfa9ca7) 但要注意不是每个Linux的基础镜像都有 cron job
+
+    
 
 `pm2`   `git subtree` 都还要再找时间复习下
 
@@ -210,9 +212,9 @@ k8s 是不是也能这样，我现在不清楚。
 - [x] 好久没用有些设置又变了  https://code.visualstudio.com/docs/nodejs/nodejs-debugging
 
 
-- [ ] [pm2 的log](https://pm2.keymetrics.io/docs/usage/log-management/)
+- [x] [pm2 的log](https://pm2.keymetrics.io/docs/usage/log-management/)
 
-- [ ] pm2 没法和debug 一起，网上能找到几个资料都不行。估计要暂时放弃pm2
+- [x] pm2 如何和debug 一起，网上能找到几个资料都不行。
 
 
       1. https://stackoverflow.com/questions/46117380/how-to-start-pm2-process-with-debug-option
@@ -221,14 +223,16 @@ k8s 是不是也能这样，我现在不清楚。
     
       3. https://github.com/Unitech/pm2/issues/1757
 
-注：目前新暂时放弃 pm2的使用
+先暂时放弃 pm2的使用
 
-- [x] JSON.parse异常处理
+注，pm2 和 debug使用见下面总结。
+
+- [x] JSON.parse异常处理要加上。 合法的json串，最外面是单引号，每个属性双引号。
 
 
 - [x] repo 改名  https://stackoverflow.com/questions/2041993/how-do-i-rename-a-git-repository
-- [ ] nginx log 和时区的设置还要确认
-- [ ] 用密码方式访问 redis
+- [x] nginx log 和时区的设置还要确认
+- [x] 用密码方式访问 redis
 
 
 
@@ -297,9 +301,9 @@ OK
 2. 基于 alpine 的docker容器的时区问题， CST
 3. 32服务器部署要打开防火墙，不然websocket 不通；阿里云部署 wss不需要专门配置
 - [ ] 4. 测试问题，同一账户在不同机器登录，消息会发到哪个浏览器，需要测试。我感觉是最后一个
-- [ ] 5. 需要支持 IE 11 [参考](https://segmentfault.com/a/1190000019525892) 和 这个 [git issue](https://github.com/socketio/socket.io-client/issues/1328)
+- [ ] 5. 需要支持 IE 11 [参考](https://segmentfault.com/a/1190000019525892) 和 这个 [git issue](https://github.com/socketio/socket.io-client/issues/1328)  
 
-
+     
 
 ### pm2 使用
 
@@ -311,3 +315,6 @@ OK
    1. [日志写到 index-error.log](https://github.com/visionmedia/debug/issues/503) 
    2. 时区设置, 非 tty时候，debug 缺省用 Date#toISOString() ，不知道怎么设置本地时区，发现我很久前就给它[开过问题单](https://github.com/visionmedia/debug/issues/574)，没答复。 另一个问题单说可以[定制输出格式，包括时区](https://github.com/visionmedia/debug/issues/582) 但我试了半天[没试验出来，原来是作者还未实现](https://github.com/visionmedia/debug/issues/708), 干脆不要它的时间戳，用pm2的
 6. pm2 log rotate设置
+7. websocket 下线要通知服务器,同个账号多次登录也要通知
+8. IE11的问题，目前看是debug v4 引起的，改用 debug v3 就好了，为啥也不清楚，[总结在这](https://forum.vuejs.org/t/i-cant-polyfill-debug-module-version-4-for-ie-11-but-version-3-works-just-fine/79548)
+

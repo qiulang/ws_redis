@@ -40,6 +40,18 @@ redis.on('error', err => {
   debug('REDIS: FAILED， will keep reconnecting, but what next?')
 })
 
+async function cleaup() {
+  debug('每次启动都清空redis数据，假定浏览器会重连，我们再重写入新的数据')
+  //await will wait for redis connect
+  let tables = await redis.keys('websocket:*')
+  for (let t of tables) {
+    debug(`delete ${t}`)
+    redis.del(t)
+  }
+}
+
+cleaup()
+
 module.exports = {
   redis,
   pub,

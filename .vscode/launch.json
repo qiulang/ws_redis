@@ -7,7 +7,7 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Launch via NPM",
+      "name": "debug server",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run-script", "debug"],
       "port": 9229
@@ -17,6 +17,14 @@
       "request": "launch",
       "name": "Launch Program",
       "program": "${workspaceFolder}/spec/json_test.js"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "pubsub",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run-script", "pubsub"],
+      "port": 9229
     }
   ]
 }
