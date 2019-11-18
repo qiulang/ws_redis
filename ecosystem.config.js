@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: 'ws_redis',
-      script: 'index.js',
+      script: './src/index.js',
       //设置 instances https://pm2.keymetrics.io/docs/usage/cluster-mode/
       // instances: 1,
       autorestart: true,

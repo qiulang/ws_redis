@@ -110,7 +110,7 @@ async function dupCheck(user_id, socket_id, fn) {
   }
   //自己测试超过1也有过, If node has action queue it will be much easier
   await redis.set(socket_id, 'exists', 'ex', 1)
-  debug(`${socket_id} will expire in 1'. Not sure if this helps.`)
+  debug(`${socket_id} will expire in 1''. Not sure if this helps.`)
   exist = await redis.exists(`websocket:${user_id}`)
   if (exist == 0) {
     debug(`First time login, subscribe to ${user_id} channel`)

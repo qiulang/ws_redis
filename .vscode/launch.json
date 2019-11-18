@@ -15,8 +15,8 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Launch Program",
-      "program": "${workspaceFolder}/spec/json_test.js"
+      "name": "Launch test script",
+      "program": "${workspaceFolder}/src/test/json_test.js"
     },
     {
       "type": "node",
