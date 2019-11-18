@@ -51,14 +51,36 @@ io.on('connection', async function(socket) {
     fn(`${user_id}`)
     debug(`send ack to user ${user_id} : ${socket.id}`)
   })
-  //没有这个事件
-  socket.on('reconnect', async function(reason) {
-    debug('NO server get reconnect event ?')
+  //Server do NOT have reconnect event
+  socket.on('user-reconnect', async function(reason) {
+    debug(`Client emit a reconnect event ${socket.id}`)
   })
+
   //用户关闭页面，断网都会触发disconnect消息
   socket.on('disconnect', async function(reason) {
     debug(`socket id ${socket.id} has disconnect with reason ${reason}`)
-    await existCheck(socket.id)
+    let user_id = await redis.hget('websocket:socket_user', socket.id)
+    if (!user_id) {
+      debug(`No ${socket.id} related data, should b/c we tell him to logoff.`)
+      return
+    }
+    debug('wait for 2 seconds to call notifyDisconnect')
+    //处理重刷浏览器，不要马上就通知web服务器用户下线了
+    setTimeout(
+      async (sid, uid) => {
+        debug(`2 second later, check for ${sid}`)
+        let new_socket = await redis.hget(`websocket:${user_id}`, 'socketid')
+        if (new_socket == sid) {
+          debug('socketio.id remains the same so assume we do disconnect')
+          await notifyDisconnect(sid, uid)
+        } else {
+          debug(`Indeed client reconnect with ${new_socket}`)
+        }
+      },
+      2000,
+      socket.id,
+      user_id
+    )
   })
 
   //chat-message这个现在意义不大，可以用于测试连接
@@ -93,7 +115,7 @@ sub.on('message', async function(channel, message) {
     debug(`${message} is not a valid JSON string so we did not sent to client`)
   }
 })
-
+//连接的时候调用检查
 async function dupCheck(user_id, socket_id, fn) {
   if (!user_id) {
     //happen in dev env a lot
@@ -103,14 +125,15 @@ async function dupCheck(user_id, socket_id, fn) {
   }
   let exist = await redis.exists(socket_id)
   if (exist > 0) {
+    //https://github.com/socketio/socket.io/issues/474
     debug(
-      'We find ws client will trigger multi connect events, e.g in reconnect case'
+      'ws client sometime triggers multi connect events, maybe it is their bug'
     )
     return true
   }
   //自己测试超过1也有过, If node has action queue it will be much easier
   await redis.set(socket_id, 'exists', 'ex', 1)
-  debug(`${socket_id} will expire in 1''. Not sure if this helps.`)
+  debug(`${socket_id} will expire in 1 second. Not sure if this helps.`)
   exist = await redis.exists(`websocket:${user_id}`)
   if (exist == 0) {
     debug(`First time login, subscribe to ${user_id} channel`)
@@ -122,27 +145,21 @@ async function dupCheck(user_id, socket_id, fn) {
   }
   let old_socket = await redis.hget(`websocket:${user_id}`, 'socketid')
   if (old_socket == socket_id) {
-    debug('Same socket.io login, but happened more than 1 second')
+    debug('Same socket.io login, but happened after 1 second')
     return true
   }
   //now we assume it is another login
   debug(
-    `${user_id} exists with socket id ${old_socket}, assume it is another login.`
+    `${user_id} exists with socket id ${old_socket}, assume it is another login(including reconnect).`
   )
   //客户端收到后会close这个socket.io，所以我们还会再收到一条它的disconnect消息
+  //TODO 如果加入重刷浏览器的延迟处理会走到这，但是因为旧的连接已经没了我想调用emit也没啥
   io.to(old_socket).emit('logoff', 'another login')
   await redis.hdel('websocket:socket_user', old_socket)
   return false //更新 socketid
 }
 
-async function existCheck(socket_id) {
-  let user_id = await redis.hget('websocket:socket_user', socket_id)
-  if (!user_id) {
-    debug(`No ${socket_id} related data, should b/c we tell him to logoff.`)
-    return
-  }
-  let old_socket = await redis.hget(`websocket:${user_id}`, 'socketid')
-  //TODO 先通知web 服务器， 但是用户重刷浏览器会有disconnect，web服务器可能要能处理！！
+async function notifyDisconnect(socket_id, user_id) {
   let seid = await redis.hget(`websocket:${user_id}`, 'seid')
   let ccgeid = await redis.hget(`websocket:${user_id}`, 'ccgeid')
   //'{"seid": 134,"ccgeid": 243,"op_code":"check_out","channel_id":"134_243_1000962325"}'
