@@ -318,3 +318,11 @@ OK
 7. websocket 下线要通知服务器,同个账号多次登录也要通知
 8. IE11的问题，目前看是debug v4 引起的，改用 debug v3 就好了，为啥也不清楚，[总结在这](https://forum.vuejs.org/t/i-cant-polyfill-debug-module-version-4-for-ie-11-but-version-3-works-just-fine/79548)
 
+
+
+### 处理重连和重复登录问题
+
+1. 目前改成每次清单都清掉所有redis数据，出发点是浏览器重来会再更新所有数据
+2. websocket:socket_user 和 websocket:${user_id} 不要都存 socket_id, 存在websocket:socket_user 就可以
+3. 
+
