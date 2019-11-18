@@ -47,11 +47,6 @@ io.on('connection', async function(socket) {
       .hset(`websocket:${user_id}`, 'seid', seid)
       .hset(`websocket:${user_id}`, 'ccgeid', ccgeid)
       .exec()
-
-    // await redis.hset('websocket:socket_user', socket.id, user_id)
-    // await redis.hset(`websocket:${user_id}`, 'socketid', socket.id)
-    // await redis.hset(`websocket:${user_id}`, 'seid', seid)
-    // await redis.hset(`websocket:${user_id}`, 'ccgeid', ccgeid)
     debug(`store in hash table user_socket ${user_id} => ${socket.id}`)
     fn(`${user_id}`)
     debug(`send ack to user ${user_id} : ${socket.id}`)
@@ -106,7 +101,17 @@ async function dupCheck(user_id, socket_id, fn) {
     fn(`wrong user_id:${user_id}`)
     return true //to let the caller just return
   }
-  let exist = await redis.exists(`websocket:${user_id}`)
+  let exist = await redis.exists(socket_id)
+  if (exist > 0) {
+    debug(
+      'We find ws client will trigger multi connect events, e.g in reconnect case'
+    )
+    return true
+  }
+  //自己测试超过1也有过, If node has action queue it will be much easier
+  await redis.set(socket_id, 'exists', 'ex', 1)
+  debug(`${socket_id} will expire in 1'. Not sure if this helps.`)
+  exist = await redis.exists(`websocket:${user_id}`)
   if (exist == 0) {
     debug(`First time login, subscribe to ${user_id} channel`)
     await sub.subscribe(user_id)
@@ -117,14 +122,12 @@ async function dupCheck(user_id, socket_id, fn) {
   }
   let old_socket = await redis.hget(`websocket:${user_id}`, 'socketid')
   if (old_socket == socket_id) {
-    debug(
-      'Same socket.io login happens when browser reconnects or server restarts, just return'
-    )
+    debug('Same socket.io login, but happened more than 1 second')
     return true
   }
   //now we assume it is another login
   debug(
-    `${user_id} exists with socket id ${old_socket}, assume user login with another browser?`
+    `${user_id} exists with socket id ${old_socket}, assume it is another login.`
   )
   //客户端收到后会close这个socket.io，所以我们还会再收到一条它的disconnect消息
   io.to(old_socket).emit('logoff', 'another login')
@@ -135,36 +138,25 @@ async function dupCheck(user_id, socket_id, fn) {
 async function existCheck(socket_id) {
   let user_id = await redis.hget('websocket:socket_user', socket_id)
   if (!user_id) {
-    debug(`No ${socket_id} related data, probably b/c we tell him to logoff.`)
+    debug(`No ${socket_id} related data, should b/c we tell him to logoff.`)
     return
   }
-  debug(`${socket_id} has disconnect, delete its websocket:socket_user data.`)
-  await redis.hdel('websocket:socket_user', socket_id)
   let old_socket = await redis.hget(`websocket:${user_id}`, 'socketid')
-  //改用 https://github.com/luin/ioredis#transaction，应该总是相等才对
-  if (socket_id == old_socket) {
-    //TODO 先通知web 服务器， 但是用户重刷浏览器会有disconnect，web服务器可能要能处理！！
-    let seid = await redis.hget(`websocket:${user_id}`, 'seid')
-    let ccgeid = await redis.hget(`websocket:${user_id}`, 'ccgeid')
-    //'{"seid": 134,"ccgeid": 243,"op_code":"check_out","channel_id":"134_243_1000962325"}'
-    let msg = {
-      seid: seid,
-      ccgeid: ccgeid,
-      op_code: 'check_out',
-      channel_id: user_id
-    }
-    pub.publish('seat_message_channel', JSON.stringify(msg))
-    redis.del(`websocket:${user_id}`)
-    debug(`delete ${socket_id} related data ${user_id}`)
-    return
+  //TODO 先通知web 服务器， 但是用户重刷浏览器会有disconnect，web服务器可能要能处理！！
+  let seid = await redis.hget(`websocket:${user_id}`, 'seid')
+  let ccgeid = await redis.hget(`websocket:${user_id}`, 'ccgeid')
+  //'{"seid": 134,"ccgeid": 243,"op_code":"check_out","channel_id":"134_243_1000962325"}'
+  let msg = {
+    seid: seid,
+    ccgeid: ccgeid,
+    op_code: 'check_out',
+    channel_id: user_id
   }
-  //TODO 现在我们每次启动都清空数据，还可能看到不一致的地方吗？
-  debug('warning!!! I hope following should NOT happen any more')
-  if (old_socket) {
-    debug(
-      `${user_id}'s socket has update from ${socket_id} to ${socket_id}. Weird!!!`
-    )
-  } else {
-    debug(`${old_socket} related data has been cleared up`)
-  }
+  pub.publish('seat_message_channel', JSON.stringify(msg))
+  await redis
+    .multi()
+    .hdel('websocket:socket_user', socket_id)
+    .del(`websocket:${user_id}`)
+    .exec()
+  debug(`delete ${socket_id} related data ${user_id}`)
 }

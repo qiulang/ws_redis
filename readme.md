@@ -323,6 +323,21 @@ OK
 ### 处理重连和重复登录问题
 
 1. 目前改成每次清单都清掉所有redis数据，出发点是浏览器重来会再更新所有数据
+
 2. websocket:socket_user 和 websocket:${user_id} 不要都存 socket_id, 存在websocket:socket_user 就可以
-3. 
+
+3. `PUBSUB CHANNELS` 看当前订购了哪些通道. 调试哪个通道有问题,一般先执行
+
+   ```shell
+   bash-4.4# redis-cli -h emic-cm-redis.redis.rds.aliyuncs.com -p 6379 -a Sinicnet123456
+   Warning: Using a password with '-a' option on the command line interface may not be safe.
+   emic-cm-redis.redis.rds.aliyuncs.com:6379> PUBSUB CHANNELS
+   1) "134_243_1000962325"
+   2) "134_243_1000056188"
+   3) "seat_message_channel"
+   4) "134_243_1000964617"
+   5) "134_243_1000960367"
+   ```
+
+   
 
