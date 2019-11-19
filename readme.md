@@ -300,8 +300,8 @@ OK
 1. 今天提交的客户端代码， 重新刷新页面 socket.io 有时候不通！重启socket.io服务器可以连上。查了半天发现 `socket.on('connect' ...` 的代码必须和 `socket = io()`  在同一个文件
 2. 基于 alpine 的docker容器的时区问题， CST
 3. 32服务器部署要打开防火墙，不然websocket 不通；阿里云部署 wss不需要专门配置
-- [ ] 4. 测试问题，同一账户在不同机器登录，消息会发到哪个浏览器，需要测试。我感觉是最后一个
-- [ ] 5. 需要支持 IE 11 [参考](https://segmentfault.com/a/1190000019525892) 和 这个 [git issue](https://github.com/socketio/socket.io-client/issues/1328)  
+- [x] 4. 测试问题，同一账户在不同机器登录，消息会发到哪个浏览器，当然是最后一个，而且我们还要踢下线之前的
+- [x] 5. 需要支持 IE 11 参考这个 [git issue](https://github.com/socketio/socket.io-client/issues/1328)  
 
      
 
@@ -341,3 +341,4 @@ OK
 
    
 
+4. IE 11 问题

@@ -7,6 +7,7 @@ var io = require('socket.io')(http)
 var { redis, pub, sub } = require('./database/redis')
 var indexRouter = require('./routes/index')
 var port = process.env.PORT || 3000
+let RTIME = process.env.RTIME || 2
 
 //开发调试已经完成，只用一个debug，并写到 stdout, 这样pm2 log才能正常看到
 //https://www.npmjs.com/package/debug#output-streams
@@ -49,7 +50,6 @@ io.on('connection', async function(socket) {
       .exec()
     debug(`store in hash table user_socket ${user_id} => ${socket.id}`)
     fn(`${user_id}`)
-    debug(`send ack to user ${user_id} : ${socket.id}`)
   })
   //Server do NOT have reconnect event
   socket.on('user-reconnect', async function(reason) {
@@ -64,11 +64,10 @@ io.on('connection', async function(socket) {
       debug(`No ${socket.id} related data, should b/c we tell him to logoff.`)
       return
     }
-    debug('wait for 2 seconds to call notifyDisconnect')
     //处理重刷浏览器，不要马上就通知web服务器用户下线了
     setTimeout(
       async (sid, uid) => {
-        debug(`2 second later, check for ${sid}`)
+        debug(`${RTIME} seconds later, check for ${sid}`)
         let new_socket = await redis.hget(`websocket:${user_id}`, 'socketid')
         if (new_socket == sid) {
           debug('socketio.id remains the same so assume we do disconnect')
@@ -77,7 +76,7 @@ io.on('connection', async function(socket) {
           debug(`Indeed client reconnect with ${new_socket}`)
         }
       },
-      2000,
+      1000 * RTIME,
       socket.id,
       user_id
     )
@@ -127,10 +126,13 @@ async function dupCheck(user_id, socket_id, fn) {
   if (exist > 0) {
     //https://github.com/socketio/socket.io/issues/474
     debug(
-      'ws client sometime triggers multi connect events, maybe it is their bug'
+      'ws client sometime triggers multi connect events, but not alway. Not sure whose problem'
     )
     return true
   }
+  //no empty hash in redis, so we can't just set a "mark" here to prevent multi-connect event
+  //https://stackoverflow.com/questions/21283042/keep-empty-data-keys-in-redis
+  //So I add an expire string for 1 second
   //自己测试超过1也有过, If node has action queue it will be much easier
   await redis.set(socket_id, 'exists', 'ex', 1)
   debug(`${socket_id} will expire in 1 second. Not sure if this helps.`)
@@ -138,14 +140,11 @@ async function dupCheck(user_id, socket_id, fn) {
   if (exist == 0) {
     debug(`First time login, subscribe to ${user_id} channel`)
     await sub.subscribe(user_id)
-    //no empty hash in redis, so we can't just set a "mark" here to prevent multi-connect event
-    //https://stackoverflow.com/questions/21283042/keep-empty-data-keys-in-redis
-    //So maybe set an expire key
     return false
   }
   let old_socket = await redis.hget(`websocket:${user_id}`, 'socketid')
   if (old_socket == socket_id) {
-    debug('Same socket.io login, but happened after 1 second')
+    debug(`So key {socket_id} has expired but another login for this id`)
     return true
   }
   //now we assume it is another login
@@ -153,7 +152,7 @@ async function dupCheck(user_id, socket_id, fn) {
     `${user_id} exists with socket id ${old_socket}, assume it is another login(including reconnect).`
   )
   //客户端收到后会close这个socket.io，所以我们还会再收到一条它的disconnect消息
-  //TODO 如果加入重刷浏览器的延迟处理会走到这，但是因为旧的连接已经没了我想调用emit也没啥
+  //加入重刷浏览器的延迟处理会走到这，但是因为旧的连接已经没了我想调用emit也没啥
   io.to(old_socket).emit('logoff', 'another login')
   await redis.hdel('websocket:socket_user', old_socket)
   return false //更新 socketid
