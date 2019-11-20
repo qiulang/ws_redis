@@ -13,8 +13,10 @@
 7. `hdel myhash field1` https://redis.io/commands/hdel 删除hash表的某个field
 8. `hget hash field` https://redis.io/commands/hget 和 hexists 有点类似，如果不存在返回nil
 9. `hkeys hash` https://redis.io/commands/hkeys  返回hash中所有的field。但这也是我觉得key这个关键字在redis有点含混，hkeys 返回是field我觉得就应该是 hash表的key， 而hash表本身不应该叫key！
-10. pubsub https://redis.io/commands/pubsub 有几组子命令
+10. `hgetall hash` https://redis.io/commands/hgetall 查看 某个hash表的所有值
+11. pubsub https://redis.io/commands/pubsub 有几组子命令
     1. pubsub channels 当前存在通道
+    2. publish channel message 返回值显示几个通道收到了
 
 
 

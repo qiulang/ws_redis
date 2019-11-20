@@ -7,7 +7,7 @@ var io = require('socket.io')(http)
 var { redis, pub, sub } = require('./database/redis')
 var indexRouter = require('./routes/index')
 var port = process.env.PORT || 3000
-let RTIME = process.env.RTIME || 2
+let RTIME = process.env.RTIME || 10
 
 //开发调试已经完成，只用一个debug，并写到 stdout, 这样pm2 log才能正常看到
 //https://www.npmjs.com/package/debug#output-streams
@@ -93,23 +93,17 @@ io.on('connection', async function(socket) {
 //订购 redis 消息处理，一般是web服务器发给我们的
 sub.on('message', async function(channel, message) {
   debug('Receive message %s from channel %s', message, channel)
-  let exist = await redis.exists(`websocket:${channel}`)
-  debug(`Does ${channel} exist ? ${exist}`)
-  if (exist == 0) return
+  let socketid = await redis.hget(`websocket:${channel}`, 'socketid')
+  if (!socketid) {
+    debug(`Channel ${channel} does NOT exist.`)
+    return
+  }
   //{"op_code":"change_status","ccgeid":243,"seid":134,"uid":1000056188,
   //"data":{"number":"1056","status":1}}
   try {
     let pushData = JSON.parse(message)
-    debug(
-      `message type: ${pushData.op_code}, data content:${JSON.stringify(
-        pushData.data
-      )}`
-    )
-    debug(
-      `校验ccgeid: ${pushData.ccgeid}, seid:${pushData.seid}, uid:${pushData.uid}`
-    )
-    let socketid = await redis.hget(`websocket:${channel}`, 'socketid')
     io.to(socketid).emit('cr_msg', message)
+    debug(`emit the message to ${socketid}`)
   } catch (err) {
     debug(`${message} is not a valid JSON string so we did not sent to client`)
   }
@@ -122,29 +116,32 @@ async function dupCheck(user_id, socket_id, fn) {
     fn(`wrong user_id:${user_id}`)
     return true //to let the caller just return
   }
-  let exist = await redis.exists(socket_id)
-  if (exist > 0) {
+  //https://github.com/luin/ioredis#pipelining
+  //Each response follows the format `[err, result]`.
+  let exist = await redis
+    .multi()
+    .exists(socket_id)
+    .set(socket_id, 'exists', 'ex', 1)
+    .exec()
+  if (exist[0][1] > 0) {
     //https://github.com/socketio/socket.io/issues/474
+    //有时会收到多个连接请求但也不每次。不清楚是socket.io的问题还是我们代码的问题
     debug(
-      'ws client sometime triggers multi connect events, but not alway. Not sure whose problem'
+      `Sometime we get several connect events:${user_id}--${socket_id}, just return.`
     )
     return true
+  } else {
+    //自己测试超过1也有过, If node has action queue it will be much easier
+    debug(`${socket_id} will expire in 1 second. Not sure if this helps.`)
   }
-  //no empty hash in redis, so we can't just set a "mark" here to prevent multi-connect event
-  //https://stackoverflow.com/questions/21283042/keep-empty-data-keys-in-redis
-  //So I add an expire string for 1 second
-  //自己测试超过1也有过, If node has action queue it will be much easier
-  await redis.set(socket_id, 'exists', 'ex', 1)
-  debug(`${socket_id} will expire in 1 second. Not sure if this helps.`)
-  exist = await redis.exists(`websocket:${user_id}`)
-  if (exist == 0) {
+  let old_socket = await redis.hget(`websocket:${user_id}`, 'socketid')
+  if (!old_socket) {
     debug(`First time login, subscribe to ${user_id} channel`)
     await sub.subscribe(user_id)
     return false
   }
-  let old_socket = await redis.hget(`websocket:${user_id}`, 'socketid')
   if (old_socket == socket_id) {
-    debug(`So key {socket_id} has expired but another login for this id`)
+    debug(`Rare! Key {socket_id} has expired then another login`)
     return true
   }
   //now we assume it is another login
@@ -174,5 +171,7 @@ async function notifyDisconnect(socket_id, user_id) {
     .hdel('websocket:socket_user', socket_id)
     .del(`websocket:${user_id}`)
     .exec()
-  debug(`delete ${socket_id} related data ${user_id}`)
+  debug(
+    `delete ${socket_id} related data ${user_id} after disconnect for ${RTIME} seconds`
+  )
 }

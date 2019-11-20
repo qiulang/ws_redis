@@ -14,6 +14,39 @@ const uuidv1 = require('uuid/v1')
 var redis = new Redis()
 
 // ioredis supports all Redis commands:
+async function tranc() {
+  log('trancsation test')
+  let user_id = await redis.hget('websocket:socket_user1', 'hi you')
+  if (!user_id) {
+    log('nil result is what I need')
+  } else {
+    log('disappointed')
+  }
+  //'exists', 'ex', 1
+  let exist = await redis
+    // .exists('websocket:debug')
+    .multi()
+    .exists('websocket:debug')
+    .set('websocket:debug', 'exists', 'ex', 1)
+    .exec()
+  if (exist[0][1] == 0 && exist[1][1] == 'OK') {
+    log('0 result is what I need')
+  } else {
+    log(`disappointed ${exist}`)
+  }
+
+  exist = await redis.exists('websocket:debug')
+
+  if (exist == 1) {
+    log('1 result is what I need')
+  } else {
+    log(`disappointed ${exist}`)
+  }
+  redis.disconnect()
+}
+
+tranc()
+
 redis.set('foo', 'bar')
 redis.get('foo', function(err, result) {
   if (err) {
@@ -67,4 +100,4 @@ async function promiseVer() {
   }, 250)
 }
 
-promiseVer()
+// promiseVer()

@@ -75,11 +75,11 @@ chat 例子一开始没跑起应该 socket.io client版本问题。另，开了�
 
 **redis 数据**
 
-1. `socket_user ` 哈希表 存 `socket.id` 到 `user_id`映射 ： 客户端成功连接到服务器就发`login`事件（自定义事件），消息内容是 `user_id`, 服务器收到 `login`事件，在redis的`socket_user `表添加一对key:value对 `socket.id`： `user_id`
-2. 维护`socket_user `哈希表目的是 当断线时候, 服务器会收到`disconnet`事件（包括网络问题、关闭页面）从 `socket.id` 知道相应`user_id`，更新 `user_id` 哈希表的相关数据
-3. 每个坐席登录后为它创建哈希表 key 是 `user_id`, 用它来存所有跟这个坐席相关信息。每个坐席有自己的哈希表。
-4. redis的pubsub 目前只用了sub，订阅从web服务器发来消息，为每个坐席建立一个通道。暂时还没有设置额外的公告通道用来和 web 服务器交互。
-5. redis的pub目前没用是因为web服务器希望上传消息直接从浏览器调用http接口，而不是通过 websocket服务器pub方式通知web服务器。
+1. `socket_user ` 哈希表 存 `socket.id` 到 `user_id`映射 ： 客户端成功连接到服务器就发`login`事件（自定义事件），消息内容是 `user_id`, 服务器收到 `login`事件，在redis的`socket_user `表添加一对`key:value`对 `socket.id`： `user_id` 
+2. 服务器对每个登录`sub.subscribe(user_id)` , 即为每个坐席建立一个通道，订阅从web服务器发来消息。
+3. 维护`socket_user `哈希表目的是 当断线时候, 服务器会收到`disconnet`事件（包括网络问题、关闭页面）从 `socket.id` 知道相应`user_id`，更新 `user_id` 哈希表的相关数据
+4. 每个坐席登录后为它创建哈希表 key 是 `user_id`, 用它来存所有跟这个坐席相关信息。每个坐席有自己的哈希表。坐席存socket.id的目的是 sub收到消息,后通过channel取到对应 socket.io.  因为socket.id存在两个地方，用transcation 保证他们是一样的。
+5. redis的pub目前只用在用户下线， websocket 服务器往公共通道 `seat_message_channel` 发下线消息通知web服务器。其他客户端的上传消息web服务器希望直接从浏览器调用http接口，而不是通过 websocket服务器pub方式通知web服务器。
 6. redis-cli里发送json数据要这样 `publish 134_243_1000998392 '{"op_code":"change_status","ccgeid":243,"seid":134,"uid":1000056188,"data":{"number":"1056","status":1}}'`  最外面是单引号，每个json的key值是双引号。
 
 
@@ -301,7 +301,7 @@ OK
 2. 基于 alpine 的docker容器的时区问题， CST
 3. 32服务器部署要打开防火墙，不然websocket 不通；阿里云部署 wss不需要专门配置
 - [x] 4. 测试问题，同一账户在不同机器登录，消息会发到哪个浏览器，当然是最后一个，而且我们还要踢下线之前的
-- [x] 5. 需要支持 IE 11 参考这个 [git issue](https://github.com/socketio/socket.io-client/issues/1328)  
+- [x] 5. 需要支持 IE 11 参考这个 [git issue](https://github.com/socketio/socket.io-client/issues/1328)  由此发现不能使用socket.io 2.3 只能用 socket.io 2.2 或2.1
 
      
 
@@ -341,4 +341,19 @@ OK
 
    
 
-4. IE 11 问题
+4. IE 11 问题， debug没转码，[给bablel开的问题单回复了](https://github.com/babel/babel/issues/10707)，但debug的维护者一直很不耐烦
+
+5. - [ ] channel 是否需要unsubscribe 实际生产环境肯定需要。[根据这个SO](https://stackoverflow.com/questions/10142246/how-to-design-redis-pub-sub-for-an-instant-messaging-system) 连接达到上限就不再接受新连接：
+
+   ```shell
+   config get maxclients //当前设置10000暂时还达不到
+   info stat //有一项 pubsub_channels 不知道怎么单独看
+   pubsub_channels:xxx
+   ```
+
+
+6. - [ ] pm2 的日志要写的nas盘，不然容器重启就没了！
+7. - [ ] 目前代码加的判断key是否 exists，如果不存在set expire看来没起到串行效果，set expire还是被调用两次 
+8. [no empty hash in redis](https://stackoverflow.com/questions/21283042/keep-empty-data-keys-in-redis)
+9. dump.rdb对我们到底有用吗？
+
