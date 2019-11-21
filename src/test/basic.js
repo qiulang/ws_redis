@@ -16,6 +16,16 @@ var redis = new Redis()
 // ioredis supports all Redis commands:
 async function tranc() {
   log('trancsation test')
+  let result = await redis.hset(
+    'websocket:debug2',
+    'socketid',
+    'sid1',
+    'seid',
+    'seid01',
+    'ccgid',
+    'ccgeid01'
+  )
+  log(`what is hset result ${result}`)
   let user_id = await redis.hget('websocket:socket_user1', 'hi you')
   if (!user_id) {
     log('nil result is what I need')

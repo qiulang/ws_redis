@@ -44,9 +44,15 @@ io.on('connection', async function(socket) {
     await redis
       .multi()
       .hset('websocket:socket_user', socket.id, user_id) //socket.io 状态变化取到对用用户
-      .hset(`websocket:${user_id}`, 'socketid', socket.id) //pub-sub 取到对应的 socket.io
-      .hset(`websocket:${user_id}`, 'seid', seid)
-      .hset(`websocket:${user_id}`, 'ccgeid', ccgeid)
+      .hset(
+        `websocket:${user_id}`,
+        'socketid',
+        socket.id, //pub-sub 取到对应的 socket.io
+        'seid',
+        seid,
+        'ccgeid',
+        ccgeid
+      )
       .exec()
     debug(`store in hash table user_socket ${user_id} => ${socket.id}`)
     fn(`${user_id}`)

@@ -347,7 +347,7 @@ OK
 
    ```shell
    config get maxclients //当前设置10000暂时还达不到
-   info stat //有一项 pubsub_channels 不知道怎么单独看
+   info stats //有一项 pubsub_channels 不知道怎么单独看
    pubsub_channels:xxx
    ```
 
