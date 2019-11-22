@@ -11,7 +11,7 @@ parser.add_argument(
 args = parser.parse_args()
 uid = args.uid
 sid = args.sid
-server = 'https://docker1.emicloud.com/' if args.server == 1 else "http://localhost:3000/"
+server = 'https://docker1.emicloud.com/rep/' if args.server == 1 else "http://localhost:3000/"
 # NOT server = args.s or "http://localhost:3000/"
 if (not uid and not sid):
     print('Either uid or sid should be provided')

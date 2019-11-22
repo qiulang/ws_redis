@@ -34,6 +34,7 @@ http.listen(port, function() {
 })
 
 app.use('/', indexRouter)
+app.use('/rep', indexRouter) //from nginx
 
 io.on('connection', async function(socket) {
   //客户端连接成功后会主动发login消息，redis记录 user 到 socketio.id的对应
