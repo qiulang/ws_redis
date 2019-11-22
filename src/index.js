@@ -2,9 +2,11 @@ var express = require('express')
 var app = express()
 var cors = require('cors')
 var http = require('http').Server(app)
+var redisAdapter = require('socket.io-redis')
 var io = require('socket.io')(http)
 // var io = require('socket.io')(http, { path: 'rep' })
 var { redis, pub, sub } = require('./database/redis')
+io.adapter(redisAdapter({ pub, sub }))
 var indexRouter = require('./routes/index')
 var port = process.env.PORT || 3000
 let RTIME = process.env.RTIME || 10
