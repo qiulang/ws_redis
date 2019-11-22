@@ -39,7 +39,10 @@ io.on('connection', async function(socket) {
       `user ${user_id}, seid:${seid}, ccgeid:${ccgeid} has login using socket ${socket.id}`
     )
     let dup = await dupCheck(user_id, socket.id, fn)
-    if (dup) return
+    if (dup) {
+      await redis.hdel('websocket:dupCheck', socket.id)
+      return
+    }
 
     await redis
       .multi()
@@ -53,6 +56,7 @@ io.on('connection', async function(socket) {
         'ccgeid',
         ccgeid
       )
+      .hdel('websocket:dupCheck', socket.id)
       .exec()
     debug(`store in hash table user_socket ${user_id} => ${socket.id}`)
     fn(`${user_id}`)
@@ -126,19 +130,14 @@ async function dupCheck(user_id, socket_id, fn) {
   //Each response follows the format `[err, result]`.
   let exist = await redis
     .multi()
-    .exists(socket_id)
-    .set(socket_id, 'exists', 'ex', 1)
+    .hexists('websocket:dupCheck', socket_id)
+    .hset('websocket:dupCheck', socket_id, 'exists')
     .exec()
   if (exist[0][1] > 0) {
     //https://github.com/socketio/socket.io/issues/474
     //有时会收到多个连接请求但也不每次。不清楚是socket.io的问题还是我们代码的问题
-    debug(
-      `Sometime we get several connect events:${user_id}--${socket_id}, just return.`
-    )
+    debug(`We get several connect events:${user_id}--${socket_id}, return.`)
     return true
-  } else {
-    //自己测试超过1也有过, If node has action queue it will be much easier
-    debug(`${socket_id} will expire in 1 second. Not sure if this helps.`)
   }
   let old_socket = await redis.hget(`websocket:${user_id}`, 'socketid')
   if (!old_socket) {
@@ -147,17 +146,15 @@ async function dupCheck(user_id, socket_id, fn) {
     return false
   }
   if (old_socket == socket_id) {
-    debug(`Rare! Key {socket_id} has expired then another login`)
+    debug(`Rare! My chage to dupcheck fails again`)
     return true
   }
   //now we assume it is another login
-  debug(
-    `${user_id} exists with socket id ${old_socket}, assume it is another login(including reconnect).`
-  )
   //客户端收到后会close这个socket.io，所以我们还会再收到一条它的disconnect消息
   //加入重刷浏览器的延迟处理会走到这，但是因为旧的连接已经没了我想调用emit也没啥
   io.to(old_socket).emit('logoff', 'another login')
   await redis.hdel('websocket:socket_user', old_socket)
+  debug(`${user_id} exists with socket id ${old_socket}, tell it to logoff.`)
   return false //更新 socketid
 }
 
