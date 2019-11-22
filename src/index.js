@@ -14,7 +14,7 @@ let RTIME = process.env.RTIME || 10
 var debug = require('debug')('app:websocket')
 debug.log = console.log.bind(console)
 
-app.use(express.json())
+app.use(express.json()) //https://stackoverflow.com/a/47232318/301513
 app.use(express.urlencoded({ extended: false }))
 app.use(cors())
 
@@ -72,6 +72,10 @@ io.on('connection', async function(socket) {
     let user_id = await redis.hget('websocket:socket_user', socket.id)
     if (!user_id) {
       debug(`No ${socket.id} related data, should b/c we tell him to logoff.`)
+      return
+    }
+    if (reason == 'transport close') {
+      debug('Lost connection, just return')
       return
     }
     //处理重刷浏览器，不要马上就通知web服务器用户下线了
@@ -146,7 +150,7 @@ async function dupCheck(user_id, socket_id, fn) {
     return false
   }
   if (old_socket == socket_id) {
-    debug(`Rare! My chage to dupcheck fails again`)
+    debug(`Another login with the same ${socket_id}, return.`)
     return true
   }
   //now we assume it is another login

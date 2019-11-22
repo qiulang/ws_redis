@@ -352,7 +352,7 @@ OK
    ```
 
 
-6. - [ ] pm2 的日志要写的nas盘，不然容器重启就没了！
+6. - [ ] pm2 的日志要写的nas盘，不然容器重启就没了 或者**输出到阿里云日志服务**
 7. - [ ] 目前代码加的判断key是否 exists，如果不存在set expire看来没起到串行效果，set expire还是被调用两次 
 8. [no empty hash in redis](https://stackoverflow.com/questions/21283042/keep-empty-data-keys-in-redis)
 9. dump.rdb对我们到底有用吗？
