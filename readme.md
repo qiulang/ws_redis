@@ -353,7 +353,26 @@ OK
 
 
 6. - [ ] pm2 的日志要写的nas盘，不然容器重启就没了 或者**输出到阿里云日志服务**
+
 7. - [ ] 目前代码加的判断key是否 exists，如果不存在set expire看来没起到串行效果，set expire还是被调用两次 
+
 8. [no empty hash in redis](https://stackoverflow.com/questions/21283042/keep-empty-data-keys-in-redis)
+
 9. dump.rdb对我们到底有用吗？
 
+10. dupCheck 里多个 await ，[每执行await 代码就交出执行权，这样其他event事件能进一步被处理](https://blog.vanila.io/handling-concurrency-with-async-await-in-javascript-8ec2e185f9b4) 所以原来设计 await exists & set 没有达到阻止同个socket.id的多个login事件处理。从日志就可以看出：
+
+    ```shell
+    2019-11-21 22:50: app:websocket user 134_243_1000988324, seid:134, ccgeid:243 has login using socket ebwyJu8xkRuvhwMzAAAL
+    2019-11-21 22:50: app:websocket user 134_243_1000988324, seid:134, ccgeid:243 has login using socket ebwyJu8xkRuvhwMzAAAL
+    2019-11-21 22:50: app:websocket ebwyJu8xkRuvhwMzAAAL will expire in 1 second. Not sure if this helps.
+    2019-11-21 22:50: app:websocket ebwyJu8xkRuvhwMzAAAL will expire in 1 second. Not sure if this helps.
+    2019-11-21 22:50: app:websocket First time login, subscribe to 134_243_1000988324 channel
+    2019-11-21 22:50: app:websocket First time login, subscribe to 134_243_1000988324 channel
+    2019-11-21 22:50: app:websocket store in hash table user_socket 134_243_1000988324 => ebwyJu8xkRuvhwMzAAAL
+    2019-11-21 22:50: app:websocket store in hash table user_socket 134_243_1000988324 => ebwyJu8xkRuvhwMzAAAL
+    ```
+
+    
+
+所以现在直接改存在内存数据 dup 里

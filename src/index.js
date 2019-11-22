@@ -14,7 +14,7 @@ let RTIME = process.env.RTIME || 10
 var debug = require('debug')('app:websocket')
 debug.log = console.log.bind(console)
 
-//没不要redis来存
+//不需要redis来存
 var dup = {}
 
 app.use(express.json()) //https://stackoverflow.com/a/47232318/301513
@@ -43,6 +43,7 @@ io.on('connection', async function(socket) {
     )
     let exist = await dupCheck(user_id, socket.id, fn)
     if (exist) {
+      //dupCheck 里设置了
       delete dup[socket.id]
       return
     }
