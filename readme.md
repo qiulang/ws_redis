@@ -352,7 +352,7 @@ OK
    ```
 
 
-6. - [ ] pm2 的日志要写的nas盘，不然容器重启就没了 或者**输出到阿里云日志服务**
+6. - [x] pm2 的日志要写的nas盘，不然容器重启就没了 或者**输出到阿里云日志服务**
 
 7. - [ ] 目前代码加的判断key是否 exists，如果不存在set expire看来没起到串行效果，set expire还是被调用两次 
 
@@ -375,4 +375,24 @@ OK
 
     
 
-所以现在直接改存在内存数据 dup 里
+所以现在直接改存在内存数据 dup 里,但从日志里还是有问题, 因为第二次登录消息把标识位清掉了，接着再来第三个就还是没有标识为！ 
+
+```shell
+2019-11-22 19:01:03: app:websocket user 134_243_1000988323, seid:134, ccgeid:243 login using socket PFh2OHUS6ZqNujU9AAAc
+2019-11-22 19:01:03: app:websocket First time login, subscribe to 134_243_1000988323 channel
+2019-11-22 19:01:03: app:websocket user 134_243_1000988323, seid:134, ccgeid:243 login using socket PFh2OHUS6ZqNujU9AAAc
+2019-11-22 19:01:03: app:websocket We get several connect events:134_243_1000988323--PFh2OHUS6ZqNujU9AAAc, return.
+2019-11-22 19:01:03: app:websocket user 134_243_1000988323, seid:134, ccgeid:243 login using socket PFh2OHUS6ZqNujU9AAAc
+2019-11-22 19:01:03: app:websocket First time login, subscribe to 134_243_1000988323 channel
+2019-11-22 19:01:03: app:websocket store in hash table user_socket 134_243_1000988323 => PFh2OHUS6ZqNujU9AAAc
+2019-11-22 19:01:03: app:websocket store in hash table user_socket 134_243_1000988323 => PFh2OHUS6ZqNujU9AAAc
+```
+
+
+
+### 没收到下线原因
+
+以后起了多个docker，多个websocket 服务器。登录处理可能是第一台websocket , 但sub 处理可能是另一台服务器，所以发送消息就不成功。
+
+必须引入 https://github.com/socketio/socket.io-redis 
+

@@ -34,7 +34,7 @@ http.listen(port, function() {
 })
 
 app.use('/', indexRouter)
-app.use('/rep', indexRouter) //from nginx
+app.use('/rep', indexRouter) //本地 nginx 测试，实际部署不需要
 
 io.on('connection', async function(socket) {
   //客户端连接成功后会主动发login消息，redis记录 user 到 socketio.id的对应
@@ -44,8 +44,6 @@ io.on('connection', async function(socket) {
     )
     let exist = await dupCheck(user_id, socket.id, fn)
     if (exist) {
-      //dupCheck 里设置了
-      delete dup[socket.id]
       return
     }
 
