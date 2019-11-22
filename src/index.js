@@ -14,6 +14,9 @@ let RTIME = process.env.RTIME || 10
 var debug = require('debug')('app:websocket')
 debug.log = console.log.bind(console)
 
+//没不要redis来存
+var dup = {}
+
 app.use(express.json()) //https://stackoverflow.com/a/47232318/301513
 app.use(express.urlencoded({ extended: false }))
 app.use(cors())
@@ -36,11 +39,11 @@ io.on('connection', async function(socket) {
   //客户端连接成功后会主动发login消息，redis记录 user 到 socketio.id的对应
   socket.on('login', async function(user_id, seid, ccgeid, fn) {
     debug(
-      `user ${user_id}, seid:${seid}, ccgeid:${ccgeid} has login using socket ${socket.id}`
+      `user ${user_id}, seid:${seid}, ccgeid:${ccgeid} login using socket ${socket.id}`
     )
-    let dup = await dupCheck(user_id, socket.id, fn)
-    if (dup) {
-      await redis.hdel('websocket:dupCheck', socket.id)
+    let exist = await dupCheck(user_id, socket.id, fn)
+    if (exist) {
+      delete dup[socket.id]
       return
     }
 
@@ -56,8 +59,8 @@ io.on('connection', async function(socket) {
         'ccgeid',
         ccgeid
       )
-      .hdel('websocket:dupCheck', socket.id)
       .exec()
+    delete dup[socket.id]
     debug(`store in hash table user_socket ${user_id} => ${socket.id}`)
     fn(`${user_id}`)
   })
@@ -130,18 +133,22 @@ async function dupCheck(user_id, socket_id, fn) {
     fn(`wrong user_id:${user_id}`)
     return true //to let the caller just return
   }
+  //试验感觉这里存内存就好，没必要存reids
   //https://github.com/luin/ioredis#pipelining
   //Each response follows the format `[err, result]`.
-  let exist = await redis
-    .multi()
-    .hexists('websocket:dupCheck', socket_id)
-    .hset('websocket:dupCheck', socket_id, 'exists')
-    .exec()
-  if (exist[0][1] > 0) {
+  // let exist = await redis
+  //   .multi()
+  //   .hexists('websocket:dupCheck', socket_id)
+  //   .hset('websocket:dupCheck', socket_id, 'exists')
+  //   .exec()
+  // if (exist[0][1] > 0) {
+  if (dup[socket_id]) {
     //https://github.com/socketio/socket.io/issues/474
     //有时会收到多个连接请求但也不每次。不清楚是socket.io的问题还是我们代码的问题
     debug(`We get several connect events:${user_id}--${socket_id}, return.`)
     return true
+  } else {
+    dup[socket_id] = 'exist'
   }
   let old_socket = await redis.hget(`websocket:${user_id}`, 'socketid')
   if (!old_socket) {
@@ -150,7 +157,7 @@ async function dupCheck(user_id, socket_id, fn) {
     return false
   }
   if (old_socket == socket_id) {
-    debug(`Another login with the same ${socket_id}, return.`)
+    debug(`Another login with the same existing ${socket_id}, return.`)
     return true
   }
   //now we assume it is another login

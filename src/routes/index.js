@@ -13,16 +13,22 @@ router.post('/dpub', async function(req, res) {
     var socketid = await redis.hget(`websocket:${uid}`, 'socketid')
   } else {
     socketid = sid
+    uid = await redis.hget(`websocket:socket_user`, sid)
   }
   if (!socketid) {
     debug(`Channel ${uid} related socketid does NOT exist.`)
     res.send(`Channel ${uid} related socketid NOT exist.\n`)
     return
   }
+  if (!uid) {
+    debug(`Channel does NOT exist, so I can't publish.`)
+    res.send(`Channel  NOT exist, so I can't publish.\n`)
+    return
+  }
   let msg = {
     op_code: 'debug publish',
     uid: uid,
-    data: { msg: 'can you get this' }
+    data: { msg: `can you get this ${uuidv1()}` }
   }
   let receiver = await pub.publish(uid, JSON.stringify(msg))
   if (receiver == 0) {
