@@ -1,4 +1,6 @@
 module.exports = {
+  //https://doc.pm2.io/en/runtime/reference/ecosystem-file/
+  //@TODO 仔细再看看
   apps: [
     {
       name: 'ws_redis',

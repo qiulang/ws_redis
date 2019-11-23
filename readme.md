@@ -392,7 +392,17 @@ OK
 
 ### 没收到下线原因
 
-以后起了多个docker，多个websocket 服务器。登录处理可能是第一台websocket , 但sub 处理可能是另一台服务器，所以发送消息就不成功。
+以后起了多个docker，多个websocket 服务器。登录处理可能是第一台websocket , 但sub 处理可能是另一台服务器，所以发送消息就不成功。必须引入 https://github.com/socketio/socket.io-redis 
 
-必须引入 https://github.com/socketio/socket.io-redis 
+https://github.com/socketio/socket.io-redis#custom-client-eg-with-authentication 
+
+> If you need to create a redisAdapter to a redis instance that has a password, use pub/sub options instead of passing a connection string.
+
+```javascript
+io.adapter(redisAdapter({ pubClient: pub, subClient: sub }));
+```
+
+
+
+我曾经的问题 [sticky session 和 pm2 的使用](https://stackoverflow.com/questions/46891819/how-to-make-sticky-session-works-with-socket-io-w-or-w-o-pm2)
 

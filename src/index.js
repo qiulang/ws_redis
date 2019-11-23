@@ -6,7 +6,7 @@ var redisAdapter = require('socket.io-redis')
 var io = require('socket.io')(http)
 // var io = require('socket.io')(http, { path: 'rep' })
 var { redis, pub, sub } = require('./database/redis')
-io.adapter(redisAdapter({ pub, sub }))
+io.adapter(redisAdapter({ pubClient: pub, subClient: sub }))
 var indexRouter = require('./routes/index')
 var port = process.env.PORT || 3000
 let RTIME = process.env.RTIME || 10
