@@ -47,6 +47,22 @@ chat 例子一开始没跑起应该 socket.io client版本问题。另，开了�
 
 
 
+### websocket
+
+[WebSocket vs socket.io](https://stackoverflow.com/questions/10112178/differences-between-socket-io-and-websockets)
+
+[Moving from socket.io to raw websockets?](https://stackoverflow.com/questions/38546496/moving-from-socket-io-to-raw-websockets)
+
+[Which websocket library to use with Node.js?](https://stackoverflow.com/questions/16392260/which-websocket-library-to-use-with-node-js)
+
+[8 Node.js Web Socket Libraries for 2019](https://blog.bitsrc.io/8-node-js-web-socket-libraries-for-2018-818e7e5b67cf)
+
+如果不用socket.io 可以试试 [ws](https://github.com/websockets/ws)
+
+[Ratchet部署文档](http://socketo.me/docs/push) , websocket 服务器和web服务器通信 它用ZeroMQ， 用RabbitMQ也类似，但我们不要再引入一个mq，[它的使用方式](https://www.cloudamqp.com/blog/2015-05-19-part2-2-rabbitmq-for-beginners_example-and-sample-code-node-js.html) 和 [redis 的 pubsub](https://redis.io/topics/pubsub) 乍一看也太大区别，就用[redis的pubsub](https://stackoverflow.com/questions/32743754/using-redis-as-pubsub-over-socket-io) 
+
+
+
 ### 实现socket.io 
 
 每个client连接在它自己缺省的 room，连接后发登录消息，服务器收到登录消息往这个房间发一个确认。
@@ -159,7 +175,7 @@ http 服务器和websocket 服务器监听不同端口的方法暂时没试出�
 
 1. 当两个SPA放在一起通过路径区分时，必须要在[vue.config.js 要配置 publicPath](https://cli.vuejs.org/zh/config/#publicpath) . 延伸阅读 https://stackoverflow.com/questions/2005079/absolute-vs-relative-urls , 但即使把index.html路劲手动修正确，SPA一样不显示。不值得研究了。
 
-2. [root 和 alias 区分很重要](https://stackoverflow.com/questions/10631933/nginx-static-file-serving-confusion-with-root-alias) 我们必须用alias, 并针对 publicPath的值设置。子路径用 alias不用root, 但 "/" 如果用alias，路径结尾必须有 `/`
+2. [root 和 alias 区分很重要](https://stackoverflow.com/questions/10631933/nginx-static-file-serving-confusion-with-root-alias) 子路径用 alias不用root, 并针对 publicPath的值设置。, 但 "/" 如果用alias，路径结尾必须有 `/`
 
 3. [location 一些规则](https://www.digitalocean.com/community/tutorials/understanding-nginx-server-and-location-block-selection-algorithms)
 
@@ -169,7 +185,9 @@ http 服务器和websocket 服务器监听不同端口的方法暂时没试出�
 
 6. [location 做 path match的时候， websocket连不上，暂时无解](https://stackoverflow.com/questions/58668373/socket-io-with-nginx-location-path-match-hit-the-error-during-websocket-handsha)
 
-   
+7. [alias 含义容易忘](https://serverfault.com/questions/748634/how-to-alias-directories-in-nginx) 
+
+    
 
 ### dockerfile 难点
 
