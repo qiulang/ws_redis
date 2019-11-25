@@ -87,7 +87,7 @@ chat 例子一开始没跑起应该 socket.io client版本问题。另，开了�
 
 1. https://stackoverflow.com/questions/16293520/how-to-detect-that-users-connection-is-lost-or-he-closed-the-browser-window-in
 
-#### 目前socket.io 的设计
+### 目前socket.io 的设计
 
 **redis 数据**
 
@@ -102,7 +102,7 @@ chat 例子一开始没跑起应该 socket.io client版本问题。另，开了�
 
 注：
 
-1. pubsub 必须要两个redis示例，因为 `(node:80054) UnhandledPromiseRejectionWarning: Error: Connection in subscriber mode, only subscriber commands may be used` 
+1. pubsub 必须要两个redis实例，因为 `(node:80054) UnhandledPromiseRejectionWarning: Error: Connection in subscriber mode, only subscriber commands may be used` 
 2. 连别的机器redis最简单办法 在他的redis-cli 运行 `CONFIG SET protected-mode no` 
 
 
@@ -121,7 +121,9 @@ chat 例子一开始没跑起应该 socket.io client版本问题。另，开了�
 
 4. 客户端需要监听`cr_msg`事件，收到的消息体是服务器下发给浏览器各种消息。
 
-  
+5. [这些系统事件](https://socket.io/docs/emit-cheatsheet/) 不要和自定义事件重复了
+
+   
 
 http 服务器和websocket 服务器监听不同端口的方法暂时没试出来，但目前也不需要
 
@@ -205,11 +207,11 @@ http 服务器和websocket 服务器监听不同端口的方法暂时没试出�
 
 #### 如何把nginx 和 nodejs 放在一个容器里 ？
 
-如果用 `docker-compose.yml` 设置 nginx 容器 `depends_on`  , docker-compose建立的虚拟网络里, nginx 容器就可以通域名nodejs ，所以 nginx.conf 可以直接写 `proxy_pass http://nodejs:8080;` 
+如果用 `docker-compose.yml` 设置 nginx 容器 `depends_on`  , docker-compose建立的虚拟网络里, nginx 容器就可以通域名nodejs ，所以 nginx.conf 可以直接写 `proxy_pass http://nodejs:8080;`  (或者写死ip172.17.0.1，参见  [Load Balancing Node.js Applications with NGINX and Docker](https://auth0.com/blog/load-balancing-nodejs-applications-with-nginx-and-docker/))
 
-k8s 是不是也能这样，我现在不清楚。
+k8s 是不是也能这样，我现在不清楚。但总之 nginx和websocket 服务器如果分属两个容器，如何访问终究是个问题。
 
-
+**决定把把 nginx 和 nodejs编在一个容器里**
 
 但是要把 nginx 和 nodejs编在一个容器里，网上没看到资料。就直接在nginx容器里安装nodejs吧，注意 alpine的安装方法：
 
@@ -372,13 +374,15 @@ OK
 
 6. - [x] pm2 的日志要写的nas盘，不然容器重启就没了 或者**输出到阿里云日志服务**
 
-7. - [ ] 目前代码加的判断key是否 exists，如果不存在set expire看来没起到串行效果，set expire还是被调用两次 
+7. - [x] 目前代码加的判断key是否 exists，如果不存在set expire看来没起到串行效果，set expire还是被调用两次 
 
 8. [no empty hash in redis](https://stackoverflow.com/questions/21283042/keep-empty-data-keys-in-redis)
 
-9. dump.rdb对我们到底有用吗？
+9. dump.rdb对我们到底有用吗？https://redis.io/topics/persistence#rdb-advantages
 
-10. dupCheck 里多个 await ，[每执行await 代码就交出执行权，这样其他event事件能进一步被处理](https://blog.vanila.io/handling-concurrency-with-async-await-in-javascript-8ec2e185f9b4) 所以原来设计 await exists & set 没有达到阻止同个socket.id的多个login事件处理。从日志就可以看出：
+10. - [ ] [如何备份 redis数据](https://www.digitalocean.com/community/tutorials/how-to-back-up-and-restore-your-redis-data-on-ubuntu-14-04)，还没时间做。
+
+11. dupCheck 里多个 await ，[每执行await 代码就交出执行权，这样其他event事件能进一步被处理](https://blog.vanila.io/handling-concurrency-with-async-await-in-javascript-8ec2e185f9b4) 所以原来设计 await exists & set 没有达到阻止同个socket.id的多个login事件处理。从日志就可以看出：
 
     ```shell
     2019-11-21 22:50: app:websocket user 134_243_1000988324, seid:134, ccgeid:243 has login using socket ebwyJu8xkRuvhwMzAAAL
@@ -406,7 +410,7 @@ OK
 2019-11-22 19:01:03: app:websocket store in hash table user_socket 134_243_1000988323 => PFh2OHUS6ZqNujU9AAAc
 ```
 
-
+但是放内存也有问题，因为可能请求是不同docker容器处理。。。
 
 ### 没收到下线原因
 
@@ -423,4 +427,16 @@ io.adapter(redisAdapter({ pubClient: pub, subClient: sub }));
 
 
 我曾经的问题 [sticky session 和 pm2 的使用](https://stackoverflow.com/questions/46891819/how-to-make-sticky-session-works-with-socket-io-w-or-w-o-pm2)
+
+
+
+- [ ] 客户端断开连接两个原因 `client namespace disconnect` 和 `transport close` 要区分
+
+
+
+### 目前发现几个问题总结
+
+1. 使用 docker 则一定要用 socket.io-redis 
+2. 支持IE就必须用socket.io 2.1 或者2.2， 不能socket2.3 以及 debug 3 
+3. await时候执行权交回event loop ， 所以防止同一事件多次执行的标志位不要设置在redis里用await
 

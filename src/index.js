@@ -67,26 +67,29 @@ io.on('connection', async function(socket) {
     fn(`${user_id}`)
   })
   //Server do NOT have reconnect event
+  //https://socket.io/docs/emit-cheatsheet/
   socket.on('user-reconnect', async function(reason) {
     debug(`Client emit a reconnect event ${socket.id}`)
   })
 
   //用户关闭页面，断网都会触发disconnect消息
   socket.on('disconnect', async function(reason) {
+    //https://socket.io/docs/server-api/#Event-%E2%80%98disconnect%E2%80%99
     debug(`socket id ${socket.id} has disconnect with reason ${reason}`)
+    //客户端断开，重连，比如重刷浏览器原因是 'transport close'
+    //客户端调用 websocket.close 原因是  'client namespace disconnect'
     let user_id = await redis.hget('websocket:socket_user', socket.id)
     if (!user_id) {
-      debug(`No ${socket.id} related data, should b/c we tell him to logoff.`)
+      //我们通知客户端下线，客户端调用 socket.close() 原因就是
+      debug(
+        `No ${socket.id} related data, 'client namespace disconnect or 'transport close' `
+      )
       return
     }
-    if (reason == 'transport close') {
-      debug('Lost connection, just return')
-      return
-    }
-    //处理重刷浏览器，不要马上就通知web服务器用户下线了
+    //RTIME后查是不是用户主动下线， reason 'client namespace disconnect'
     setTimeout(
       async (sid, uid) => {
-        debug(`${RTIME} seconds later, check for ${sid}`)
+        debug(`${RTIME} seconds later, check ${sid} with reason ${reason}`)
         let new_socket = await redis.hget(`websocket:${user_id}`, 'socketid')
         if (new_socket == sid) {
           debug('socketio.id remains the same so assume we do disconnect')
