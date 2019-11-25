@@ -8,6 +8,8 @@ var io = require('socket.io')(http)
 var { redis, pub, sub } = require('./database/redis')
 io.adapter(redisAdapter({ pubClient: pub, subClient: sub }))
 var indexRouter = require('./routes/index')
+const chalk = require('chalk')
+
 var port = process.env.PORT || 3000
 let RTIME = process.env.RTIME || 10
 
@@ -41,9 +43,7 @@ app.use('/rep', indexRouter) //本地 nginx 测试，实际部署不需要
 io.on('connection', async function(socket) {
   //客户端连接成功后会主动发login消息，redis记录 user 到 socketio.id的对应
   socket.on('login', async function(user_id, seid, ccgeid, fn) {
-    debug(
-      `user ${user_id}, seid:${seid}, ccgeid:${ccgeid} login using socket ${socket.id}`
-    )
+    debug(`user ${user_id}, seid:${seid}, ccgeid:${ccgeid} login using socket ${socket.id}`)
     let exist = await dupCheck(user_id, socket.id, fn)
     if (exist) {
       return
@@ -63,7 +63,7 @@ io.on('connection', async function(socket) {
       )
       .exec()
     delete dup[socket.id]
-    debug(`store in hash table user_socket ${user_id} => ${socket.id}`)
+    debug(`store in hash table user_socket ${chalk.cyan(user_id)} => ${chalk.cyan(socket.id)}`)
     fn(`${user_id}`)
   })
   //Server do NOT have reconnect event
@@ -75,21 +75,19 @@ io.on('connection', async function(socket) {
   //用户关闭页面，断网都会触发disconnect消息
   socket.on('disconnect', async function(reason) {
     //https://socket.io/docs/server-api/#Event-%E2%80%98disconnect%E2%80%99
-    debug(`socket id ${socket.id} has disconnect with reason ${reason}`)
+    debug(`socket id ${chalk.cyan(socket.id)} has disconnected with reason ${chalk.cyan(reason)}`)
     //客户端断开，重连，比如重刷浏览器原因是 'transport close'
     //客户端调用 websocket.close 原因是  'client namespace disconnect'
     let user_id = await redis.hget('websocket:socket_user', socket.id)
     if (!user_id) {
       //我们通知客户端下线，客户端调用 socket.close() 原因就是
-      debug(
-        `No ${socket.id} related data, 'client namespace disconnect or 'transport close' `
-      )
+      debug(`No ${socket.id} related data, 'client namespace disconnect or 'transport close' `)
       return
     }
     //RTIME后查是不是用户主动下线， reason 'client namespace disconnect'
     setTimeout(
       async (sid, uid) => {
-        debug(`${RTIME} seconds later, check ${sid} with reason ${reason}`)
+        debug(`${RTIME} seconds later, check ${sid} with reason ${chalk.cyan(reason)}`)
         let new_socket = await redis.hget(`websocket:${user_id}`, 'socketid')
         if (new_socket == sid) {
           debug('socketio.id remains the same so assume we do disconnect')
@@ -117,7 +115,7 @@ sub.on('message', async function(channel, message) {
   debug('Receive message %s from channel %s', message, channel)
   let socketid = await redis.hget(`websocket:${channel}`, 'socketid')
   if (!socketid) {
-    debug(`Channel ${channel} does NOT exist.`)
+    debug(`Channel ${chalk.red(channel)} does NOT exist.`)
     return
   }
   //{"op_code":"change_status","ccgeid":243,"seid":134,"uid":1000056188,
@@ -125,7 +123,7 @@ sub.on('message', async function(channel, message) {
   try {
     let pushData = JSON.parse(message)
     io.to(socketid).emit('cr_msg', message)
-    debug(`emit the message to ${socketid}`)
+    debug(`emit the message to ${chalk.cyan(socketid)}`)
   } catch (err) {
     debug(`${message} is not a valid JSON string so we did not sent to client`)
   }
@@ -150,19 +148,19 @@ async function dupCheck(user_id, socket_id, fn) {
   if (dup[socket_id]) {
     //https://github.com/socketio/socket.io/issues/474
     //有时会收到多个连接请求但也不每次。不清楚是socket.io的问题还是我们代码的问题
-    debug(`We get several connect events:${user_id}--${socket_id}, return.`)
+    debug(`We get ${chalk.cyan('several connect')}: ${user_id}--${socket_id}, just return.`)
     return true
   } else {
     dup[socket_id] = 'exist'
   }
   let old_socket = await redis.hget(`websocket:${user_id}`, 'socketid')
   if (!old_socket) {
-    debug(`First time login, subscribe to ${user_id} channel`)
+    debug(`First time login, ${chalk.cyan('subscribe to')} ${user_id} channel`)
     await sub.subscribe(user_id)
     return false
   }
   if (old_socket == socket_id) {
-    debug(`Another login with the same existing ${socket_id}, return.`)
+    debug(`${chalk.cyan('Another login')} with the existing ${socket_id}, just return.`)
     return true
   }
   //now we assume it is another login
@@ -170,7 +168,7 @@ async function dupCheck(user_id, socket_id, fn) {
   //加入重刷浏览器的延迟处理会走到这，但是因为旧的连接已经没了我想调用emit也没啥
   io.to(old_socket).emit('logoff', 'another login')
   await redis.hdel('websocket:socket_user', old_socket)
-  debug(`${user_id} exists with socket id ${old_socket}, tell it to logoff.`)
+  debug(`${user_id} exists with socket id ${old_socket}, ${chalk.cyan('tell it to logoff.')}`)
   return false //更新 socketid
 }
 
@@ -191,6 +189,8 @@ async function notifyDisconnect(socket_id, user_id) {
     .del(`websocket:${user_id}`)
     .exec()
   debug(
-    `delete ${socket_id} related data ${user_id} after disconnect for ${RTIME} seconds`
+    `${chalk.cyan('Delete')} ${socket_id} related data ${chalk.cyan(
+      user_id
+    )} after ${RTIME} seconds`
   )
 }

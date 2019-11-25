@@ -440,3 +440,11 @@ io.adapter(redisAdapter({ pubClient: pub, subClient: sub }));
 2. 支持IE就必须用socket.io 2.1 或者2.2， 不能socket2.3 以及 debug 3 
 3. await时候执行权交回event loop ， 所以防止同一事件多次执行的标志位不要设置在redis里用await
 
+
+
+### log 的问题（继续）
+
+[A Guide to Node.js Logging](https://www.twilio.com/blog/guide-node-js-logging) 提到 server log, library log, CLI log 我不能完全同意，对我们来说都是调试log和服务器log没法完全区分。 `pino-debug` 倒是可以试试。
+
+尝试引入 npm install chalk
+
