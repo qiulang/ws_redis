@@ -19,6 +19,11 @@ try {
 }
 
 console.log(pushData.data)
+namespaces = ' app:debug, app:*'
+const split = (typeof namespaces === 'string' ? namespaces : '').split(/[\s,]+/)
+for (i of split) {
+  console.log(`b:${i}`)
+}
 
 const Moudles = ['app', 'phone-bar']
 

@@ -1,6 +1,6 @@
 require('dotenv-flow').config()
 var Redis = require('ioredis')
-var debug = require('debug')('app:redis')
+var { debug, info, warn } = require('../logger')
 /*
 new Redis({
   port: 6379, // Redis port
@@ -24,6 +24,8 @@ const setting = {
 
 if (process.env.REDIS_PASS) setting.password = process.env.REDIS_PASS
 
+info(`Connect to redis using ${JSON.stringify(setting)}`)
+
 var redis = new Redis(setting)
 var sub = new Redis(setting)
 var pub = new Redis(setting)
@@ -31,13 +33,13 @@ var pub = new Redis(setting)
 redis.on('error', err => {
   if (err.message.includes('invalid password')) {
     //By default debug will log to stderr.
-    debug('Invalid password so redis fails to work, so just exit')
+    warn('Invalid password so redis fails to work, so just exit')
     process.exit(1)
   }
   if (err.message.includes('connect ECONNREFUSED')) {
-    debug('Failed to connect redis, redis-server is probably down')
+    warn('Failed to connect redis, redis-server is probably down')
   }
-  debug('REDIS: FAILED， will keep reconnecting, but what next?')
+  warn('REDIS: FAILED， will keep reconnecting, but what next?')
 })
 
 async function cleaup() {
@@ -45,7 +47,7 @@ async function cleaup() {
   //await will wait for redis connect
   let tables = await redis.keys('websocket:*')
   for (let t of tables) {
-    debug(`delete ${t}`)
+    info(`delete ${t}`)
     redis.del(t)
   }
 }

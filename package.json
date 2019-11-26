@@ -10,7 +10,7 @@
   "scripts": {
     "pub": "DEBUG=app:* node src/test/pubsub.js",
     "pubsub": "DEBUG=app:* node --nolazy --inspect-brk=9229 src/test/pubsub.js",
-    "basic": "DEBUG=app:* node src/test/basic.js",
+    "basic": "DEBUG=app:* node src/test/json_test.js",
     "prestart": "src/shell/redis_check.sh",
     "start": "DEBUG=app:* nodemon src/index.js",
     "debug": "DEBUG=app:* node --nolazy --inspect-brk=9229 src/index.js",
