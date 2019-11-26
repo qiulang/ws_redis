@@ -10,7 +10,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-u", "--uid", help="either uid or sid should be provided")
 parser.add_argument("-sid", help="either uid or sid should be provided")
 parser.add_argument(
-    "-s", "--server", help="If server is not provide localhost will be used, 1 means using aliyun server",
+    "-s", "--server", help="If server is not provided localhost will be used, 1 means using aliyun server",
     type=int)
 args = parser.parse_args()
 uid = args.uid
@@ -27,7 +27,7 @@ if (sid):
 url = server + 'dpub'
 # without using termcolor or colorama
 confirm = input(
-    'Send \033[93m %s \033[0m to server: \033[93m %s \033[0m (y|n)?' % (payload, url))
+    'POST \033[93m %s \033[0m to server: \033[93m %s \033[0m (y|n)?' % (payload, url))
 if (len(confirm) > 0 and not confirm.startswith(('y', 'Y'))):
     sys.exit()
 

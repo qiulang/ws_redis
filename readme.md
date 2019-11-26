@@ -446,5 +446,17 @@ io.adapter(redisAdapter({ pubClient: pub, subClient: sub }));
 
 [A Guide to Node.js Logging](https://www.twilio.com/blog/guide-node-js-logging) 提到 server log, library log, CLI log 我不能完全同意，对我们来说都是调试log和服务器log没法完全区分。 `pino-debug` 倒是可以试试。
 
-尝试引入 npm install chalk
+[Logging: Best Practices for Node.JS Applications](https://blog.bitsrc.io/logging-best-practices-for-node-js-applications-8a0a5969b94c) 推荐用winston，但主要原因 log 分级别，动态改变其实pino也有。
+
+引入 npm install chalk, 主要因为我是颜色控，对几个我觉得比较重要信息都加了颜色。
+
+
+
+目前用debug做log主要问题**有两个**： (a) log 不分级别；(b) 没法运行时修改打开的log 下一步任务就是要解决这两个问题。
+
+首先调查了 [pino-debug](https://github.com/pinojs/pino-debug) 但发现 它打出日志真的不是 human readable, `hostname, time, level`在调试时候都没啥用，msg 埋没在这些信息当中，而且也没有颜色。没进一步花时间看解决。
+
+但得到一个启发，把 debug的 namespace 设置成的 log level，运行时候打开哪个namespace 可以用来控制哪个 log level.
+
+运行时候需改log级别， [debug 3就支持](https://github.com/visionmedia/debug#set-dynamically) 所以我们只要提供相应web api就可以在运行时候动态修改。唯一碰到一点小问题，就是 `debug.enable()`会把之前的ns都清空，而且只有 `debug.disable()` 才返回当前的ns
 

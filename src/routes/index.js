@@ -36,9 +36,9 @@ router.post('/dpub', async function(req, res) {
     info(`Channel ${uid} did NOT get my message.`)
     res.send(`Channel ${uid} did NOT get my message.\n`)
   } else {
-    info(`Channel ${uid} get my message. Check your response at browser.\n`)
+    info(`Channel ${uid} : ${msg.data.msg}.\n`)
     //https://stackoverflow.com/questions/29497038/why-does-a-curl-request-return-a-percent-sign-with-every-request-in-zsh
-    res.send(`Channel ${uid} get my message. Check your response browser.\n`)
+    res.send(`Channel ${uid} : ${msg.data.msg}.\n`)
   }
 })
 

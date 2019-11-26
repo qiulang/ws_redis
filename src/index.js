@@ -122,6 +122,7 @@ sub.on('message', async function(channel, message) {
   //"data":{"number":"1056","status":1}}
   try {
     let pushData = JSON.parse(message)
+    //https://socket.io/docs/emit-cheatsheet/
     io.to(socketid).emit('cr_msg', message)
     info(`emit the message to ${chalk.cyan(socketid)}`)
   } catch (err) {
