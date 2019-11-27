@@ -9,6 +9,7 @@ var { debug, info, warn } = require('./logger')
 var { redis, pub, sub } = require('./database/redis')
 io.adapter(redisAdapter({ pubClient: pub, subClient: sub }))
 var indexRouter = require('./routes/index')
+const uuidv1 = require('uuid/v1')
 const chalk = require('chalk')
 
 var port = process.env.PORT || 3000
@@ -112,7 +113,7 @@ io.on('connection', async function(socket) {
 
 //订购 redis 消息处理，一般是web服务器发给我们的
 sub.on('message', async function(channel, message) {
-  debug('Receive message %s from channel %s', message, channel)
+  debug('SUB channel %s received message %s', channel, message)
   let socketid = await redis.hget(`websocket:${channel}`, 'socketid')
   if (!socketid) {
     warn(`Got ${message} but channel ${channel} does NOT exist.`)
@@ -122,11 +123,14 @@ sub.on('message', async function(channel, message) {
   //"data":{"number":"1056","status":1}}
   try {
     let pushData = JSON.parse(message)
+    //看来暂时不需要
+    // pushData['id'] = uuidv1()
+    // let tmp = JSON.stringify(pushData)
     //https://socket.io/docs/emit-cheatsheet/
     io.to(socketid).emit('cr_msg', message)
-    info(`emit the message to ${chalk.cyan(socketid)}`)
+    info(`SUB emit the message to ${chalk.cyan(socketid)}`)
   } catch (err) {
-    info(`${message} is not a valid JSON string so we did not sent to client`)
+    info(`SUB message ${message} is not a valid JSON string so we did not sent to client`)
   }
 })
 //连接的时候调用检查
@@ -184,12 +188,13 @@ async function notifyDisconnect(socket_id, user_id) {
     channel_id: user_id
   }
   pub.publish('seat_message_channel', JSON.stringify(msg))
-  info(`publish to seat_message_channel ${user_id} check_out`)
+  info(`publish to seat_message_channel ${user_id} check_out and SUB unsubscribe`)
   await redis
     .multi()
     .hdel('websocket:socket_user', socket_id)
     .del(`websocket:${user_id}`)
     .exec()
+  sub.unsubscribe(user_id)
   debug(
     `${chalk.cyan('Delete')} ${socket_id} related data ${chalk.cyan(
       user_id

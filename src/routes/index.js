@@ -1,6 +1,6 @@
 var express = require('express')
-const uuidv1 = require('uuid/v1')
 let dbg = require('debug')
+const uuidv1 = require('uuid/v1')
 var { debug, info, warn } = require('../logger')
 var router = express.Router()
 var { redis, pub } = require('../database/redis')
@@ -29,16 +29,16 @@ router.post('/dpub', async function(req, res) {
   let msg = {
     op_code: 'debug publish',
     uid: uid,
-    data: { msg: `can you get this ${uuidv1()}` }
+    data: { msg: `can you get this ${uuidv1()}?` }
   }
   let receiver = await pub.publish(uid, JSON.stringify(msg))
   if (receiver == 0) {
-    info(`Channel ${uid} did NOT get my message.`)
-    res.send(`Channel ${uid} did NOT get my message.\n`)
+    info(`PUB failed, channel ${uid} did NOT get my message.`)
+    res.send(`PUB failed, channel ${uid} did NOT get my message.\n`)
   } else {
-    info(`Channel ${uid} : ${msg.data.msg}.\n`)
+    info(`PUB succeeded, channel ${uid} : ${msg.data.msg}.\n`)
     //https://stackoverflow.com/questions/29497038/why-does-a-curl-request-return-a-percent-sign-with-every-request-in-zsh
-    res.send(`Channel ${uid} : ${msg.data.msg}.\n`)
+    res.send(`PUB succeeded, channel ${uid} : ${msg.data.msg}.\n`)
   }
 })
 
