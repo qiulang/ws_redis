@@ -62,7 +62,7 @@ io.on('connection', async function(socket) {
       .exec()
     delete dup[socket.id]
     await sub.subscribe(user_id)
-    info(`store in hash table user_socket ${user_id} => ${socket.id} SUB subscribe`)
+    info(`store in hash table user_socket ${user_id} => ${socket.id} AND SUB subscribe`)
     fn(`${user_id}`)
   })
   //Server do NOT have reconnect event
@@ -134,7 +134,7 @@ sub.on('message', async function(channel, message) {
     // let tmp = JSON.stringify(pushData)
     //https://socket.io/docs/emit-cheatsheet/
     io.to(socketid).emit('cr_msg', message)
-    info(`SUB emit the message to ${socketid}`)
+    info(`SUB emit ${message} to ${socketid}`)
   } catch (err) {
     info(`SUB message ${message} is not a valid JSON string so we did not sent to client`)
   }
