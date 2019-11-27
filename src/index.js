@@ -5,7 +5,8 @@ var http = require('http').Server(app)
 var redisAdapter = require('socket.io-redis')
 var io = require('socket.io')(http)
 // var io = require('socket.io')(http, { path: 'rep' })
-var { debug, info, warn } = require('./logger')
+var { info, warn } = require('./logger')
+var debug = require('debug')('app:websocket:debug')
 var { redis, pub, sub } = require('./database/redis')
 io.adapter(redisAdapter({ pubClient: pub, subClient: sub }))
 var indexRouter = require('./routes/index')
@@ -60,7 +61,8 @@ io.on('connection', async function(socket) {
       )
       .exec()
     delete dup[socket.id]
-    info(`store in hash table user_socket ${user_id} => ${socket.id}`)
+    await sub.subscribe(user_id)
+    info(`store in hash table user_socket ${user_id} => ${socket.id} SUB subscribe`)
     fn(`${user_id}`)
   })
   //Server do NOT have reconnect event
@@ -78,7 +80,9 @@ io.on('connection', async function(socket) {
     let user_id = await redis.hget('websocket:socket_user', socket.id)
     if (!user_id) {
       //我们通知客户端下线，客户端调用 socket.close() 原因就是
-      debug(`No ${socket.id} related data, 'client namespace disconnect or 'transport close' `)
+      debug(
+        `No ${socket.id} related data, is it 'client namespace disconnect or 'transport close' ?`
+      )
       return
     }
     //RTIME后查是不是用户主动下线， reason 'client namespace disconnect'
@@ -87,7 +91,8 @@ io.on('connection', async function(socket) {
         debug(`${RTIME} seconds later, check ${sid} with reason ${reason}`)
         let new_socket = await redis.hget(`websocket:${user_id}`, 'socketid')
         if (new_socket == sid) {
-          debug('socketio.id remains the same so assume we do disconnect')
+          debug('socketio.id remains the same so assume we disconnected, SUB unsubscribe first.')
+          sub.unsubscribe(user_id)
           if (reason == 'client namespace disconnect') {
             info(`Assume ${uid} logoff and told CR, so we do NOT send check_out message`)
           } else {
@@ -161,8 +166,8 @@ async function dupCheck(user_id, socket_id, fn) {
   }
   let old_socket = await redis.hget(`websocket:${user_id}`, 'socketid')
   if (!old_socket) {
-    info(`First time login, subscribe to ${user_id} channel`)
-    await sub.subscribe(user_id)
+    debug(`First time login`)
+    // await sub.subscribe(user_id)
     return false
   }
   if (old_socket == socket_id) {
@@ -174,7 +179,7 @@ async function dupCheck(user_id, socket_id, fn) {
   //加入重刷浏览器的延迟处理会走到这，但是因为旧的连接已经没了我想调用emit也没啥
   io.to(old_socket).emit('logoff', 'another login')
   await redis.hdel('websocket:socket_user', old_socket)
-  info(`${user_id} exists with socket id ${old_socket}, tell it to logoff.}`)
+  info(`${user_id} exists with socket id ${old_socket}, tell it to logoff.`)
   return false //更新 socketid
 }
 
@@ -189,12 +194,11 @@ async function notifyDisconnect(socket_id, user_id) {
     channel_id: user_id
   }
   pub.publish('seat_message_channel', JSON.stringify(msg))
-  info(`publish to seat_message_channel ${user_id} check_out and SUB unsubscribe`)
+  info(`publish to seat_message_channel ${user_id} check_out`)
   await redis
     .multi()
     .hdel('websocket:socket_user', socket_id)
     .del(`websocket:${user_id}`)
     .exec()
-  sub.unsubscribe(user_id)
   debug(`Delete ${socket_id} related data ${user_id} after ${RTIME} seconds`)
 }

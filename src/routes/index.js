@@ -1,7 +1,8 @@
 var express = require('express')
 let dbg = require('debug')
 const uuidv1 = require('uuid/v1')
-var { debug, info, warn } = require('../logger')
+var { info, warn } = require('../logger')
+var debug = require('debug')('app:router:debug')
 var router = express.Router()
 var { redis, pub } = require('../database/redis')
 
@@ -17,12 +18,12 @@ router.post('/dpub', async function(req, res) {
     uid = await redis.hget(`websocket:socket_user`, sid)
   }
   if (!socketid) {
-    info(`Channel ${uid} related socketid does NOT exist.`)
+    debug(`Channel ${uid} related socketid does NOT exist.`)
     res.send(`Channel ${uid} related socketid NOT exist.\n`)
     return
   }
   if (!uid) {
-    info(`Channel does NOT exist, so I can't publish.`)
+    debug(`Channel does NOT exist, so I can't publish.`)
     res.send(`Channel  NOT exist, so I can't publish.\n`)
     return
   }
@@ -33,10 +34,10 @@ router.post('/dpub', async function(req, res) {
   }
   let receiver = await pub.publish(uid, JSON.stringify(msg))
   if (receiver == 0) {
-    info(`PUB failed, channel ${uid} did NOT get my message.`)
+    debug(`PUB failed, channel ${uid} did NOT get my message.`)
     res.send(`PUB failed, channel ${uid} did NOT get my message.\n`)
   } else {
-    info(`PUB succeeded, channel ${uid} : ${msg.data.msg}.\n`)
+    debug(`PUB succeeded, channel ${uid} : ${msg.data.msg}.\n`)
     //https://stackoverflow.com/questions/29497038/why-does-a-curl-request-return-a-percent-sign-with-every-request-in-zsh
     res.send(`PUB succeeded, channel ${uid} : ${msg.data.msg}.\n`)
   }
@@ -77,16 +78,16 @@ router.put('/clog', function(req, res) {
   enableNS(namespaces, res)
 })
 
-router.get('/clog', function(req, res) {
+router.get('/elog', function(req, res) {
   namespaces = dbg.disable()
   dbg.enable(namespaces)
-  info(`Currently enable ${namespaces}`)
+  debug(`Currently enable ${namespaces}`)
   res.send(`Currently enable ${namespaces}\n`)
 })
 
 function enableNS(namespaces, res) {
   dbg.enable(namespaces)
-  info(`enable ${namespaces}`)
+  debug(`enable ${namespaces}`)
   res.send(`Enable ${namespaces}\n`)
 }
 module.exports = router

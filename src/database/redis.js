@@ -1,6 +1,7 @@
 require('dotenv-flow').config()
 var Redis = require('ioredis')
-var { debug, info, warn } = require('../logger')
+var { info, warn } = require('../logger')
+var debug = require('debug')('app:redis:debug')
 /*
 new Redis({
   port: 6379, // Redis port
@@ -47,7 +48,7 @@ async function cleaup() {
   //await will wait for redis connect
   let tables = await redis.keys('websocket:*')
   for (let t of tables) {
-    info(`delete ${t}`)
+    debug(`delete ${t}`)
     redis.del(t)
   }
 }
