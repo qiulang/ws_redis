@@ -440,7 +440,7 @@ io.adapter(redisAdapter({ pubClient: pub, subClient: sub }));
 2. - [x] 支持IE就必须用socket.io 2.1 或者2.2， 不能socket2.3 以及 debug 3 
 3. - [ ] await时候执行权交回event loop ， 所以防止同一事件多次执行的标志位不要设置在redis里用await， 在内存里，但是这又没法处理请求被两个不同docker处理情况
 4. - [ ] 同一条消息，本机的websocket服务器推一次，浏览器处理一次，没问题；但阿里云服务器有时候两个docker都会推，找到原因!，因为没有unsubcribe; 浏览器端会处理两次或者四次，因为 `socket.on('cr_msg'`  被调用两次，如何能确保对一个事件只监听一次? 什么时机调用 `removeListener` 合适？
-5. - [ ] [Is it possible to limit socket.io to have only one listener per event?](https://stackoverflow.com/questions/44570697/is-it-possible-to-limit-socket-io-to-have-only-one-listener-per-event) 存在session storage里，**但是重刷就收不到消息** :(  应该是重刷socket.io 换了新的
+5. - [ ] [Is it possible to limit socket.io to have only one listener per event?](https://stackoverflow.com/questions/44570697/is-it-possible-to-limit-socket-io-to-have-only-one-listener-per-event) 存在session storage里，**但是重刷就收不到消息** :(  应该是重刷socket.io 换了新的. 现在通过 `    let exist = window.socket.hasListeners('cr_msg')` 来判断
 
 
 
@@ -461,7 +461,5 @@ io.adapter(redisAdapter({ pubClient: pub, subClient: sub }));
 但得到一个启发，把 debug的 namespace 设置成的 log level，运行时候打开哪个namespace 可以用来控制哪个 log level.
 
 运行时候需改log级别， [debug 3就支持](https://github.com/visionmedia/debug#set-dynamically) 所以我们只要提供相应web api就可以在运行时候动态修改。唯一碰到一点小问题，就是 `debug.enable()`会把之前的ns都清空，而且只有 `debug.disable()` 才返回当前的ns
-
-
 
 还有不能用chalk，因为pm2的log文件里，chalk的颜色代码都变成 ANSI color codes

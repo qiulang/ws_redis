@@ -85,14 +85,15 @@ io.on('connection', async function(socket) {
       )
       return
     }
+    info(`SUB unsubscribe ${user_id} first.`)
+    sub.unsubscribe(user_id)
     //RTIME后查是不是用户主动下线， reason 'client namespace disconnect'
     setTimeout(
       async (sid, uid) => {
         debug(`${RTIME} seconds later, check ${sid} with reason ${reason}`)
         let new_socket = await redis.hget(`websocket:${user_id}`, 'socketid')
         if (new_socket == sid) {
-          debug('socketio.id remains the same so assume we disconnected, SUB unsubscribe first.')
-          sub.unsubscribe(user_id)
+          debug('socketio.id remains the same so assume we disconnected')
           if (reason == 'client namespace disconnect') {
             info(`Assume ${uid} logoff and told CR, so we do NOT send check_out message`)
           } else {
