@@ -10,7 +10,8 @@ var { redis, pub, sub } = require('./database/redis')
 io.adapter(redisAdapter({ pubClient: pub, subClient: sub }))
 var indexRouter = require('./routes/index')
 const uuidv1 = require('uuid/v1')
-const chalk = require('chalk')
+//pm2 log file will be filled with ANSI color codes!
+//const chalk = require('chalk')
 
 var port = process.env.PORT || 3000
 let RTIME = process.env.RTIME || 10
@@ -59,7 +60,7 @@ io.on('connection', async function(socket) {
       )
       .exec()
     delete dup[socket.id]
-    info(`store in hash table user_socket ${chalk.cyan(user_id)} => ${chalk.cyan(socket.id)}`)
+    info(`store in hash table user_socket ${user_id} => ${socket.id}`)
     fn(`${user_id}`)
   })
   //Server do NOT have reconnect event
@@ -71,7 +72,7 @@ io.on('connection', async function(socket) {
   //用户关闭页面，断网都会触发disconnect消息
   socket.on('disconnect', async function(reason) {
     //https://socket.io/docs/server-api/#Event-%E2%80%98disconnect%E2%80%99
-    debug(`socket id ${chalk.cyan(socket.id)} has disconnected with reason ${chalk.cyan(reason)}`)
+    debug(`socket id ${socket.id} has disconnected with reason ${reason}`)
     //客户端断开，重连，比如重刷浏览器原因是 'transport close'
     //客户端调用 websocket.close 原因是  'client namespace disconnect'
     let user_id = await redis.hget('websocket:socket_user', socket.id)
@@ -83,7 +84,7 @@ io.on('connection', async function(socket) {
     //RTIME后查是不是用户主动下线， reason 'client namespace disconnect'
     setTimeout(
       async (sid, uid) => {
-        debug(`${RTIME} seconds later, check ${sid} with reason ${chalk.cyan(reason)}`)
+        debug(`${RTIME} seconds later, check ${sid} with reason ${reason}`)
         let new_socket = await redis.hget(`websocket:${user_id}`, 'socketid')
         if (new_socket == sid) {
           debug('socketio.id remains the same so assume we do disconnect')
@@ -94,7 +95,7 @@ io.on('connection', async function(socket) {
             await notifyDisconnect(sid, uid)
           }
         } else {
-          debug(`Indeed client reconnect with ${chalk.cyan(new_socket)}`)
+          debug(`Indeed client reconnect with ${new_socket}`)
         }
       },
       1000 * RTIME,
@@ -128,7 +129,7 @@ sub.on('message', async function(channel, message) {
     // let tmp = JSON.stringify(pushData)
     //https://socket.io/docs/emit-cheatsheet/
     io.to(socketid).emit('cr_msg', message)
-    info(`SUB emit the message to ${chalk.cyan(socketid)}`)
+    info(`SUB emit the message to ${socketid}`)
   } catch (err) {
     info(`SUB message ${message} is not a valid JSON string so we did not sent to client`)
   }
@@ -153,19 +154,19 @@ async function dupCheck(user_id, socket_id, fn) {
   if (dup[socket_id]) {
     //https://github.com/socketio/socket.io/issues/474
     //有时会收到多个连接请求但也不每次。不清楚是socket.io的问题还是我们代码的问题
-    debug(`We get ${chalk.cyan('several connect')}: ${user_id}--${socket_id}, just return.`)
+    debug(`We get several connect: ${user_id}--${socket_id}, just return.`)
     return true
   } else {
     dup[socket_id] = 'exist'
   }
   let old_socket = await redis.hget(`websocket:${user_id}`, 'socketid')
   if (!old_socket) {
-    info(`First time login, ${chalk.cyan('subscribe to')} ${user_id} channel`)
+    info(`First time login, subscribe to ${user_id} channel`)
     await sub.subscribe(user_id)
     return false
   }
   if (old_socket == socket_id) {
-    debug(`${chalk.cyan('Another login')} with the existing ${socket_id}, just return.`)
+    debug(`Another login with the existing ${socket_id}, just return.`)
     return true
   }
   //now we assume it is another login
@@ -173,7 +174,7 @@ async function dupCheck(user_id, socket_id, fn) {
   //加入重刷浏览器的延迟处理会走到这，但是因为旧的连接已经没了我想调用emit也没啥
   io.to(old_socket).emit('logoff', 'another login')
   await redis.hdel('websocket:socket_user', old_socket)
-  info(`${user_id} exists with socket id ${old_socket}, ${chalk.cyan('tell it to logoff.')}`)
+  info(`${user_id} exists with socket id ${old_socket}, tell it to logoff.}`)
   return false //更新 socketid
 }
 
@@ -195,9 +196,5 @@ async function notifyDisconnect(socket_id, user_id) {
     .del(`websocket:${user_id}`)
     .exec()
   sub.unsubscribe(user_id)
-  debug(
-    `${chalk.cyan('Delete')} ${socket_id} related data ${chalk.cyan(
-      user_id
-    )} after ${RTIME} seconds`
-  )
+  debug(`Delete ${socket_id} related data ${user_id} after ${RTIME} seconds`)
 }
