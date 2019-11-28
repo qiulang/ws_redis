@@ -8,6 +8,6 @@ let info = log('app:info')
 let warn = log('app:warn')
 // warn.log = console.log.bind(console)
 
-//以后其他模块如果要用debug，ns建议用本模块名字，不要用app:xxx
-//缺省该模块debug不打开，但可以动态打开
+//以后其他模块如果要用debug，ns建议用本模块名字，app:xxx:debug,
+//缺省debug打开，但info和warn就共用一个
 module.exports = { debug, info, warn }

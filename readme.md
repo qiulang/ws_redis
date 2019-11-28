@@ -363,7 +363,7 @@ OK
 
 4. IE 11 问题， debug没转码，[给bablel开的问题单回复了](https://github.com/babel/babel/issues/10707)，但debug的维护者一直很不耐烦
 
-5. - [ ] channel 是否需要unsubscribe 实际生产环境肯定需要。[根据这个SO](https://stackoverflow.com/questions/10142246/how-to-design-redis-pub-sub-for-an-instant-messaging-system) 连接达到上限就不再接受新连接：
+5. - [x] channel 是否需要unsubscribe 实际生产环境肯定需要。[根据这个SO](https://stackoverflow.com/questions/10142246/how-to-design-redis-pub-sub-for-an-instant-messaging-system) 连接达到上限就不再接受新连接：
 
    ```shell
    config get maxclients //当前设置10000暂时还达不到
@@ -372,7 +372,7 @@ OK
    ```
 
 
-6. - [x] pm2 的日志要写的nas盘，不然容器重启就没了 或者**输出到阿里云日志服务**
+6. - [x] pm2 的日志要写的nas盘，不然容器重启就没了 已经改成**输出到阿里云日志服务**
 
 7. - [x] 目前代码加的判断key是否 exists，如果不存在set expire看来没起到串行效果，set expire还是被调用两次 
 
@@ -430,7 +430,7 @@ io.adapter(redisAdapter({ pubClient: pub, subClient: sub }));
 
 
 
-- [ ] 客户端断开连接两个原因 `client namespace disconnect` 和 `transport close` 要区分
+- [x] 客户端断开连接两个原因 `client namespace disconnect` 和 `transport close` 要区分
 
 
 
@@ -439,8 +439,8 @@ io.adapter(redisAdapter({ pubClient: pub, subClient: sub }));
 1. - [x] 使用 docker 则一定要用 socket.io-redis 
 2. - [x] 支持IE就必须用socket.io 2.1 或者2.2， 不能socket2.3 以及 debug 3 
 3. - [ ] await时候执行权交回event loop ， 所以防止同一事件多次执行的标志位不要设置在redis里用await， 在内存里，但是这又没法处理请求被两个不同docker处理情况
-4. - [ ] 同一条消息，本机的websocket服务器推一次，浏览器处理一次，没问题；但阿里云服务器有时候两个docker都会推，找到原因!，因为没有unsubcribe; 浏览器端会处理两次或者四次，因为 `socket.on('cr_msg'`  被调用两次，如何能确保对一个事件只监听一次? 什么时机调用 `removeListener` 合适？
-5. - [ ] [Is it possible to limit socket.io to have only one listener per event?](https://stackoverflow.com/questions/44570697/is-it-possible-to-limit-socket-io-to-have-only-one-listener-per-event) 存在session storage里，**但是重刷就收不到消息** :(  应该是重刷socket.io 换了新的. 现在通过 `    let exist = window.socket.hasListeners('cr_msg')` 来判断
+4. - [x] 同一条消息，本机的websocket服务器推一次，浏览器处理一次，没问题；但阿里云服务器有时候两个docker都会推，找到原因，因为没有unsubscribe; 代码已改成一收到disconnect就unsubscribe
+5. - [ ] 浏览器端会处理两次或者四次，因为 `socket.on('cr_msg'`  被调用两次，如何能确保对一个事件只监听一次? 什么时机调用 `removeListener` 合适？ [Is it possible to limit socket.io to have only one listener per event?](https://stackoverflow.com/questions/44570697/is-it-possible-to-limit-socket-io-to-have-only-one-listener-per-event) 存在session storage里，**但是重刷就收不到消息** :(  应该是重刷socket.io 换了新的. 现在通过 `    let exist = window.socket.hasListeners('cr_msg')` 来判断。
 
 
 
@@ -463,3 +463,13 @@ io.adapter(redisAdapter({ pubClient: pub, subClient: sub }));
 运行时候需改log级别， [debug 3就支持](https://github.com/visionmedia/debug#set-dynamically) 所以我们只要提供相应web api就可以在运行时候动态修改。唯一碰到一点小问题，就是 `debug.enable()`会把之前的ns都清空，而且只有 `debug.disable()` 才返回当前的ns
 
 还有不能用chalk，因为pm2的log文件里，chalk的颜色代码都变成 ANSI color codes
+
+
+
+#### 总结现在对debug的使用
+
+1. 每个模块的debug信息，ns设置 `app:模块:debug` 这样才能用app:*一起打开。
+2.  info 和 warn不分模块，不然代码复杂度增加很多。
+3. 提供动态修改log级别的接口。
+4. debug确实写得std.err, 不做修改了，不然要改的地方太多。pm2就都从 `/root/.pm2/logs/ws-redis-error.log` 看吧
+5. 不用chalk
