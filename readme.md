@@ -437,12 +437,18 @@ io.adapter(redisAdapter({ pubClient: pub, subClient: sub }));
 ### 目前发现几个问题总结
 
 1. - [x] 使用 docker 则一定要用 socket.io-redis 
+
 2. - [x] 支持IE就必须用socket.io 2.1 或者2.2， 不能socket2.3 以及 debug 3 
+
 3. - [ ] await时候执行权交回event loop ， 所以防止同一事件多次执行的标志位不要设置在redis里用await， 在内存里，但是这又没法处理请求被两个不同docker处理情况
+
 4. - [x] 同一条消息，本机的websocket服务器推一次，浏览器处理一次，没问题；但阿里云服务器有时候两个docker都会推，找到原因，因为没有unsubscribe; 代码已改成一收到disconnect就unsubscribe
-5. - [ ] 浏览器端会处理两次或者四次，因为 `socket.on('cr_msg'`  被调用两次，如何能确保对一个事件只监听一次? 什么时机调用 `removeListener` 合适？ [Is it possible to limit socket.io to have only one listener per event?](https://stackoverflow.com/questions/44570697/is-it-possible-to-limit-socket-io-to-have-only-one-listener-per-event) 存在session storage里，**但是重刷就收不到消息** :(  应该是重刷socket.io 换了新的. 现在通过 `    let exist = window.socket.hasListeners('cr_msg')` 来判断。
 
+5. - [ ] 浏览器端会处理两次或者四次，因为 `socket.on('cr_msg'`  被调用两次，如何能确保对一个事件只监听一次? 什么时机调用 `removeListener` 合适？ [Is it possible to limit socket.io to have only one listener per event?](https://stackoverflow.com/questions/44570697/is-it-possible-to-limit-socket-io-to-have-only-one-listener-per-event) 存在session storage里，**但是重刷就收不到消息**, 应该是重刷socket.io 换了新的. 现在通过 `    let exist = window.socket.hasListeners('cr_msg')` 来判断。
 
+6. 在线客服项目其实也有针对同一个事件多次监听的处理， [beforeDestroy: removeListeners](https://github.com/icebob/vue-websocket/blob/master/src/index.js)
+
+   
 
 ### log 的问题（继续）
 
