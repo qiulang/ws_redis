@@ -10,7 +10,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-u", "--uid", help="either uid or sid should be provided")
 parser.add_argument("-sid", help="either uid or sid should be provided")
 parser.add_argument(
-    "-s", "--server", help="If server is not provided localhost will be used, 1 means using aliyun server",
+    "-s", "--server", default=0, help="If server is not provided localhost will be used, 1 means using aliyun server",
     type=int)
 args = parser.parse_args()
 uid = args.uid
@@ -31,8 +31,6 @@ confirm = input(
 if (len(confirm) > 0 and not confirm.startswith(('y', 'Y'))):
     sys.exit()
 
-
 headers = {'content-type': 'application/json'}
-
 response = requests.post(url, json=payload, headers=headers, verify=False)
 print(response.text)

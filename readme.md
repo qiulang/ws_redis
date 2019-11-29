@@ -189,7 +189,11 @@ http 服务器和websocket 服务器监听不同端口的方法暂时没试出�
 
 7. [alias 含义容易忘](https://serverfault.com/questions/748634/how-to-alias-directories-in-nginx) 
 
-    
+8. [如何确认nginx 在运行](https://stackoverflow.com/questions/35220654/how-to-verify-if-nginx-is-running-or-not) , mac 下最简单的方法 `brew services list` 
+  
+9. [扫描某个端口使用情况](https://askubuntu.com/questions/538208/how-to-check-opened-closed-ports-on-my-computer) 几条命令，容易忘。（1） `netstat -an | grep 3000` -a all -n number 有些版本有 -p看是哪个进程，但mac版本没有，所以mac我更倾向于用 (2) `lsof -i :3000` (3) nc做端口扫描,比如`nc -zv localhost 3000-3010` 扫描 3000到 3010
+
+     
 
 ### dockerfile 难点
 
