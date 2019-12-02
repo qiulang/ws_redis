@@ -16,6 +16,7 @@
     "debug": "DEBUG=app:* node --nolazy --inspect-brk=9229 src/index.js",
     "preprod": "src/shell/redis_check.sh",
     "prod": "pm2 start ecosystem.config.js --env production",
+    "pm2log": "pm2 set pm2-logrotate:workerInterval 150",
     "pm2.5": "pm2 start ecosystem.config.js"
   },
   "author": "qiulang",

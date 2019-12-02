@@ -15,7 +15,7 @@ const uuidv1 = require('uuid/v1')
 //const chalk = require('chalk')
 
 var port = process.env.PORT || 3000
-let RTIME = process.env.RTIME || 10
+let RTIME = process.env.RTIME || 45
 
 //不需要redis来存
 var dup = {}
@@ -42,7 +42,7 @@ app.use('/', indexRouter)
 io.on('connection', async function(socket) {
   //客户端连接成功后会主动发login消息，redis记录 user 到 socketio.id的对应
   socket.on('login', async function(user_id, seid, ccgeid, fn) {
-    info(`user ${user_id}, seid:${seid}, ccgeid:${ccgeid} login using socket ${socket.id}`)
+    debug(`user ${user_id}, seid:${seid}, ccgeid:${ccgeid} login using socket ${socket.id}`)
     let exist = await dupCheck(user_id, socket.id, fn)
     if (exist) {
       return

@@ -193,7 +193,9 @@ http 服务器和websocket 服务器监听不同端口的方法暂时没试出�
   
 9. [扫描某个端口使用情况](https://askubuntu.com/questions/538208/how-to-check-opened-closed-ports-on-my-computer) 几条命令，容易忘。（1） `netstat -an | grep 3000` -a all -n number 有些版本有 -p看是哪个进程，但mac版本没有，所以mac我更倾向于用 (2) `lsof -i :3000` (3) nc做端口扫描,比如`nc -zv localhost 3000-3010` 扫描 3000到 3010
 
-     
+10. lsof -i :3000 显示 [*:hbci 表示 "Home Banking Computer Interface"](https://unix.stackexchange.com/questions/346060/tcp-hbci-listen-what-does-hbci-mean?noredirect=1&lq=1) 可以改用`lsof -P -i :3000` 
+
+       
 
 ### dockerfile 难点
 
@@ -479,7 +481,15 @@ io.adapter(redisAdapter({ pubClient: pub, subClient: sub }));
 #### 总结现在对debug的使用
 
 1. 每个模块的debug信息，ns设置 `app:模块:debug` 这样才能用app:*一起打开。
-2.  info 和 warn不分模块，不然代码复杂度增加很多。
+
+2. info 和 warn不分模块，不然代码复杂度增加很多。
+
 3. 提供动态修改log级别的接口。
+
 4. debug确实写得std.err, 不做修改了，不然要改的地方太多。pm2就都从 `/root/.pm2/logs/ws-redis-error.log` 看吧
+
 5. 不用chalk
+
+6. `pm2-logrotate` 使用要研究下，目前只修改 `workerInterval `为150秒，确实30查一次没必要。
+
+   
