@@ -11,31 +11,17 @@ var { redis, pub, sub } = require('./database/redis')
 io.adapter(redisAdapter({ pubClient: pub, subClient: sub }))
 var indexRouter = require('./routes/index')
 const uuidv1 = require('uuid/v1')
-//pm2 log file will be filled with ANSI color codes!
-//const chalk = require('chalk')
+const portfinder = require('portfinder')
 
-var port = process.env.PORT || 3000
 let RTIME = process.env.RTIME || 45
 
+startServer()
 //不需要redis来存
 var dup = {}
 
 app.use(express.json()) //https://stackoverflow.com/a/47232318/301513
 app.use(express.urlencoded({ extended: false }))
 app.use(cors())
-
-//调试用
-if (process.env.NGINX) {
-  debug('use nginx to provide static file, e.g. index.html')
-} else {
-  debug('use express to provide static file, e.g. index.html')
-  app.use(express.static('public'))
-  app.use('/rep', indexRouter) //本地 nginx 测试，实际部署不需要
-}
-
-http.listen(port, function() {
-  debug('server starts, listening on *:' + port)
-})
 
 app.use('/', indexRouter)
 
@@ -202,4 +188,21 @@ async function notifyDisconnect(socket_id, user_id) {
     .del(`websocket:${user_id}`)
     .exec()
   debug(`Delete ${socket_id} related data ${user_id} after ${RTIME} seconds`)
+}
+
+async function startServer() {
+  var port = process.env.PORT || 3000
+  //调试用
+  if (process.env.NGINX) {
+    debug('use nginx to provide static file; port 3000 is free in docker')
+  } else {
+    debug('use express to provide static file, e.g. index.html')
+    app.use(express.static('public'))
+    app.use('/rep', indexRouter) //本地 nginx 测试，实际部署不需要
+    portfinder.basePort = port
+    port = await portfinder.getPortPromise()
+  }
+  http.listen(port, function() {
+    debug('server starts, listening on *:' + port)
+  })
 }

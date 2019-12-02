@@ -125,7 +125,7 @@ chat 例子一开始没跑起应该 socket.io client版本问题。另，开了�
 
    
 
-http 服务器和websocket 服务器监听不同端口的方法暂时没试出来，但目前也不需要
+http 服务器和websocket 服务器监听不同端口的方法暂时没试出来，但目前也不需要, **注意**：已确认必须相同。
 
 
 
@@ -491,5 +491,21 @@ io.adapter(redisAdapter({ pubClient: pub, subClient: sub }));
 5. 不用chalk
 
 6. `pm2-logrotate` 使用要研究下，目前只修改 `workerInterval `为150秒，确实30查一次没必要。
+
+   
+
+### free port 方便开发
+
+如果3000端口已经使用就用下一个free端口，只在开发时候用,避免`EADDRINUSE` 错误；生成环境不可以，因为nginx规则写死3000
+
+试了几个包 ，选了下载量最大的 portfinder
+
+1. [portfinder](https://www.npmjs.com/package/portfinder)
+
+2. [get-port](https://www.npmjs.com/package/get-port) 应该也可以，但没有portfinder下载量大
+
+3. 其他的包年代都比较就久不考虑，比如 [find-free-port](https://www.npmjs.com/package/find-free-port) 和 [Nodejs random free tcp ports](https://stackoverflow.com/questions/28050171/nodejs-random-free-tcp-ports) 
+
+4. 现在的启动服务器函数 `startServer` 就比express脚手架生成的 www/bin有意义多了
 
    
