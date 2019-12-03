@@ -195,7 +195,9 @@ http 服务器和websocket 服务器监听不同端口的方法暂时没试出�
 
 10. lsof -i :3000 显示 [*:hbci 表示 "Home Banking Computer Interface"](https://unix.stackexchange.com/questions/346060/tcp-hbci-listen-what-does-hbci-mean?noredirect=1&lq=1) 可以改用`lsof -P -i :3000` 
 
-       
+注： nginx 配置文件不含ssl 部分，这块原本 nginx配置一个难点，但因为我们在阿里云的ssl配置在统一在最外层的负载均衡器（slb），[slb转发到我们容器机器时候已经不加密的数据](https://help.aliyun.com/document_detail/89151.html?spm=a2c4g.11186623.6.750.55291f8bxeHlNG) 。
+
+  ​     
 
 ### dockerfile 难点
 
@@ -326,8 +328,8 @@ OK
 1. 今天提交的客户端代码， 重新刷新页面 socket.io 有时候不通！重启socket.io服务器可以连上。查了半天发现 `socket.on('connect' ...` 的代码必须和 `socket = io()`  在同一个文件
 2. 基于 alpine 的docker容器的时区问题， CST
 3. 32服务器部署要打开防火墙，不然websocket 不通；阿里云部署 wss不需要专门配置
-- [x] 4. 测试问题，同一账户在不同机器登录，消息会发到哪个浏览器，当然是最后一个，而且我们还要踢下线之前的
-- [x] 5. 需要支持 IE 11 参考这个 [git issue](https://github.com/socketio/socket.io-client/issues/1328)  由此发现不能使用socket.io 2.3 只能用 socket.io 2.2 或2.1
+4. 测试问题，同一账户在不同机器登录，消息会发到哪个浏览器，当然是最后一个，而且我们还要踢下线之前的
+5. 需要支持 IE 11 参考这个 [git issue](https://github.com/socketio/socket.io-client/issues/1328)  由此发现不能使用socket.io 2.3 只能用 socket.io 2.2 或2.1
 
      
 
@@ -369,7 +371,7 @@ OK
 
 4. IE 11 问题， debug没转码，[给bablel开的问题单回复了](https://github.com/babel/babel/issues/10707)，但debug的维护者一直很不耐烦
 
-5. - [x] channel 是否需要unsubscribe 实际生产环境肯定需要。[根据这个SO](https://stackoverflow.com/questions/10142246/how-to-design-redis-pub-sub-for-an-instant-messaging-system) 连接达到上限就不再接受新连接：
+5. channel 是否需要unsubscribe 实际生产环境肯定需要。[根据这个SO](https://stackoverflow.com/questions/10142246/how-to-design-redis-pub-sub-for-an-instant-messaging-system) 连接达到上限就不再接受新连接：
 
    ```shell
    config get maxclients //当前设置10000暂时还达不到
@@ -378,9 +380,9 @@ OK
    ```
 
 
-6. - [x] pm2 的日志要写的nas盘，不然容器重启就没了 已经改成**输出到阿里云日志服务**
+6. pm2 的日志要写的nas盘，不然容器重启就没了 已经改成**输出到阿里云日志服务**
 
-7. - [x] 目前代码加的判断key是否 exists，如果不存在set expire看来没起到串行效果，set expire还是被调用两次 
+7. 目前代码加的判断key是否 exists，如果不存在set expire看来没起到串行效果，set expire还是被调用两次 
 
 8. [no empty hash in redis](https://stackoverflow.com/questions/21283042/keep-empty-data-keys-in-redis)
 
@@ -442,19 +444,21 @@ io.adapter(redisAdapter({ pubClient: pub, subClient: sub }));
 
 ### 目前发现几个问题总结
 
-1. - [x] 使用 docker 则一定要用 socket.io-redis 
+1. 使用 docker 则一定要用 socket.io-redis 
 
-2. - [x] 支持IE就必须用socket.io 2.1 或者2.2， 不能socket2.3 以及 debug 3 
+2. 关于core-js 和 lodash差异，[参见](https://github.com/zloirock/core-js/issues/709) core-js是babel用来 polyfill， `lodash` is a set of utility functions.
 
-3. - [ ] await时候执行权交回event loop ， 所以防止同一事件多次执行的标志位不要设置在redis里用await， 在内存里，但是这又没法处理请求被两个不同docker处理情况
+3. 支持IE就必须用socket.io 2.1 或者2.2， 不能socket2.3 以及 debug 3 
 
-4. - [x] 同一条消息，本机的websocket服务器推一次，浏览器处理一次，没问题；但阿里云服务器有时候两个docker都会推，找到原因，因为没有unsubscribe; 代码已改成一收到disconnect就unsubscribe
+4. - [ ] await时候执行权交回event loop ， 所以防止同一事件多次执行的标志位不要设置在redis里用await， 在内存里，但是这又没法处理请求被两个不同docker处理情况
 
-5. - [ ] 浏览器端会处理两次或者四次，因为 `socket.on('cr_msg'`  被调用两次，如何能确保对一个事件只监听一次? 什么时机调用 `removeListener` 合适？ [Is it possible to limit socket.io to have only one listener per event?](https://stackoverflow.com/questions/44570697/is-it-possible-to-limit-socket-io-to-have-only-one-listener-per-event) 存在session storage里，**但是重刷就收不到消息**, 应该是重刷socket.io 换了新的. 现在通过 `    let exist = window.socket.hasListeners('cr_msg')` 来判断。
+5. 同一条消息，本机的websocket服务器推一次，浏览器处理一次，没问题；但阿里云服务器有时候两个docker都会推，找到原因，因为没有unsubscribe; 代码已改成一收到disconnect就unsubscribe
 
-6. 在线客服项目其实也有针对同一个事件多次监听的处理， [beforeDestroy: removeListeners](https://github.com/icebob/vue-websocket/blob/master/src/index.js)
+6. 浏览器端会处理两次或者四次，因为 `socket.on('cr_msg'`  被调用两次，如何能确保对一个事件只监听一次? 什么时机调用 `removeListener` 合适？ [Is it possible to limit socket.io to have only one listener per event?](https://stackoverflow.com/questions/44570697/is-it-possible-to-limit-socket-io-to-have-only-one-listener-per-event) 存在session storage里，**但是重刷就收不到消息**, 应该是重刷socket.io 换了新的. 现在通过 `    let exist = window.socket.hasListeners('cr_msg')` 来判断。
 
-   
+7. 在线客服项目其实也有针对同一个事件多次监听的处理， [beforeDestroy: removeListeners](https://github.com/icebob/vue-websocket/blob/master/src/index.js)
+
+    
 
 ### log 的问题（继续）
 
