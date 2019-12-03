@@ -345,6 +345,21 @@ OK
 6. pm2 log rotate设置
 7. websocket 下线要通知服务器,同个账号多次登录也要通知
 8. IE11的问题，目前看是debug v4 引起的，改用 debug v3 就好了，为啥也不清楚，[总结在这](https://forum.vuejs.org/t/i-cant-polyfill-debug-module-version-4-for-ie-11-but-version-3-works-just-fine/79548)
+9. 我曾经的问题 [sticky session 和 pm2 的使用](https://stackoverflow.com/questions/46891819/how-to-make-sticky-session-works-with-socket-io-w-or-w-o-pm2)
+
+
+
+关于使用pm2, [Top 4 Tactics To Keep Node.js Rockin’ in Docker](https://www.docker.com/blog/keep-nodejs-rockin-in-docker/) 建议不要用
+
+> Don’t Use Process Managers In Production 
+> ...
+>
+> Docker, Swarm, and Kubernetes will do the job of running healthchecks and restarting or recreating your container if it fails. It’s also now the job of orchestrators to scale the number of replicas of our apps, which we used to use tools like pm2 and forever for.
+
+以前做在线客服就有这个困惑，后来没用pm2. 我们这次用pm2一个原因其实是因为把 nginx做docker主进程，所以node就有在后台起（反过来当然也行）。
+
+[what is the point of using pm2 and docker together?](https://stackoverflow.com/questions/51191378/what-is-the-point-of-using-pm2-and-docker-together)  这个讨论也可以看看
+
 
 
 
@@ -432,12 +447,6 @@ https://github.com/socketio/socket.io-redis#custom-client-eg-with-authentication
 io.adapter(redisAdapter({ pubClient: pub, subClient: sub }));
 ```
 
-
-
-我曾经的问题 [sticky session 和 pm2 的使用](https://stackoverflow.com/questions/46891819/how-to-make-sticky-session-works-with-socket-io-w-or-w-o-pm2)
-
-
-
 - [x] 客户端断开连接两个原因 `client namespace disconnect` 和 `transport close` 要区分
 
 
@@ -458,7 +467,9 @@ io.adapter(redisAdapter({ pubClient: pub, subClient: sub }));
 
 7. 在线客服项目其实也有针对同一个事件多次监听的处理， [beforeDestroy: removeListeners](https://github.com/icebob/vue-websocket/blob/master/src/index.js)
 
-    
+8. 一个历史问题， vscode为什么看不了node_moduels的代码，而是ts的“模拟代码”，[终于得到解答](https://stackoverflow.com/questions/46893661/go-to-implementation-instead-of-typescript-declaration)
+
+     
 
 ### log 的问题（继续）
 
