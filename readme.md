@@ -63,7 +63,7 @@ chat 例子一开始没跑起应该 socket.io client版本问题。另，开了�
 
 
 
-### 实现socket.io 
+### 采用socket.io 
 
 每个client连接在它自己缺省的 room，连接后发登录消息，服务器收到登录消息往这个房间发一个确认。
 
@@ -356,7 +356,7 @@ OK
 >
 > Docker, Swarm, and Kubernetes will do the job of running healthchecks and restarting or recreating your container if it fails. It’s also now the job of orchestrators to scale the number of replicas of our apps, which we used to use tools like pm2 and forever for.
 
-以前做在线客服就有这个困惑，后来没用pm2. 我们这次用pm2一个原因其实是因为把 nginx做docker主进程，所以node就有在后台起（反过来当然也行）。
+以前做在线客服就有这个困惑，后来没用pm2. 我们这次用pm2一个原因其实是因为把 nginx做docker主进程，所以node就有在后台起（反过来当然也行）。但使用pm2 不要用cluster mode
 
 [what is the point of using pm2 and docker together?](https://stackoverflow.com/questions/51191378/what-is-the-point-of-using-pm2-and-docker-together)  这个讨论也可以看看
 
@@ -450,27 +450,6 @@ io.adapter(redisAdapter({ pubClient: pub, subClient: sub }));
 - [x] 客户端断开连接两个原因 `client namespace disconnect` 和 `transport close` 要区分
 
 
-
-### 目前发现几个问题总结
-
-1. 使用 docker 则一定要用 socket.io-redis 
-
-2. 关于core-js 和 lodash差异，[参见](https://github.com/zloirock/core-js/issues/709) core-js是babel用来 polyfill， `lodash` is a set of utility functions.
-
-3. 支持IE就必须用socket.io 2.1 或者2.2， 不能socket2.3 以及 debug 3 
-
-4. - [ ] await时候执行权交回event loop ， 所以防止同一事件多次执行的标志位不要设置在redis里用await， 在内存里，但是这又没法处理请求被两个不同docker处理情况
-
-5. 同一条消息，本机的websocket服务器推一次，浏览器处理一次，没问题；但阿里云服务器有时候两个docker都会推，找到原因，因为没有unsubscribe; 代码已改成一收到disconnect就unsubscribe
-
-6. 浏览器端会处理两次或者四次，因为 `socket.on('cr_msg'`  被调用两次，如何能确保对一个事件只监听一次? 什么时机调用 `removeListener` 合适？ [Is it possible to limit socket.io to have only one listener per event?](https://stackoverflow.com/questions/44570697/is-it-possible-to-limit-socket-io-to-have-only-one-listener-per-event) 存在session storage里，**但是重刷就收不到消息**, 应该是重刷socket.io 换了新的. 现在通过 `    let exist = window.socket.hasListeners('cr_msg')` 来判断。
-
-7. 在线客服项目其实也有针对同一个事件多次监听的处理， [beforeDestroy: removeListeners](https://github.com/icebob/vue-websocket/blob/master/src/index.js)
-
-8. 一个历史问题， vscode为什么看不了node_moduels的代码，而是ts的“模拟代码”，[终于得到解答](https://stackoverflow.com/questions/46893661/go-to-implementation-instead-of-typescript-declaration)
-
-     
-
 ### log 的问题（继续）
 
 [A Guide to Node.js Logging](https://www.twilio.com/blog/guide-node-js-logging) 提到 server log, library log, CLI log 我不能完全同意，对我们来说都是调试log和服务器log没法完全区分。 `pino-debug` 倒是可以试试。
@@ -524,3 +503,26 @@ io.adapter(redisAdapter({ pubClient: pub, subClient: sub }));
 4. 现在的启动服务器函数 `startServer` 就比express脚手架生成的 www/bin有意义多了
 
    
+
+
+### 目前发现几个问题总结
+
+1. 使用 docker 则一定要用 socket.io-redis 
+
+2. 关于core-js 和 lodash差异，[参见](https://github.com/zloirock/core-js/issues/709) core-js是babel用来 polyfill， `lodash` is a set of utility functions.
+
+3. 支持IE就必须用socket.io 2.1 或者2.2， 不能socket2.3 以及 debug 3 
+
+4. - [ ] await时候执行权交回event loop ， 所以防止同一事件多次执行的标志位不要设置在redis里用await， 在内存里，但是这又没法处理请求被两个不同docker处理情况
+
+5. 同一条消息，本机的websocket服务器推一次，浏览器处理一次，没问题；但阿里云服务器有时候两个docker都会推，找到原因，因为没有unsubscribe; 代码已改成一收到disconnect就unsubscribe
+
+6. 浏览器端会处理两次或者四次，因为 `socket.on('cr_msg'`  被调用两次，如何能确保对一个事件只监听一次? 什么时机调用 `removeListener` 合适？ [Is it possible to limit socket.io to have only one listener per event?](https://stackoverflow.com/questions/44570697/is-it-possible-to-limit-socket-io-to-have-only-one-listener-per-event) 存在session storage里，**但是重刷就收不到消息**, 应该是重刷socket.io 换了新的. 现在通过 `    let exist = window.socket.hasListeners('cr_msg')` 来判断。
+
+7. 在线客服项目其实也有针对同一个事件多次监听的处理， [beforeDestroy: removeListeners](https://github.com/icebob/vue-websocket/blob/master/src/index.js)
+
+8. 一个历史问题， vscode为什么看不了node_moduels的代码，而是ts的“模拟代码”，[终于得到解答](https://stackoverflow.com/questions/46893661/go-to-implementation-instead-of-typescript-declaration)
+
+9. - [ ] 处理`SIGTERM` 告知web服务器连接断开。
+
+10. 前端打包代码如何能使用运行时环境变量，[难点参见](https://medium.com/@oprearocks/environment-variables-in-webpack-builds-vs-node-js-apps-bc2b26261e66)， [可能方案参见](https://www.freecodecamp.org/news/how-to-implement-runtime-environment-variables-with-create-react-app-docker-and-nginx-7f9d42a91d70/) 这其实和我们ccfront做法一样。
