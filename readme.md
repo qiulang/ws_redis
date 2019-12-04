@@ -525,4 +525,4 @@ io.adapter(redisAdapter({ pubClient: pub, subClient: sub }));
 
 9. - [ ] 处理`SIGTERM` 告知web服务器连接断开。
 
-10. 前端打包代码如何能使用运行时环境变量，[难点参见](https://medium.com/@oprearocks/environment-variables-in-webpack-builds-vs-node-js-apps-bc2b26261e66)， [可能方案参见](https://www.freecodecamp.org/news/how-to-implement-runtime-environment-variables-with-create-react-app-docker-and-nginx-7f9d42a91d70/) 这其实和我们ccfront做法一样。
+10. 前端打包代码如何能使用运行时环境变量，[难点参见](https://medium.com/@oprearocks/environment-variables-in-webpack-builds-vs-node-js-apps-bc2b26261e66)， [可能方案参见](https://www.freecodecamp.org/news/how-to-implement-runtime-environment-variables-with-create-react-app-docker-and-nginx-7f9d42a91d70/) 这其实和我们ccfront做法一样。在index.html 引入script [会碰到错误参见](https://forum.vuejs.org/t/add-script-tag-to-index-html/51525)
