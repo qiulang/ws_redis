@@ -57,9 +57,21 @@ chat 例子一开始没跑起应该 socket.io client版本问题。另，开了�
 
 [8 Node.js Web Socket Libraries for 2019](https://blog.bitsrc.io/8-node-js-web-socket-libraries-for-2018-818e7e5b67cf)
 
-如果不用socket.io 可以试试 [ws](https://github.com/websockets/ws)
+如果不用socket.io 可以试试 [ws](https://github.com/websockets/ws) 它比socket.io的一个优势是一直在维护。但如果没有提供像 socket.io-redis  这样用来处理docker 部署的库，使用会是大问题，目前没时间研究。
 
 [Ratchet部署文档](http://socketo.me/docs/push) , websocket 服务器和web服务器通信 它用ZeroMQ， 用RabbitMQ也类似，但我们不要再引入一个mq，[它的使用方式](https://www.cloudamqp.com/blog/2015-05-19-part2-2-rabbitmq-for-beginners_example-and-sample-code-node-js.html) 和 [redis 的 pubsub](https://redis.io/topics/pubsub) 乍一看也太大区别，就用[redis的pubsub](https://stackoverflow.com/questions/32743754/using-redis-as-pubsub-over-socket-io) 
+
+
+
+#### websocket 的url 能带 query string吗 ？
+
+12.5 号调试江西建行的项目碰到一个新问题 websocket 的url 能带 query string吗  ?
+
+[Can WebSocket addresses carry parameters?](https://stackoverflow.com/questions/17301269/can-websocket-addresses-carry-parameters) 提到 `ws://myserver.com/path?param=1` is a valid WebSocket URI. **However**, the way that your WebSocket server application can access the path and query string will differ depending on what WebSocket server framework you are using. 
+
+也就是说要看 WebSocket server 有处理吗。
+
+[how to get parameters from websocket client request](https://stackoverflow.com/questions/44781301/how-to-get-parameters-from-websocket-client-request) 提供了服务器处理的一个示例。
 
 
 
@@ -147,7 +159,7 @@ http 服务器和websocket 服务器监听不同端口的方法暂时没试出�
 
  socket.io client 能连和express 服务器不同的端口吗？ **不能**
 
-[what port does the socketIO client listen to by default?](https://stackoverflow.com/questions/25778414/what-port-does-the-socketio-client-listen-to-by-default) 从这个答复再加参看源代码，socket.io client连服务器监听端口， 所以nginx的转发规划要怎么做？！
+[what port does the socketIO client listen to by default?](https://stackoverflow.com/questions/25778414/what-port-does-the-socketio-client-listen-to-by-default) 从这个答复再加参看源代码，socket.io client连服务器监听端口， **所以nginx的转发规划要怎么做？！**
 
 根据这两个问答，终于找到解决办法 
 
@@ -494,7 +506,7 @@ io.adapter(redisAdapter({ pubClient: pub, subClient: sub }));
 
 mac下用brew安装的nginx，缺省日志在`/usr/local/var/log/nginx/` 路径下，但如果指定相对路径，比如 `access_log logs/ql.access.log combined if=$loggable;`  实际位置就在 `/usr/local/Cellar/nginx/1.15.8/logs` (注，我本机用 1.1.5.8)
 
-
+容器里不写绝对路径会，比如 `access_log access.log` 会在 `/etc/nginx/access.log` 
 
 **Conditional logging** 
 
