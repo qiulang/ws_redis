@@ -449,8 +449,9 @@ io.adapter(redisAdapter({ pubClient: pub, subClient: sub }));
 
 - [x] 客户端断开连接两个原因 `client namespace disconnect` 和 `transport close` 要区分
 
+### log 的问题
 
-### log 的问题（继续）
+#### express的log
 
 [A Guide to Node.js Logging](https://www.twilio.com/blog/guide-node-js-logging) 提到 server log, library log, CLI log 我不能完全同意，对我们来说都是调试log和服务器log没法完全区分。 `pino-debug` 倒是可以试试。
 
@@ -487,6 +488,35 @@ io.adapter(redisAdapter({ pubClient: pub, subClient: sub }));
 6. `pm2-logrotate` 使用要研究下，目前只修改 `workerInterval `为150秒，确实30查一次没必要。
 
    
+#### nginx的log
+
+[nginx log的缺省位置](https://docs.splunk.com/Documentation/AddOns/released/NGINX/Setupv2) `/var/log/nginx/access.log`  docker容器也是这个位置，但把 access.log重定向到标准输出。
+
+mac下用brew安装的nginx，缺省日志在`/usr/local/var/log/nginx/` 路径下，但如果指定相对路径，比如 `access_log logs/ql.access.log combined if=$loggable;`  实际位置就在 `/usr/local/Cellar/nginx/1.15.8/logs` (注，我本机用 1.1.5.8)
+
+
+
+**Conditional logging** 
+
+Conditional logging 如果不设置路径就有问题，在我的机器上会发生log完全不记录。
+
+```nginx
+map $request_method $loggable {
+    HEAD 0;
+    OPTIONS 0;
+    default 1;
+}
+# 或者
+map $remote_addr $log_ip {
+    #但是如果用容器启动，$remote_addr被映射成容器内地址，所以可能不好用
+    "127.0.0.1" 0;
+    default 1;
+}
+
+```
+
+
+
 
 ### free port 方便开发
 
