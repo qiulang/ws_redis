@@ -1,6 +1,8 @@
 ### 本项目常用到的redis命令
 
-首先目前只用到两个数据结构 string & hash
+首先，redis版本必须是 4.0以上，因为我用 heset 设置多个field，而不是用hmset （见下）
+
+其次，目前只用到两个数据结构 string & hash.
 
 相关常用命令
 
@@ -19,7 +21,10 @@
 13. pubsub https://redis.io/commands/pubsub 有几组子命令
 
     1. pubsub channels 当前存在通道
+    
     2. publish channel message 返回值显示几个通道收到了
+    
+       
 
 
 

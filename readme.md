@@ -23,6 +23,14 @@ redis nodejs 客户端我们用ioredis,  https://github.com/NodeRedis/node_redis
 
 
 
+#### stream
+
+redis 5.0 引入 stream，它和pub sub 一点区别就是 pub sub 消息不保存，stream保存 "historical messages"
+
+因为我们环境使用redis 4.0，而且 pub sub 目前能满足需求，所以没有进一步研究stream, [可参考](https://www.alibabacloud.com/blog/redis-streams-redis-5-0s-newest-data-type_593816)
+
+
+
 连别的服务器
 
 ```shell
@@ -481,7 +489,11 @@ io.adapter(redisAdapter({ pubClient: pub, subClient: sub }));
 
 运行时候需改log级别， [debug 3就支持](https://github.com/visionmedia/debug#set-dynamically) 所以我们只要提供相应web api就可以在运行时候动态修改。唯一碰到一点小问题，就是 `debug.enable()`会把之前的ns都清空，而且只有 `debug.disable()` 才返回当前的ns
 
-还有不能用chalk，因为pm2的log文件里，chalk的颜色代码都变成 ANSI color codes
+还有不能用chalk，因为pm2的log文件里，chalk的颜色代码都变成 ANSI color codes.
+
+
+
+**补充**：pm2 自己也用了 chalk,  `ecosystem.config.js` 设置参数 `DEBUG_COLORS` 和 `args: ['--color']` 作用是一样，都是让chalk 显示颜色，这样pm2的log文件就含了ANSI color codes. 所以`production` 环境要关闭。
 
 
 
