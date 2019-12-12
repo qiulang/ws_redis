@@ -97,15 +97,32 @@ chat 例子一开始没跑起应该 socket.io client版本问题。另，开了�
 
 
 
-关于socket.io启动 http server 和 express的不同
+**关于socket.io启动 http server 和 express的不同**
 
 1. https://stackoverflow.com/questions/26921117/http-createserverapp-v-http-serverapp
 
 2. https://stackoverflow.com/questions/27492101/what-is-happening-when-requirehttp-server-is-evaluated-with-an-express-app
 
-关于关闭页面，断网 socket.io的处理
+**关于关闭页面，断网 socket.io的处理**
 
 1. https://stackoverflow.com/questions/16293520/how-to-detect-that-users-connection-is-lost-or-he-closed-the-browser-window-in
+
+**关于socket.io发的payload，前面那一串数字到底什么含义** 参见 [What do these numbers mean in socket.io payload?](https://stackoverflow.com/questions/24564877/what-do-these-numbers-mean-in-socket-io-payload) 这是socket.io实现细节，用来表示发送的消息是什么类型消息。[具体参见](https://github.com/socketio/engine.io-protocol#packet):
+
+An encoded packet can be UTF-8 string or binary data. The packet encoding format for a string is as follows
+
+```
+<packet type id>[<data>]
+//The packet type id is an integer
+0 open
+1 close
+2 ping
+3 pong
+4 message
+...
+```
+
+
 
 ### 目前socket.io 的设计
 
@@ -538,6 +555,8 @@ map $remote_addr $log_ip {
 }
 
 ```
+
+由于 容器的nginx 重定向到标准输出，所以看日志可以用 `docker logs -f <container id>`
 
 
 
