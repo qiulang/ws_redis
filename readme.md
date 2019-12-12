@@ -213,24 +213,16 @@ http 服务器和websocket 服务器监听不同端口的方法暂时没试出�
 
 
 1. 当两个SPA放在一起通过路径区分时，必须要在[vue.config.js 要配置 publicPath](https://cli.vuejs.org/zh/config/#publicpath) . 延伸阅读 https://stackoverflow.com/questions/2005079/absolute-vs-relative-urls , 但即使把index.html路劲手动修正确，SPA一样不显示。不值得研究了。
-
 2. [root 和 alias 区分很重要](https://stackoverflow.com/questions/10631933/nginx-static-file-serving-confusion-with-root-alias) 子路径用 alias不用root, 并针对 publicPath的值设置。, 但 "/" 如果用alias，路径结尾必须有 `/`
-
 3. [location 一些规则](https://www.digitalocean.com/community/tutorials/understanding-nginx-server-and-location-block-selection-algorithms)
-
 4. 可以单独对 socket.io 设置 location，这样就不需要 `@websocket ` 做 fallback。
-
 5. 如果单独对 socket.io 设置location， [SPA就可以用history mode](https://router.vuejs.org/guide/essentials/history-mode.html#example-server-configurations) 用 `index.html` 做 fallback. 
-
 6. [location 做 path match的时候， websocket连不上，暂时无解](https://stackoverflow.com/questions/58668373/socket-io-with-nginx-location-path-match-hit-the-error-during-websocket-handsha)
-
 7. [alias 含义容易忘](https://serverfault.com/questions/748634/how-to-alias-directories-in-nginx) 
-
 8. [如何确认nginx 在运行](https://stackoverflow.com/questions/35220654/how-to-verify-if-nginx-is-running-or-not) , mac 下最简单的方法 `brew services list` 
-  
 9. [扫描某个端口使用情况](https://askubuntu.com/questions/538208/how-to-check-opened-closed-ports-on-my-computer) 几条命令，容易忘。（1） `netstat -an | grep 3000` -a all -n number 有些版本有 -p看是哪个进程，但mac版本没有，所以mac我更倾向于用 (2) `lsof -i :3000` (3) nc做端口扫描,比如`nc -zv localhost 3000-3010` 扫描 3000到 3010
-
 10. lsof -i :3000 显示 [*:hbci 表示 "Home Banking Computer Interface"](https://unix.stackexchange.com/questions/346060/tcp-hbci-listen-what-does-hbci-mean?noredirect=1&lq=1) 可以改用`lsof -P -i :3000` 
+11. gzip 之前一直没开启，这是要开启，[参见](https://betterexplained.com/articles/how-to-optimize-your-site-with-gzip-compression/)。
 
 注： nginx 配置文件不含ssl 部分，这块原本 nginx配置一个难点，但因为我们在阿里云的ssl配置在统一在最外层的负载均衡器（slb），[slb转发到我们容器机器时候已经不加密的数据](https://help.aliyun.com/document_detail/89151.html?spm=a2c4g.11186623.6.750.55291f8bxeHlNG) 。
 
