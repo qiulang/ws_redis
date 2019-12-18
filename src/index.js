@@ -63,15 +63,17 @@ io.on('connection', async function(socket) {
     debug(`socket id ${socket.id} has disconnected with reason ${reason}`)
     //客户端断开，重连，比如重刷浏览器原因是 'transport close'
     //客户端调用 websocket.close 原因是  'client namespace disconnect'
-    let user_id = await redis.hget('websocket:socket_user', socket.id)
+    let get_del = await redis
+      .multi()
+      .hget('websocket:socket_user', socket.id)
+      .hdel('websocket:socket_user', socket.id)
+      .exec()
+    let user_id = get_del[0][1] //[err, result]
     if (!user_id) {
-      //我们通知客户端下线，客户端调用 socket.close() 原因就是
-      debug(
-        `No ${socket.id} related data, is it 'client namespace disconnect or 'transport close' ?`
-      )
+      warn(`No ${socket.id} related data when it disconnected, BUG!!!`)
       return
     }
-    info(`SUB unsubscribe ${user_id} first.`)
+    info(`SUB unsubscribe ${user_id} and del ${socket.id} record.`)
     sub.unsubscribe(user_id)
     //RTIME后查是不是用户主动下线， reason 'client namespace disconnect'
     setTimeout(
@@ -165,7 +167,8 @@ async function dupCheck(user_id, socket_id, fn) {
   //客户端收到后会close这个socket.io，所以我们还会再收到一条它的disconnect消息
   //加入重刷浏览器的延迟处理会走到这，但是因为旧的连接已经没了我想调用emit也没啥
   io.to(old_socket).emit('logoff', 'another login')
-  await redis.hdel('websocket:socket_user', old_socket)
+  //不能在这里直接删除'websocket:socket_user' 老的关联关系，因为之前可能是别的docker处理
+  //必须在disconect 里处理 redis.hdel 和 sub.unsubscribe
   info(`${user_id} exists with socket id ${old_socket}, tell it to logoff.`)
   return false //更新 socketid
 }

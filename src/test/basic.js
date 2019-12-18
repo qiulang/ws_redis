@@ -45,6 +45,17 @@ async function tranc() {
     log(`disappointed ${exist}`)
   }
 
+  await redis.set('atomic', 'get-delete')
+  let atomic = await redis
+    .multi()
+    .get('atomic')
+    .del('atomic')
+    .exec()
+  log(`${atomic[0][1]} : ${atomic[1][1]}`)
+  if (atomic[0][1] == 'get-delete' && atomic[1][1] == 1) {
+    log('atomic get-delete')
+  }
+
   exist = await redis.exists('websocket:debug')
 
   if (exist == 1) {

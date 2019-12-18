@@ -591,3 +591,37 @@ map $remote_addr $log_ip {
 9. - [ ] 处理`SIGTERM` 告知web服务器连接断开。
 
 10. 前端打包代码如何能使用运行时环境变量，[难点参见](https://medium.com/@oprearocks/environment-variables-in-webpack-builds-vs-node-js-apps-bc2b26261e66)， [可能方案参见](https://www.freecodecamp.org/news/how-to-implement-runtime-environment-variables-with-create-react-app-docker-and-nginx-7f9d42a91d70/) 这其实和我们ccfront做法一样。在index.html 引入script [会碰到错误参见](https://forum.vuejs.org/t/add-script-tag-to-index-html/51525)
+
+    
+
+### 12.18发现重复登录一个问题
+
+第一个容器发现同一个账号重复登录，提醒老的websocket下线，删掉老的关联记录。
+
+```javascript
+io.to(old_socket).emit('logoff', 'another login')
+await redis.hdel('websocket:socket_user', old_socket)
+```
+
+
+
+但是老的websocket是第二个容器处理的, 因为关联记录已经被删掉，就没法unsubscribe
+
+```javascript
+    let user_id = await redis.hget('websocket:socket_user', socket.id)
+    if (!user_id) {
+      //我们通知客户端下线，客户端调用 socket.close() 原因就是
+      debug(
+        `No ${socket.id} related data, is it 'client namespace disconnect or 'transport close' ?`
+      )
+      return
+    }
+    info(`SUB unsubscribe ${user_id} first.`)
+    sub.unsubscribe(user_id)
+```
+
+
+
+另 this 指针问题老是容易忘，[注意这点](https://stackoverflow.com/questions/3127429/how-does-the-this-keyword-work/17514482#17514482) object inside object
+
+vue的 [methods](https://vuejs.org/v2/api/index.html#methods) 和 [watch](https://vuejs.org/v2/api/index.html#watch) 都不要用 箭头函数
