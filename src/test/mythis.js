@@ -33,6 +33,7 @@ let handler = {
     console.log(this.name)
   },
   h2: {
+    // name: 'kkk',
     msg() {
       console.log(this.name)
     }
@@ -43,4 +44,5 @@ let handler = {
 
 handler.h2.msg()
 //https://stackoverflow.com/a/17514482/301513
-handler.h2.msg.bind(handler)()
+// handler.h2.msg.bind(handler)()
+handler.h2.msg()

@@ -624,4 +624,21 @@ await redis.hdel('websocket:socket_user', old_socket)
 
 另 this 指针问题老是容易忘，[注意这点](https://stackoverflow.com/questions/3127429/how-does-the-this-keyword-work/17514482#17514482) object inside object
 
-vue的 [methods](https://vuejs.org/v2/api/index.html#methods) 和 [watch](https://vuejs.org/v2/api/index.html#watch) 都不要用 箭头函数
+vue的 [methods](https://vuejs.org/v2/api/index.html#methods) 和 [watch](https://vuejs.org/v2/api/index.html#watch) 都不要用 箭头函数 , 参考这篇 [5 common problems with Vue.js](https://medium.com/@fadamakis/common-problems-with-vue-js-a5b6da6a1eba)
+
+[`this` undefined in filters](https://github.com/vuejs/vue/issues/5998) 和 [VueJS: why is “this” undefined?](https://stackoverflow.com/questions/43929650/vuejs-why-is-this-undefined)
+
+vuex 的例子， 如果不用箭头函数， this 指向 window
+
+vuex 如何访问 router ， [这里说用 payload](https://github.com/vuejs/vue-hackernews-2.0/issues/171) 但现在估计可以[直接访问](https://stackoverflow.com/questions/40736799/how-to-navigate-using-vue-router-from-vuex-actions) 
+
+
+
+计算属性作为函数名, 和定义属性一样加 []
+
+[ES2015之对象计算属性值](https://liunian.github.io/blog/es2015-computed-property-name/)
+
+[The names of functions in ES6](https://2ality.com/2015/09/function-names-es6.html)
+
+[vue中的使用介绍](https://vuex.vuejs.org/guide/mutations.html#using-constants-for-mutation-types)
+
