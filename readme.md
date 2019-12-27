@@ -622,17 +622,27 @@ await redis.hdel('websocket:socket_user', old_socket)
 
 
 
-另 this 指针问题老是容易忘，[注意这点](https://stackoverflow.com/questions/3127429/how-does-the-this-keyword-work/17514482#17514482) object inside object
+### 12.25 几个问题总结
+
+#### this 指针
+
+ this 指针问题老是搞混的地方，[注意这点](https://stackoverflow.com/questions/3127429/how-does-the-this-keyword-work/17514482#17514482) “object inside object”
 
 vue的 [methods](https://vuejs.org/v2/api/index.html#methods) 和 [watch](https://vuejs.org/v2/api/index.html#watch) 都不要用 箭头函数 , 参考这篇 [5 common problems with Vue.js](https://medium.com/@fadamakis/common-problems-with-vue-js-a5b6da6a1eba)
 
 [`this` undefined in filters](https://github.com/vuejs/vue/issues/5998) 和 [VueJS: why is “this” undefined?](https://stackoverflow.com/questions/43929650/vuejs-why-is-this-undefined)
 
-vuex 的例子， 如果不用箭头函数， this 指向 window
+
+
+#### vuex 几个问题
 
 vuex 如何访问 router ， [这里说用 payload](https://github.com/vuejs/vue-hackernews-2.0/issues/171) 但现在估计可以[直接访问](https://stackoverflow.com/questions/40736799/how-to-navigate-using-vue-router-from-vuex-actions) 
 
+vuex 的todo例子， 如果不用箭头函数， this 指向 window； “Arrow functions cannot be used to write object methods” ；但在更复杂日志 this 指向Store，[参见](https://forum.vuejs.org/t/when-will-this-is-set-to-store-object-in-getter-mutations-action-method/82811) 
 
+
+
+#### 计算属性作为函数名
 
 计算属性作为函数名, 和定义属性一样加 []
 
@@ -641,4 +651,13 @@ vuex 如何访问 router ， [这里说用 payload](https://github.com/vuejs/vue
 [The names of functions in ES6](https://2ality.com/2015/09/function-names-es6.html)
 
 [vue中的使用介绍](https://vuex.vuejs.org/guide/mutations.html#using-constants-for-mutation-types)
+
+
+
+#### forEach的问题
+
+es5 的 `forEach` 主要有两个问题，所以es6才引入 `for in` 和 `for of` 和 this，也是老忘了
+
+1. [没法break](https://hacks.mozilla.org/2015/04/es6-in-depth-iterators-and-the-for-of-loop/)
+2. [没法await](https://stackoverflow.com/questions/37576685/using-async-await-with-a-foreach-loop)
 

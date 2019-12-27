@@ -37,12 +37,44 @@ let handler = {
     msg() {
       console.log(this.name)
     }
+  },
+  h3: () => {
+    let name = 'hi'
+    console.log(this.name)
   }
 }
 
 // handler.messageHandler('call_in', 2)
 
-handler.h2.msg()
-//https://stackoverflow.com/a/17514482/301513
-// handler.h2.msg.bind(handler)()
-handler.h2.msg()
+// handler.h2.msg()
+// //https://stackoverflow.com/a/17514482/301513
+// // handler.h2.msg.bind(handler)()
+// handler.h2.msg()
+// handler.h3()
+
+var obj = {
+  // does not create a new scope
+  i: 10,
+  b: () => console.log(this.i, this),
+  c: function() {
+    console.log(this.i, this)
+  }
+}
+
+// obj.b() // prints undefined, Window {...} (or the global object)
+// obj.c() // prints 10, Object {...}
+
+let person = {
+  name: 'Jim',
+  test: console.log(this.name), // true
+  // test() {
+  //   console.log(this.name)
+  // },
+  // test: () => console.log(this.name),
+  sayName: () => {
+    console.log(this) // true
+  }
+}
+
+//person.sayName()
+person.test
