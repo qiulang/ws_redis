@@ -661,3 +661,75 @@ es5 的 `forEach` 主要有两个问题，所以es6才引入 `for in` 和 `for o
 1. [没法break](https://hacks.mozilla.org/2015/04/es6-in-depth-iterators-and-the-for-of-loop/)
 2. [没法await](https://stackoverflow.com/questions/37576685/using-async-await-with-a-foreach-loop)
 
+
+
+#### 字符串转数字方法
+
+[How to convert a string to a number in JavaScript](https://flaviocopes.com/how-to-convert-string-to-number-javascript/) 
+
+**非常规的**   
+
+> use the unary operator `+` before the string
+>
+> Use `* 1`
+
+
+
+### 1.7 问题总结（续）
+
+
+
+#### fetch vs Axios
+
+参见这两篇：
+
+1.  [How to make HTTP requests like a pro with Axios](https://blog.logrocket.com/how-to-make-http-requests-like-a-pro-with-axios/)
+2. [Axios or fetch(): Which should you use?](https://blog.logrocket.com/axios-or-fetch-api/)
+
+比如 axios 会自动对参数做JSON转化， 返回结果 response.data就是转化的json数据 (可参见我们webrtc工具条)
+
+```javascript
+// axios
+axios.get('https://api.github.com/orgs/axios')
+  .then(response => {
+    console.log(response.data);
+  }, error => {
+    console.log(error);
+  });
+
+// fetch()
+fetch('https://api.github.com/orgs/axios')
+  .then(response => response.json())    // one extra step
+  .then(data => {
+    console.log(data) 
+  })
+  .catch(error => console.error(error));
+```
+
+
+
+#### 同一账号重复登录问题
+
+还是看到日志有 ，但仔细查日子好像都是断开websocket消息，没有对应login消息
+
+```
+`No ${socket.id} related data when it disconnected, BUG!!!`
+造成没 sub.unsubscribe
+```
+
+
+
+### 1.15  问题
+
+登录跳板机碰到错误 `warning: setlocale: LC_CTYPE: cannot change locale (UTF-8): No such file or directory` 
+
+[OS X Terminal: -bash: warning: setlocale: LC_CTYPE: cannot change locale (UTF-8): No such file or directory Fix](https://www.cyberciti.biz/faq/os-x-terminal-bash-warning-setlocale-lc_ctype-cannot-change-locale/)
+
+>  SSH will try to set every LC_* variable you have set on your local OSX system on the remove server too.
+>
+>  ...
+>
+> Edit /etc/ssh/ssh_config   #SendEnv LANG LC_* 
+
+我的机器 echo "$LC_CTYPE"  LC_CTYPE=UTF-8  但是服务器 zh_CN.utf8
+

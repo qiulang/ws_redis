@@ -1,4 +1,6 @@
 'use strict'
+let _ = require('lodash')
+
 function messageHandler(op_code, msg) {
   let name = 'qiu'
   const handle = {
@@ -78,3 +80,14 @@ let person = {
 
 //person.sayName()
 person.test
+
+let t1 = _.map(''.split(','), d => +d)
+let t2 = _.map('', d => +d)
+console.log(t1, t2)
+
+let a = { you: 'qiu', he: 'tong' }
+let b = { you: 'tong', she: 'wei' }
+let c = { ...a, ...b }
+console.log(c)
+c = { ...b, ...a }
+console.log(c)
