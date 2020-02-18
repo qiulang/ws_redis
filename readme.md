@@ -122,6 +122,8 @@ An encoded packet can be UTF-8 string or binary data. The packet encoding format
 ...
 ```
 
+在docker容器使用 socket.io一定要用  socket.io-redis 包：因为有多个docker，同一个浏览器发来的websocket消息可能被分发到不同的docker容器处理。
+
 
 
 ### 目前socket.io 的设计
@@ -230,8 +232,6 @@ http 服务器和websocket 服务器监听不同端口的方法暂时没试出�
 
 ### dockerfile 难点
 
-
-
 我们需要在一个容器里部署 websocket 服务器，两个 SPA 应用， dockerfile如何生成？ 
 
 网上查不到有用资料，[最近接就是一个nodejs服务器+一个SPA](https://stackoverflow.com/questions/54996835/docker-design-for-multiple-apps)。 先从两个SPA做起或者是一个SPA和一个nodejs做起。
@@ -248,7 +248,7 @@ http 服务器和websocket 服务器监听不同端口的方法暂时没试出�
 
 k8s 是不是也能这样，我现在不清楚。但总之 nginx和websocket 服务器如果分属两个容器，如何访问终究是个问题。
 
-**决定把把 nginx 和 nodejs编在一个容器里**
+**决定把把 nginx 和 nodejs编在一个容器里**，用pm2来管理nodejs进程（详见下面pm2章节）
 
 但是要把 nginx 和 nodejs编在一个容器里，网上没看到资料。就直接在nginx容器里安装nodejs吧，注意 alpine的安装方法：
 
@@ -717,19 +717,4 @@ fetch('https://api.github.com/orgs/axios')
 造成没 sub.unsubscribe
 ```
 
-
-
-### 1.15  问题
-
-登录跳板机碰到错误 `warning: setlocale: LC_CTYPE: cannot change locale (UTF-8): No such file or directory` 
-
-[OS X Terminal: -bash: warning: setlocale: LC_CTYPE: cannot change locale (UTF-8): No such file or directory Fix](https://www.cyberciti.biz/faq/os-x-terminal-bash-warning-setlocale-lc_ctype-cannot-change-locale/)
-
->  SSH will try to set every LC_* variable you have set on your local OSX system on the remove server too.
->
->  ...
->
-> Edit /etc/ssh/ssh_config   #SendEnv LANG LC_* 
-
-我的机器 echo "$LC_CTYPE"  LC_CTYPE=UTF-8  但是服务器 zh_CN.utf8
 
