@@ -201,6 +201,7 @@ async function startServer() {
   } else {
     debug('use express to provide static file, e.g. index.html')
     app.use(express.static('public'))
+    //nginx规则是location / 用express作为fallback，所以这个路由设置应该没效果了
     app.use('/rep', indexRouter) //本地 nginx 测试，实际部署不需要
     portfinder.basePort = port
     port = await portfinder.getPortPromise()

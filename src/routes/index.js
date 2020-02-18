@@ -7,6 +7,8 @@ var router = express.Router()
 var { redis, pub } = require('../database/redis')
 
 /* 测试 publish 有没有问题. */
+
+/* 两级路由就取不到body内容，没有深入研究为什么*/
 router.post('/dpub', async function(req, res) {
   //for debug only
   let uid = req.body.uid

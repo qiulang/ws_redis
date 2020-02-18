@@ -214,7 +214,7 @@ http 服务器和websocket 服务器监听不同端口的方法暂时没试出�
 
 
 
-1. 当两个SPA放在一起通过路径区分时，必须要在[vue.config.js 要配置 publicPath](https://cli.vuejs.org/zh/config/#publicpath) . 延伸阅读 https://stackoverflow.com/questions/2005079/absolute-vs-relative-urls , 但即使把index.html路劲手动修正确，SPA一样不显示。不值得研究了。
+1. 当两个SPA放在一起通过路径区分时，必须要在[vue.config.js 要配置 publicPath](https://cli.vuejs.org/zh/config/#publicpath) . 延伸阅读 https://stackoverflow.com/questions/2005079/absolute-vs-relative-urls , 但即使把index.html路劲手动修正确，SPA一样不显示，不值得研究了。设置publicPath的另一个"问题"是 express无法处理打包的文件，即便设置`app.use(express.static('public'))` 到BS打包目录，浏览器会到rep这一级查找文件报错。没有再深入研究。
 2. [root 和 alias 区分很重要](https://stackoverflow.com/questions/10631933/nginx-static-file-serving-confusion-with-root-alias) 子路径用 alias不用root, 并针对 publicPath的值设置。, 但 "/" 如果用alias，路径结尾必须有 `/`
 3. [location 一些规则](https://www.digitalocean.com/community/tutorials/understanding-nginx-server-and-location-block-selection-algorithms)
 4. 可以单独对 socket.io 设置 location，这样就不需要 `@websocket ` 做 fallback。
