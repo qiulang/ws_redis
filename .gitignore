@@ -5,3 +5,4 @@ dump.rdb
 # local .env* files
 .env.local
 .env.*.local
+*.pyc
