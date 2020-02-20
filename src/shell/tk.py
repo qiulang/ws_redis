@@ -6,6 +6,7 @@ from datetime import datetime
 # from timeit import timeit
 import math
 from time import time
+from multiprocessing import Process
 
 import requests
 import argparse
@@ -27,46 +28,72 @@ url = "https://emicall-cmb.emicloud.com/user/token"
 # https://stackoverflow.com/questions/2257441/random-string-generation-with-upper-case-letters-and-digits
 
 
-def get_token(repeat):
+def get_token(i):
+    nonce = ''.join(random.choices(
+        string.ascii_uppercase + string.digits, k=32))
+    now = datetime.now()
+    timestamp = datetime.timestamp(now)
+    ts = str(math.ceil(timestamp))
+    sig = (f"auth-type={auth_type}&login_type={login_type}"
+           f"&nonce={nonce}&seat={seat}&source={source}&"
+           f"timestamp={ts}&signatureKey={password}")
+    # print(f"signature before sha256:{sig}")
+    signature = sha256(sig.encode()).hexdigest().upper()
+    headers = {
+        'auth-type': 'signature',
+        "signature": signature,
+        "seat": seat,
+        "nonce": nonce,
+        "source": source,
+        "timestamp": ts
+    }
+    cprint(f"round #{i}: nonce:{nonce}", 'green')
+    start = time()
+    response = requests.post(
+        url, json={"login_type": 1}, headers=headers, verify=False)
+    end = time()
+    cprint(f"round #{i}, takes {end-start:.3f} seconds", 'green')
+    result = response.json()
+    if (result['code'] == 200):
+        token = result['data']['token']
+        expire = result['data']['token_expired_at']
+        date = datetime.fromtimestamp(expire)
+        cprint(
+            f"round #{i} result: token:{token}, expire@{date:%Y-%m-%d %H:%M:%S} ", 'yellow')
+    else:
+        cprint(result['info'], 'red')
+
+
+def serial_run(repeat):
+    start = time()
     for i in range(repeat):
-        nonce = ''.join(random.choices(
-            string.ascii_uppercase + string.digits, k=32))
-        now = datetime.now()
-        timestamp = datetime.timestamp(now)
-        ts = str(math.ceil(timestamp))
-        sig = (f"auth-type={auth_type}&login_type={login_type}"
-               f"&nonce={nonce}&seat={seat}&source={source}&"
-               f"timestamp={ts}&signatureKey={password}")
-        # print(f"signature before sha256:{sig}")
-        signature = sha256(sig.encode()).hexdigest().upper()
-        headers = {
-            'auth-type': 'signature',
-            "signature": signature,
-            "seat": seat,
-            "nonce": nonce,
-            "source": source,
-            "timestamp": ts
-        }
-        cprint(f"round #{i}: nonce:{nonce}", 'green')
-        start = time()
-        response = requests.post(
-            url, json={"login_type": 1}, headers=headers, verify=False)
-        end = time()
-        cprint(f"round #{i}, takes {end-start:.3f} seconds", 'green')
-        result = response.json()
-        if (result['code'] == 200):
-            token = result['data']['token']
-            expire = result['data']['token_expired_at']
-            date = datetime.fromtimestamp(expire)
-            cprint(
-                f"round #{i} result: token:{token}, expire@{date:%Y-%m-%d %H:%M:%S} ", 'yellow')
-        else:
-            cprint(result['info'], 'red')
+        get_token(i)
+    end = time()
+    cprint(f'Done {end-start:.3f} seconds', "cyan")
+
+
+def paraellel_run(repeat):
+    start = time()
+    proc = []
+    for i in range(repeat):
+        p = Process(target=get_token, args=(i,))
+        p.start()
+        proc.append(p)
+    for p in proc:
+        p.join()
+    end = time()
+    cprint(f'Done {end-start:.3f} seconds', "cyan")
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-r", help="repeat times", type=int)
+    parser.add_argument(
+        "-m", "--mode", help="run the test serially or paraellel")
     args = parser.parse_args()
     repeat = args.r if args.r else 1
-    get_token(repeat)
+    mode = args.mode if args.mode else 's'
+    if (mode == "s"):
+        serial_run(repeat)
+    else:
+        paraellel_run(repeat)
