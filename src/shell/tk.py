@@ -1,4 +1,5 @@
 #! /usr/bin/env python3
+# encoding=utf-8
 import random
 import string
 from hashlib import sha256
@@ -7,9 +8,9 @@ from datetime import datetime
 import math
 from time import time
 from multiprocessing import Process
+import argparse
 
 import requests
-import argparse
 import urllib3
 from termcolor import cprint
 
@@ -91,6 +92,7 @@ if __name__ == '__main__':
     parser.add_argument(
         "-m", "--mode", help="run the test serially or paraellel")
     args = parser.parse_args()
+    # 我的机器300次并发,程序就出错了，200次可以
     repeat = args.r if args.r else 1
     mode = args.mode if args.mode else 's'
     if (mode == "s"):
