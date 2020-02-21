@@ -6,7 +6,7 @@ from hashlib import sha256
 from datetime import datetime
 # from timeit import timeit
 import math
-from time import time
+from time import time, sleep
 from multiprocessing import Process
 import argparse
 import urllib3
@@ -39,10 +39,25 @@ def get_nouce(length=32):
     return ''.join(random.choices(
         string.ascii_uppercase + string.digits, k=length))
 
+
+def del_token(token, source):
+    headers = {
+        'auth-type': 'token',
+        "source": source,
+        "token": token,
+        "nonce": get_nouce()
+    }
+    response = requests.delete(token_url, headers=headers, verify=False)
+    result = response.json()
+    if (result['code'] != 200):
+        cprint(f"delete token failed:{result['code']}:{result['info']}", 'red')
+    else:
+        cprint(f"delete token succeeded")
+
 # 为了能在parallel_run统一调用，图省事，get_ent 和 get_token接收一样的参数
 
 
-def get_token(i=0, client="p", token=""):  # 或者 **kwargs
+def get_token(i=0, client="p", **kwargs):
     nonce = get_nouce()
     now = datetime.now()
     timestamp = datetime.timestamp(now)
@@ -87,7 +102,11 @@ def get_token(i=0, client="p", token=""):  # 或者 **kwargs
     date = datetime.fromtimestamp(expire)
     cprint(
         f"round #{i}: token:{token}, expire@{date:%Y-%m-%d %H:%M:%S} ", 'green')
-    return token
+    if ("token" in kwargs):
+        return token
+    cprint(f"let us delete the token:{token} after 1 second", "green")
+    # sleep(1.0)
+    del_token(token, source)
 
 
 def get_ent(token, i=0, client="w"):
@@ -165,7 +184,7 @@ if __name__ == '__main__':
         else:
             parallel_run(repeat, client)
     else:
-        # web 接口不要再测试并发token了，因为PC已经测试过
+        # web接口不要再测试并发token了，因为PC已经测试过
         if (mode == "s"):
             cprint("图省事没有开发web接口的串行测试方法，就用1轮并行测试来替代吧", "yellow")
         else:
