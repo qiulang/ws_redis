@@ -25,15 +25,20 @@ switch_number = '02566687671'
 seat = f"{number}@{switch_number}"
 username = "qiulang@cc.emicloud.com"
 login_type = 1
-url = "https://emicall-cmb.emicloud.com/user/token"
+token_url = "https://emicall-cmb.emicloud.com/user/token"
+ent_url = "https://emicall-cmb.emicloud.com/enterprise/super"
 
 # need pyhton 3.6
 # https://stackoverflow.com/questions/2257441/random-string-generation-with-upper-case-letters-and-digits
 
 
+def get_nouce(length=32):
+    return ''.join(random.choices(
+        string.ascii_uppercase + string.digits, k=length))
+
+
 def get_token(i, client="p"):
-    nonce = ''.join(random.choices(
-        string.ascii_uppercase + string.digits, k=32))
+    nonce = get_nouce()
     now = datetime.now()
     timestamp = datetime.timestamp(now)
     ts = str(math.ceil(timestamp))
@@ -58,21 +63,47 @@ def get_token(i, client="p"):
         "source": source,
         "timestamp": ts
     })
-    cprint(f"round #{i}: nonce:{nonce}", 'green')
+    cprint(f"round #{i}: Call /user/token ", 'green')
     start = time()
     response = requests.post(
-        url, json={"login_type": 1}, headers=headers, verify=False)
+        token_url, json={"login_type": 1}, headers=headers, verify=False)
     end = time()
     cprint(f"round #{i}, takes {end-start:.3f} seconds", 'green')
     result = response.json()
+    if (result['code'] != 200):
+        cprint(f"round #{i} /user/token failed {result['info']}", 'red')
+        return
+    token = result['data']['token']
+    expire = result['data']['token_expired_at']
+    date = datetime.fromtimestamp(expire)
+    cprint(
+        f"round #{i}: token:{token}, expire@{date:%Y-%m-%d %H:%M:%S} ", 'green')
+    if (client == "p"):
+        return
+    get_ent(i, token)
+
+
+def get_ent(i, token):
+    cprint(f"round #{i} Call /enterprise/super {token}", "yellow")
+    headers = {
+        "source": 'client.web',
+        "token": token,
+        "nonce": get_nouce()
+    }
+    start = time()
+    response = requests.get(
+        ent_url, headers=headers,
+        params={"per_page": 50},
+        verify=False)
+    end = time()
+    result = response.json()
     if (result['code'] == 200):
-        token = result['data']['token']
-        expire = result['data']['token_expired_at']
-        date = datetime.fromtimestamp(expire)
+        ent = result['data']['data']
         cprint(
-            f"round #{i} result: token:{token}, expire@{date:%Y-%m-%d %H:%M:%S} ", 'yellow')
+            f"round #{i} get {len(ent)} enterprises data,takes {end-start:.3f} seconds", 'yellow')
     else:
-        cprint(result['info'], 'red')
+        cprint(
+            f"round #{i} /enterprise/super failed token:{token}, {result['info']}", 'red')
 
 
 def serial_run(repeat, client="p"):
