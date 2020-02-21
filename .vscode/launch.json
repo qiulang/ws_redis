@@ -10,7 +10,7 @@
       "request": "launch",
       "program": "${file}",
       "console": "integratedTerminal",
-      "args": ["-cp"]
+      "args": ["-mp"]
     },
     {
       "type": "node",

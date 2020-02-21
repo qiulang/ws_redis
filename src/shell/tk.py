@@ -39,8 +39,10 @@ def get_nouce(length=32):
     return ''.join(random.choices(
         string.ascii_uppercase + string.digits, k=length))
 
+# 为了能在parallel_run统一调用，图省事，get_ent 和 get_token接收一样的参数
 
-def get_token(i, client="p", token=""):
+
+def get_token(i=0, client="p", token=""):  # 或者 **kwargs
     nonce = get_nouce()
     now = datetime.now()
     timestamp = datetime.timestamp(now)
@@ -87,10 +89,8 @@ def get_token(i, client="p", token=""):
         f"round #{i}: token:{token}, expire@{date:%Y-%m-%d %H:%M:%S} ", 'green')
     return token
 
-# 为了能在parallel_run统一调用，图省事，get_ent 和 get_token接收一样的参数
 
-
-def get_ent(i, client="w", token=""):
+def get_ent(token, i=0, client="w"):
     cprint(f"round #{i} Call /enterprise/super using {token}", "yellow")
     headers = {
         "source": 'client.web',
@@ -116,7 +116,7 @@ def get_ent(i, client="w", token=""):
 dispatch = {"p": get_token, "w": get_ent, "b": get_token}
 
 
-def serial_run(repeat, client):
+def serial_run(repeat, client="p"):
     cprint(f"Start {sources[client]} test serially:", "cyan")
     start = time()
     for i in range(repeat):
@@ -135,7 +135,9 @@ def parallel_run(repeat, client="p", **kwargs):
     start = time()
     proc = []
     for i in range(repeat):
-        p = Process(target=dispatch[client], args=(i, client, token))
+        # p = Process(target=dispatch[client], args=(i, client, token))
+        p = Process(target=dispatch[client], kwargs={
+                    "i": i, "client": client, "token": token})
         p.start()
         proc.append(p)
     for p in proc:
@@ -148,8 +150,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-r", help="repeat times", type=int)
     parser.add_argument(
-        "-m", "--mode", help="run the test serially or paraellel")
-    parser.add_argument("-c", help="pc client or web client")
+        "-m", "--mode", help="run the test serially or parallel")
+    parser.add_argument("-c", help="pc client, web client or BS client")
     args = parser.parse_args()
     # 我的机器300次并发,程序就出错了，200次可以
     repeat = args.r if args.r else 1
