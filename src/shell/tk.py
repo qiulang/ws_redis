@@ -50,9 +50,10 @@ def del_token(token, source):
     response = requests.delete(token_url, headers=headers, verify=False)
     result = response.json()
     if (result['code'] != 200):
-        cprint(f"delete token failed:{result['code']}:{result['info']}", 'red')
+        cprint(
+            f"delete {token} failed:{result['code']}:{result['info']}", 'red')
     else:
-        cprint(f"delete token succeeded")
+        cprint(f"delete {token} succeeded")
 
 # 为了能在parallel_run统一调用，图省事，get_ent 和 get_token接收一样的参数
 
@@ -102,10 +103,12 @@ def get_token(i=0, client="p", **kwargs):
     date = datetime.fromtimestamp(expire)
     cprint(
         f"round #{i}: token:{token}, expire@{date:%Y-%m-%d %H:%M:%S} ", 'green')
-    if ("token" in kwargs):
+    # if ("token" in kwargs):
+    #     return token
+    if (client == "w"):  # client.web 需要token做其他并发测试
         return token
-    cprint(f"let us delete the token:{token} after 1 second", "green")
-    # sleep(1.0)
+    cprint(f"let us delete the token:{token} after 0.5 second", "green")
+    sleep(0.5)
     del_token(token, source)
 
 
@@ -147,6 +150,7 @@ def serial_run(repeat, client="p"):
 def parallel_run(repeat, client="p", **kwargs):
     cprint(f"Start {sources[client]} test in parallel:", "cyan")
     if (client == "w"):
+        # using the token to other test in parallel
         token = kwargs['token']
     else:
         token = ""
