@@ -40,7 +40,7 @@ def get_nouce(length=32):
         string.ascii_uppercase + string.digits, k=length))
 
 
-def get_token(i, client="p"):
+def get_token(i, client="p", token=""):
     nonce = get_nouce()
     now = datetime.now()
     timestamp = datetime.timestamp(now)
@@ -85,13 +85,13 @@ def get_token(i, client="p"):
     date = datetime.fromtimestamp(expire)
     cprint(
         f"round #{i}: token:{token}, expire@{date:%Y-%m-%d %H:%M:%S} ", 'green')
-    # if (client == "p"):
-    #     return
-    # get_ent(i, token)
+    return token
+
+# 为了能在parallel_run统一调用，图省事，get_ent 和 get_token接收一样的参数
 
 
-def get_ent(i, token):
-    cprint(f"round #{i} Call /enterprise/super {token}", "yellow")
+def get_ent(i, client="w", token=""):
+    cprint(f"round #{i} Call /enterprise/super using {token}", "yellow")
     headers = {
         "source": 'client.web',
         "token": token,
@@ -113,21 +113,29 @@ def get_ent(i, token):
             f"round #{i} /enterprise/super failed token:{token}, {result['info']}", 'red')
 
 
-def serial_run(repeat, client="p"):
+dispatch = {"p": get_token, "w": get_ent, "b": get_token}
+
+
+def serial_run(repeat, client):
     cprint(f"Start {sources[client]} test serially:", "cyan")
     start = time()
     for i in range(repeat):
-        get_token(i, client)
+        dispatch[client](i, client)
     end = time()
     cprint(f'Done {end-start:.3f} seconds', "cyan")
 
 
-def parallel_run(repeat, client="p"):
+def parallel_run(repeat, client="p", **kwargs):
     cprint(f"Start {sources[client]} test in parallel:", "cyan")
+    if (client == "w"):
+        token = kwargs['token']
+    else:
+        token = ""
+    cprint(f"Using token:{token}", "cyan")
     start = time()
     proc = []
     for i in range(repeat):
-        p = Process(target=get_token, args=(i, client))
+        p = Process(target=dispatch[client], args=(i, client, token))
         p.start()
         proc.append(p)
     for p in proc:
@@ -151,9 +159,13 @@ if __name__ == '__main__':
     # 所以web接口的并发代码要复杂些，要取到一次token后再并发接口请求
     if (client != 'w'):
         if (mode == "s"):
-            serial_run(repeat, client)
+            serial_run(repeat=repeat, client=client)
         else:
             parallel_run(repeat, client)
     else:
         # web 接口不要再测试并发token了，因为PC已经测试过
-        pass
+        if (mode == "s"):
+            cprint("图省事没有开发web接口的串行测试方法，就用1轮并行测试来替代吧", "yellow")
+        else:
+            token = get_token(0, client="w")
+            parallel_run(repeat, client="w", token=token)
