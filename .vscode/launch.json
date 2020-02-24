@@ -10,7 +10,7 @@
       "request": "launch",
       "program": "${file}",
       "console": "integratedTerminal",
-      "args": ["-ms"]
+      "args": ["-r", "1", "-c", "p"]
     },
     {
       "type": "node",

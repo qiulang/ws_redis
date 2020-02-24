@@ -4,7 +4,7 @@ import random
 import string
 from hashlib import sha256
 from datetime import datetime
-# from timeit import timeit
+from timeit import timeit
 import math
 from time import time, sleep
 from multiprocessing import Process
@@ -87,12 +87,16 @@ def get_token(i=0, client="p", **kwargs):
         "source": source,
         "timestamp": ts
     })
-    cprint(f"round #{i}: Call {url} ", 'green')
-    start = time()
-    response = requests.post(
-        url, json={"login_type": 1}, headers=headers, verify=False)
-    end = time()
-    cprint(f"round #{i}, takes {end-start:.3f} seconds", 'green')
+    if 'benchmark' in kwargs:  # 就不打印每次调用时间
+        response = requests.post(
+            url, json={"login_type": 1}, headers=headers, verify=False)
+    else:
+        cprint(f"round #{i}: Call {url} ", 'green')
+        start = time()
+        response = requests.post(
+            url, json={"login_type": 1}, headers=headers, verify=False)
+        end = time()
+        cprint(f"round #{i}, takes {end-start:.3f} seconds", 'green')
     result = response.json()
     if (result['code'] != 200):
         cprint(
@@ -103,6 +107,7 @@ def get_token(i=0, client="p", **kwargs):
     date = datetime.fromtimestamp(expire)
     cprint(
         f"round #{i}: token:{token}, expire@{date:%Y-%m-%d %H:%M:%S} ", 'green')
+    # 目前只有pc 客户端串行测试才会再测试删除
     if 'del_token' in kwargs:
         cprint(f"let us delete the token:{token} after 0.5 second", "green")
         sleep(0.5)
@@ -155,37 +160,61 @@ def serial_run(repeat, client="p"):
 
 def parallel_run(repeat, client="p", **kwargs):
     cprint(f"Start {sources[client]} test in parallel:", "cyan")
-    if (client == "w"):
+    if ("token" in kwargs):
         # using the token to other test in parallel
         token = kwargs['token']
     else:
         token = ""
     cprint(f"Using token:{token}", "cyan")
+    args = {"client": client, "token": token}
+    if ("benchmark" in kwargs):
+        args.update({"benchmark": True})
     start = time()
     proc = []
     for i in range(repeat):
         # p = Process(target=dispatch[client], args=(i, client, token))
-        p = Process(target=dispatch[client], kwargs={
-                    "i": i, "client": client, "token": token})
+        args.update({"i": i})
+        p = Process(target=dispatch[client], kwargs=args)
         p.start()
         proc.append(p)
     for p in proc:
         p.join()
     end = time()
-    cprint(f'Done {end-start:.3f} seconds', "cyan")
+    cprint(f'Done {end-start:.3f} seconds', "magenta")
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("-r", help="repeat times", type=int)
-    parser.add_argument(
-        "-m", "--mode", help="run the test serially or parallel")
-    parser.add_argument("-c", help="pc client, web client or BS client")
-    args = parser.parse_args()
     # 我的机器300次并发,程序就出错了，200次可以
-    repeat = args.r if args.r else 1
-    mode = args.mode if args.mode else 's'
-    client = args.c if args.c else 'p'
+    parser.add_argument("-r", help="repeat times", type=int, default=1)
+    parser.add_argument(
+        "-m", help="run the test serially or parallel", default="s")
+    parser.add_argument(
+        "-c", help="pc client, web client or BS client", default="p")
+    parser.add_argument(
+        "-b", help="performance benchmark, i.e. run test n times", type=int)
+    args = parser.parse_args()
+    repeat = args.r
+    mode = args.m
+    client = args.c
+
+    if args.b:
+        # using timeit to test token
+        if (mode == "p"):
+            TEST_CODE = ''' 
+parallel_run(repeat,client,benchmark=True)'''  # otherwise IndentationError: unexpected indent
+            time = timeit(stmt=TEST_CODE,
+                          number=args.b,
+                          globals=globals())
+        else:
+            time = timeit(stmt=get_token,
+                          number=args.b,
+                          globals=globals())
+        cprint(
+            f"Run test {args.b} times, take:{time} totally,"
+            f"average:{time/args.b:.3f}", "magenta")
+        exit(0)
+
     # PC接口只测试token，web接口测试两个接口。
     # 所以web接口的并发代码要复杂些，要取到一次token后再并发接口请求
     if (client != 'w'):
