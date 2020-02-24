@@ -103,13 +103,15 @@ def get_token(i=0, client="p", **kwargs):
     date = datetime.fromtimestamp(expire)
     cprint(
         f"round #{i}: token:{token}, expire@{date:%Y-%m-%d %H:%M:%S} ", 'green')
-    # if ("token" in kwargs):
-    #     return token
-    if (client == "w"):  # client.web 需要token做其他并发测试
+    if 'del_token' in kwargs:
+        cprint(f"let us delete the token:{token} after 0.5 second", "green")
+        sleep(0.5)
+        start = time()
+        del_token(token, source)
+        end = time()
+        cprint(f"Takes {end-start:.3f} seconds", 'green')
+    else:
         return token
-    cprint(f"let us delete the token:{token} after 0.5 second", "green")
-    sleep(0.5)
-    del_token(token, source)
 
 
 def get_ent(token, i=0, client="w"):
@@ -142,7 +144,11 @@ def serial_run(repeat, client="p"):
     cprint(f"Start {sources[client]} test serially:", "cyan")
     start = time()
     for i in range(repeat):
-        dispatch[client](i, client)
+        # 如果是 pc client就再测试删除，如果是 bs client就返回token
+        if client == "p":
+            dispatch[client](i, client, del_token=1)
+        else:
+            dispatch[client](i, client)
     end = time()
     cprint(f'Done {end-start:.3f} seconds', "cyan")
 
