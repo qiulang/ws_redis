@@ -91,3 +91,18 @@ let c = { ...a, ...b }
 console.log(c)
 c = { ...b, ...a }
 console.log(c)
+
+const LOGIN_ACCOUNT_TYPE = {
+  workNumber: {
+    label: '工号',
+    key: 1
+  },
+  number: {
+    label: '分机号',
+    key: 0
+  }
+}
+
+console.log('Try lodash map')
+let accounts = _.map(LOGIN_ACCOUNT_TYPE)
+console.log(JSON.stringify(accounts))
