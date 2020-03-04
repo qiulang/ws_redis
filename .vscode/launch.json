@@ -24,7 +24,7 @@
       "type": "node",
       "request": "launch",
       "name": "Launch test script",
-      "program": "${workspaceFolder}/src/test/js/mythis.js"
+      "program": "${workspaceFolder}/src/test/js/load.js"
     },
     {
       "type": "node",

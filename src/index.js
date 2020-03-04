@@ -55,7 +55,7 @@ io.on('connection', async function(socket) {
   //https://socket.io/docs/emit-cheatsheet/
   socket.on('user-reconnect', async function(reason, fn) {
     debug(`Client emit a reconnect event with reason:${reason}, ${socket.id}`)
-    fn(`${socket.id}`)
+    if (fn && typeof value === 'function') fn(`${socket.id}`)
   })
 
   //用户关闭页面，断网都会触发disconnect消息

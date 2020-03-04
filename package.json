@@ -8,9 +8,9 @@
   },
   "main": "index.js",
   "scripts": {
-    "pub": "DEBUG=app:* node src/test/pubsub.js",
-    "pubsub": "DEBUG=app:* node --nolazy --inspect-brk=9229 src/test/pubsub.js",
-    "basic": "DEBUG=app:* node src/test/json_test.js",
+    "pub": "DEBUG=app:* node src/test/js/pubsub.js",
+    "pubsub": "DEBUG=app:* node --nolazy --inspect-brk=9229 src/test/js/pubsub.js",
+    "basic": "DEBUG=app:* node src/test/js/json_test.js",
     "prestart": "src/shell/redis_check.sh",
     "start": "DEBUG=app:* nodemon --ignore 'src/test/js/*.js' src/index.js",
     "debug": "DEBUG=app:* node --nolazy --inspect-brk=9229 src/index.js",
