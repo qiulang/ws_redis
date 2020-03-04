@@ -719,3 +719,7 @@ fetch('https://api.github.com/orgs/axios')
 ```
 
 
+
+### 3.3 性能测试
+
+开始性能测试 使用 https://testable.io/ 需要写nodejs脚本，并复习testable的文档
