@@ -17,12 +17,14 @@ function progress(total) {
   let timer = setInterval(() => {
     bar.increment(1)
   }, 1000)
-  return timer
+  setTimeout(() => {
+    console.log(' ...')
+    clearInterval(timer)
+  }, total * 1000 + 500)
 }
 
-function smokeTest() {
+function smokeTest(wait = 10) {
   log.info('io connected, send login request')
-  //userid, seid, ccgeid, reply => {
   socket.emit('login', userid, seid, ccgeid, function(data) {
     if (data != userid) {
       log.fatal('websocket server went wrong, login reply is incorrect')
@@ -31,14 +33,17 @@ function smokeTest() {
     }
     log.info('Tell server we say hi')
     socket.emit('chat-message', `Hi from ${userid}`)
-    log.info('wait for 10 seconds to send another message')
+    log.info(`wait for ${wait} seconds to send another message`)
+    progress(wait)
     setTimeout(function() {
       socket.emit('chat-message', `wait for 10 seconds to send another message`)
-      log.info('wait for another 20 seconds to goodbye')
+      log.info(`wait for another ${wait * 2} seconds to goodbye`)
+      progress(wait * 2)
       setTimeout(function() {
+        bar.stop()
         socket.close()
-      }, 20000)
-    }, 10000)
+      }, wait * 2000 + 1000)
+    }, wait * 1000 + 1000)
   })
 }
 
