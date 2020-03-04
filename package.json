@@ -12,7 +12,7 @@
     "pubsub": "DEBUG=app:* node --nolazy --inspect-brk=9229 src/test/pubsub.js",
     "basic": "DEBUG=app:* node src/test/json_test.js",
     "prestart": "src/shell/redis_check.sh",
-    "start": "DEBUG=app:* nodemon src/index.js",
+    "start": "DEBUG=app:* nodemon --ignore 'src/test/js/*.js' src/index.js",
     "debug": "DEBUG=app:* node --nolazy --inspect-brk=9229 src/index.js",
     "preprod": "src/shell/redis_check.sh",
     "prod": "pm2 start ecosystem.config.js --env production",
@@ -33,9 +33,12 @@
   },
   "devDependencies": {
     "chalk": "^3.0.0",
+    "cli-progress": "^3.6.0",
     "lodash": "^4.17.15",
     "nodemon": "^1.19.4",
     "portfinder": "^1.0.25",
+    "socket.io-client": "~2.1.0",
+    "testable-utils": "^0.4.0",
     "uuid": "^3.3.3"
   }
 }
