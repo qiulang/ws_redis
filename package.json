@@ -39,6 +39,7 @@
     "portfinder": "^1.0.25",
     "socket.io-client": "~2.1.0",
     "testable-utils": "^0.4.0",
-    "uuid": "^3.3.3"
+    "uuid": "^3.3.3",
+    "yargs": "^15.1.0"
   }
 }

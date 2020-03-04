@@ -7,10 +7,13 @@ var log = require('testable-utils').log
 
 var socket = require('socket.io-client')('http://localhost:3000')
 const cliProgress = require('cli-progress')
+const argv = require('yargs').argv
 const bar = new cliProgress.SingleBar()
 var userid = '1000988323'
 var seid = '134'
 var ccgeid = '243'
+
+var wait = +argv.w || 10
 
 function progress(total) {
   bar.start(total, 0)
@@ -36,7 +39,7 @@ function smokeTest(wait = 10) {
     log.info(`wait for ${wait} seconds to send another message`)
     progress(wait)
     setTimeout(function() {
-      socket.emit('chat-message', `wait for 10 seconds to send another message`)
+      socket.emit('user-reconnect', 'load test')
       log.info(`wait for another ${wait * 2} seconds to goodbye`)
       progress(wait * 2)
       setTimeout(function() {
@@ -48,7 +51,7 @@ function smokeTest(wait = 10) {
 }
 
 socket.on('connect', function() {
-  smokeTest()
+  smokeTest(wait)
 })
 
 socket.on('cr_msg', function(data) {
