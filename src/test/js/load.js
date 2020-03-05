@@ -9,10 +9,14 @@ const argv = require('yargs').argv
 const userid = '1000988323'
 var seid = '134'
 var ccgeid = '243'
+server1 = 'https://docker1.emicloud.com/'
+server2 = 'http://localhost:3000'
 
 var wait = +argv.w || 10
 var repeat = +argv.r || 1
 var showP = repeat == 1
+var tmp = +argv.s || 0
+var server = tmp == 0 ? server2 : server1
 
 //no build in range in javascript
 for (let index = 0; index < repeat; index++) {
@@ -21,7 +25,7 @@ for (let index = 0; index < repeat; index++) {
 }
 
 function loadTest(uid) {
-  var socket = require('socket.io-client')('http://localhost:3000', { forceNew: true })
+  var socket = require('socket.io-client')(server, { forceNew: true })
   var bar = new cliProgress.SingleBar()
 
   function progress(total) {
@@ -48,18 +52,22 @@ function loadTest(uid) {
       log.info(`${socket.id} waits for ${wait} seconds to send another message`)
       if (showProgress) progress(wait)
       setTimeout(function() {
-        socket.emit('user-reconnect', 'load test')
-        log.info(`${socket.id} waits for another ${wait * 20} seconds to goodbye`)
-        if (showProgress) progress(wait * 20)
-        setTimeout(function() {
-          bar.stop()
-          if (socket.connected) {
-            log.info(`${socket.id} is about to close`)
-            socket.close()
-          } else {
-            log.info(`${socket.id} is not connected, just return`)
-          }
-        }, wait * 20000 + 1000)
+        if (socket.connected) {
+          socket.emit('user-reconnect', 'load test')
+          log.info(`${socket.id} waits for another ${wait * 20} seconds to goodbye`)
+          if (showProgress) progress(wait * 20)
+          setTimeout(function() {
+            bar.stop()
+            if (socket.connected) {
+              log.info(`${socket.id} is about to close`)
+              socket.close()
+            } else {
+              log.info(`${uid} is not connected, just return`)
+            }
+          }, wait * 20000 + 1000)
+        } else {
+          log.info(`${uid} is not connected, just return`)
+        }
       }, wait * 1000 + 1000)
     })
   }
