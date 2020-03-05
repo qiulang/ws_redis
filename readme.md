@@ -726,4 +726,11 @@ fetch('https://api.github.com/orgs/axios')
 
 今天写的测试代码 2000个连接没问题，10,000连接会断开，明天接着查
 
-pm2 `max_memory_restart` 这项配置要去掉
+pm2 `max_memory_restart` 这项配置去掉
+
+发现一个问题，如果重复连接发生，而且第一个连接的`disconnect` 事件在第二个连接之后才收到，那就错误的 `sub.unsubscribe(user_id)` 
+
+[Effect of duplicate Redis subscription to same channel name](https://stackoverflow.com/questions/41192541/effect-of-duplicate-redis-subscription-to-same-channel-name)
+
+> Conversely, calling a single unsubscribe will unsubscribe your other subscriptions for that channel/pattern as well.
+

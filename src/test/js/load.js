@@ -36,7 +36,7 @@ function loadTest(uid) {
   }
 
   function smokeTest(wait = 10, showProgress = false) {
-    log.info('io connected, send login request')
+    log.info(`${socket.id} aka ${uid} connected, send login request next`)
     socket.emit('login', uid, seid, ccgeid, function(data) {
       if (data != uid) {
         log.fatal('websocket server went wrong, login reply is incorrect')
@@ -45,16 +45,20 @@ function loadTest(uid) {
       }
       log.info(`Tell server ${socket.id} aka ${uid} says hi`)
       socket.emit('chat-message', `Hi from ${uid}`)
-      log.info(`wait for ${wait} seconds to send another message`)
+      log.info(`${socket.id} waits for ${wait} seconds to send another message`)
       if (showProgress) progress(wait)
       setTimeout(function() {
         socket.emit('user-reconnect', 'load test')
-        log.info(`wait for another ${wait * 20} seconds to goodbye`)
+        log.info(`${socket.id} waits for another ${wait * 20} seconds to goodbye`)
         if (showProgress) progress(wait * 20)
         setTimeout(function() {
           bar.stop()
-          log.info(`${socket.id} is about to close`)
-          socket.close()
+          if (socket.connected) {
+            log.info(`${socket.id} is about to close`)
+            socket.close()
+          } else {
+            log.info(`${socket.id} is not connected, just return`)
+          }
         }, wait * 20000 + 1000)
       }, wait * 1000 + 1000)
     })
@@ -69,7 +73,8 @@ function loadTest(uid) {
   })
 
   socket.on('logoff', data => {
-    log.debug(`We were told to logoff ${data}`)
+    log.debug(`We were told to logoff ${socket.id}`)
+    socket.close()
   })
 
   socket.on('disconnect', function() {
