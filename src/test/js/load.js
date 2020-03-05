@@ -17,6 +17,7 @@ var repeat = +argv.r || 1
 var showP = repeat == 1
 var tmp = +argv.s || 0
 var server = tmp == 0 ? server2 : server1
+var pause = +argv.p || 0.5
 
 const sleep = milliseconds => {
   return new Promise(resolve => setTimeout(resolve, milliseconds))
@@ -27,15 +28,13 @@ async function runLoop() {
   for (let index = 0; index < repeat; index++) {
     uid = +userid + index
     loadTest(uid)
-    log.debug(`test ${uid} now wait 0.5 second`)
-    await sleep(500)
+    log.debug(`test ${uid} , now wait ${pause} second`)
+    await sleep(pause * 1000)
   }
 }
 
-runLoop()
-
 function loadTest(uid) {
-  var socket = require('socket.io-client')(server, { forceNew: true })
+  var socket = require('socket.io-client')(server, { forceNew: true, transports: ['websocket'] })
   var bar = new cliProgress.SingleBar()
 
   function progress(total) {
@@ -99,3 +98,5 @@ function loadTest(uid) {
     log.debug(`disconnected ${uid}`)
   })
 }
+
+runLoop()
