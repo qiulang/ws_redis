@@ -8,7 +8,7 @@ module.exports = {
       // instances: 1,
       autorestart: true,
       watch: false,
-      max_memory_restart: '500M',
+      // max_memory_restart: '2G',
       // 用debug有时间戳，但它只能是Date#toISOString()，差了8小时，不知道怎么设置本地时间
       // 找了很多方法也不行，干脆不要它输出时间格式了 DEBUG_HIDE_DATE
       log_date_format: 'YYYY-MM-DD HH:mm:ss',

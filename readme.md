@@ -723,3 +723,7 @@ fetch('https://api.github.com/orgs/axios')
 ### 3.3 性能测试
 
 开始性能测试 使用 https://testable.io/ 需要写nodejs脚本，并复习testable的文档
+
+今天写的测试代码 2000个连接没问题，10,000连接会断开，明天接着查
+
+pm2 `max_memory_restart` 这项配置要去掉

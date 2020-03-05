@@ -49,13 +49,13 @@ function loadTest(uid) {
       if (showProgress) progress(wait)
       setTimeout(function() {
         socket.emit('user-reconnect', 'load test')
-        log.info(`wait for another ${wait * 2} seconds to goodbye`)
-        if (showProgress) progress(wait * 2)
+        log.info(`wait for another ${wait * 20} seconds to goodbye`)
+        if (showProgress) progress(wait * 20)
         setTimeout(function() {
           bar.stop()
           log.info(`${socket.id} is about to close`)
           socket.close()
-        }, wait * 2000 + 1000)
+        }, wait * 20000 + 1000)
       }, wait * 1000 + 1000)
     })
   }
@@ -73,6 +73,6 @@ function loadTest(uid) {
   })
 
   socket.on('disconnect', function() {
-    log.debug(`disconnected`)
+    log.debug(`disconnected ${uid}`)
   })
 }
