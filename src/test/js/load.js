@@ -18,11 +18,21 @@ var showP = repeat == 1
 var tmp = +argv.s || 0
 var server = tmp == 0 ? server2 : server1
 
-//no build in range in javascript
-for (let index = 0; index < repeat; index++) {
-  uid = +userid + index
-  loadTest(uid)
+const sleep = milliseconds => {
+  return new Promise(resolve => setTimeout(resolve, milliseconds))
 }
+
+async function runLoop() {
+  //no build in range in javascript
+  for (let index = 0; index < repeat; index++) {
+    uid = +userid + index
+    loadTest(uid)
+    log.debug(`test ${uid} now wait 0.5 second`)
+    await sleep(500)
+  }
+}
+
+runLoop()
 
 function loadTest(uid) {
   var socket = require('socket.io-client')(server, { forceNew: true })
