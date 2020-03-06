@@ -18,6 +18,8 @@ let RTIME = process.env.RTIME || 45
 startServer()
 //不需要redis来存
 var dup = {}
+//不在redis，只记录本进程
+var user_socket = {}
 
 app.use(express.json()) //https://stackoverflow.com/a/47232318/301513
 app.use(express.urlencoded({ extended: false }))
@@ -47,6 +49,7 @@ io.on('connection', async function(socket) {
       )
       .exec()
     delete dup[socket.id]
+    user_socket[user_id] = socket.id
     await sub.subscribe(user_id)
     info(`store in hash table user_socket ${user_id} => ${socket.id} AND SUB subscribe`)
     fn(`${user_id}`)
@@ -74,10 +77,16 @@ io.on('connection', async function(socket) {
       warn(`No ${socket.id} related data, is "ping timeout" the reason? ${reason}`)
       return
     }
-    info(`SUB unsubscribe ${user_id} and del ${socket.id} record.`)
-    //这里unsubscribe是基于假定运行多个docker容器，如果只有一个服务器进程会有问题
-    //因为把新连接的订阅也取消了
-    sub.unsubscribe(user_id)
+    const local = user_socket[user_id]
+    if (local == socket.id) {
+      info(`SUB unsubscribe ${user_id} and del ${socket.id} record.`)
+      //没有新的订阅（包括同一个账号，多个容器处理情况），所以必须取消
+      sub.unsubscribe(user_id)
+      delete user_socket[user_id]
+    } else {
+      //说明有新的连接，而且是同一个进程处理的，就不能 unsubscribe
+      info(`SUB ${user_id} has new subscription`)
+    }
     //RTIME后查是不是用户主动下线， reason 'client namespace disconnect'
     setTimeout(
       async (sid, uid) => {
