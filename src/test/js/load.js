@@ -10,6 +10,7 @@ const axios = require('axios')
 var log = require('testable-utils').log
 const cliProgress = require('cli-progress')
 var randomstring = require('randomstring')
+const chalk = require('chalk')
 const argv = require('yargs').argv
 
 const server1 = 'https://docker1.emicloud.com/'
@@ -52,17 +53,25 @@ function timestampINS() {
   return Math.ceil(new Date().getTime() / 1000)
 }
 
+function defaultHeader() {
+  return {
+    nonce: randomstring.generate(32),
+    timestamp: timestampINS(),
+    token
+  }
+}
+
 async function runLoop() {
   //no build in range in javascript
   for (let index = 0; index < repeat; index++) {
     uid = +userid + index
-    loadTest(userid)
+    websocketTest(userid)
     log.debug(`test ${uid} , now wait ${pause} second`)
     await sleep(pause * 1000)
   }
 }
 
-function loadTest(uid) {
+function websocketTest(uid) {
   var socket = socketClient(server, { forceNew: true, transports: ['websocket'] })
   var bar = new cliProgress.SingleBar()
 
@@ -155,7 +164,7 @@ async function getToken(number, switchNumber) {
     timestamp,
     domain
   }
-
+  console.log(chalk.cyan('Getting token'))
   const result = await axiosReq({
     url: '/user/bsToken',
     method: 'POST',
@@ -164,28 +173,37 @@ async function getToken(number, switchNumber) {
       login_type: loginType
     }
   })
-  if (result.status === 200) {
-    token = result.data.data.token
-    log.debug(`Got token:${token}`)
+  if (result.status != 200) {
+    console.log(chalk.red('Failed to get token'))
+    return
   }
+  token = result.data.data.token
+  console.log(chalk.cyan(`Got token:${token}`))
+  seatLogin()
 }
 
 async function seatLogin() {
-  const headers = {
-    nonce: randomstring.generate(32),
-    timestamp: timestampINS(),
-    token
-  }
-  const loginSuccess = await axiosReq({
+  // const headers = {
+  //   ...defaultHeader(),
+  //   token
+  // }
+  console.log(chalk.cyan('seatLogin ...'))
+  const result = await axiosReq({
     url: '/BSClient/seatLogin',
     method: 'POST',
-    headers,
+    headers: defaultHeader(),
     data: {
       switch_number: switchNumber,
       work_number: number,
       password: base64data
     }
   })
+  if (result.status != 200) {
+    console.log(chalk.red('Failed to seatLogin'))
+    return
+  } else {
+    console.log(chalk.cyan(`${JSON.stringify(result.data)}`))
+  }
 }
 
 // runLoop()
