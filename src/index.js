@@ -75,7 +75,8 @@ io.on('connection', async function(socket) {
       return
     }
     info(`SUB unsubscribe ${user_id} and del ${socket.id} record.`)
-    //这里unsubscribe是基于假定如果再另一个连接，会再之后发生，但如果新连接先发生会有问题
+    //这里unsubscribe是基于假定运行多个docker容器，如果只有一个服务器进程会有问题
+    //因为把新连接的订阅也取消了
     sub.unsubscribe(user_id)
     //RTIME后查是不是用户主动下线， reason 'client namespace disconnect'
     setTimeout(
@@ -170,7 +171,7 @@ async function dupCheck(user_id, socket_id, fn) {
   //加入重刷浏览器的延迟处理会走到这，但是因为旧的连接已经没了我想调用emit也没啥
   io.to(old_socket).emit('logoff', 'another login')
   //不能在这里直接删除'websocket:socket_user'老的关联关系而没有sub.unsubscribe，
-  //因为之前可能是别的docker处理，必须在disconect 里一起处理 redis.hdel 和 sub.unsubscribe
+  //因为前一个连接可能是别的docker处理，必须在disconect 里一起处理 redis.hdel 和 sub.unsubscribe
   info(`${user_id} exists with socket id ${old_socket}, tell it to logoff.`)
   return false //更新 socketid
 }

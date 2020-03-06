@@ -27,7 +27,7 @@ async function runLoop() {
   //no build in range in javascript
   for (let index = 0; index < repeat; index++) {
     uid = +userid + index
-    loadTest(uid)
+    loadTest(userid)
     log.debug(`test ${uid} , now wait ${pause} second`)
     await sleep(pause * 1000)
   }
