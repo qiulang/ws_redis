@@ -80,6 +80,7 @@ def get_token(i=0, client="p", **kwargs):
         headers = {"username": username}
     # print(f"signature before sha256:{sig}")
     signature = sha256(sig.encode()).hexdigest().upper()
+    # print(f"signature after sha256:{signature}")
     headers.update({
         'auth-type': 'signature',
         "signature": signature,

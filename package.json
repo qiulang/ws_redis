@@ -32,6 +32,7 @@
     "socket.io-redis": "^5.2.0"
   },
   "devDependencies": {
+    "axios": "^0.19.2",
     "chalk": "^3.0.0",
     "cli-progress": "^3.6.0",
     "lodash": "^4.17.15",

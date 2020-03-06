@@ -2,15 +2,31 @@
 // const socket = socketio('https://hjguang.emicmh.com/5b0663f07a75d800207ea6c4', {
 //   transports: ['websocket']
 // })
-
+const crypto = require('crypto')
+const socketClient = require('socket.io-client')
+const axios = require('axios')
 var log = require('testable-utils').log
 const cliProgress = require('cli-progress')
+var randomstring = require('randomstring')
 const argv = require('yargs').argv
+
+const server1 = 'https://docker1.emicloud.com/'
+const server2 = 'http://localhost:3000'
+let token = 'unknow'
+
 const userid = '1000988323'
-var seid = '134'
-var ccgeid = '243'
-server1 = 'https://docker1.emicloud.com/'
-server2 = 'http://localhost:3000'
+const seid = '134'
+const ccgeid = '243'
+const number = '7820'
+const switchNumber = '02566687671'
+
+let buff = new Buffer('123456')
+let base64data = buff.toString('base64')
+
+const axiosReq = axios.create({
+  baseURL: 'https://emicall-cmb.emicloud.com/',
+  headers: { source: 'client.bs' }
+})
 
 var wait = +argv.w || 10
 var repeat = +argv.r || 1
@@ -21,6 +37,17 @@ var pause = +argv.p || 0.5
 
 const sleep = milliseconds => {
   return new Promise(resolve => setTimeout(resolve, milliseconds))
+}
+
+function sha256(secret) {
+  return crypto
+    .createHash('sha256')
+    .update(secret)
+    .digest('hex')
+}
+
+function timestampINS() {
+  return Math.ceil(new Date().getTime() / 1000)
 }
 
 async function runLoop() {
@@ -34,7 +61,7 @@ async function runLoop() {
 }
 
 function loadTest(uid) {
-  var socket = require('socket.io-client')(server, { forceNew: true, transports: ['websocket'] })
+  var socket = socketClient(server, { forceNew: true, transports: ['websocket'] })
   var bar = new cliProgress.SingleBar()
 
   function progress(total) {
@@ -99,4 +126,65 @@ function loadTest(uid) {
   })
 }
 
-runLoop()
+async function getToken(number, switchNumber) {
+  let authType = 'signature'
+  let source = 'client.bs'
+  let loginType = 1
+  let nonce = randomstring.generate(32)
+  let timestamp = timestampINS()
+  let domain = 'docker1.emicloud.com'
+  const seat = `${number}@${switchNumber}`
+  const password = '123456'
+
+  let str =
+    `auth-type=${authType}&login_type=${loginType}` +
+    `&nonce=${nonce}&seat=${seat}&source=${source}` +
+    `&timestamp=${timestamp}&signatureKey=${password}`
+
+  let signature = sha256(str)
+    .toString()
+    .toUpperCase()
+
+  const headers = {
+    'auth-type': 'signature',
+    signature,
+    seat,
+    nonce,
+    timestamp,
+    domain
+  }
+
+  const result = await axiosReq({
+    url: '/user/bsToken',
+    method: 'POST',
+    headers,
+    data: {
+      login_type: loginType
+    }
+  })
+  if (result.status === 200) {
+    token = result.data.data.token
+    log.debug(`Got token:${token}`)
+  }
+}
+
+async function seatLogin() {
+  const headers = {
+    nonce: randomstring.generate(32),
+    timestamp: timestampINS(),
+    token
+  }
+  const loginSuccess = await axiosReq({
+    url: '/BSClient/seatLogin',
+    method: 'POST',
+    headers,
+    data: {
+      switch_number: switchNumber,
+      work_number: number,
+      password: base64data
+    }
+  })
+}
+
+// runLoop()
+getToken(number, switchNumber)
