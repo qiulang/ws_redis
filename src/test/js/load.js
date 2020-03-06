@@ -53,14 +53,6 @@ function timestampINS() {
   return Math.ceil(new Date().getTime() / 1000)
 }
 
-function defaultHeader() {
-  return {
-    nonce: randomstring.generate(32),
-    timestamp: timestampINS(),
-    token
-  }
-}
-
 async function runLoop() {
   //no build in range in javascript
   for (let index = 0; index < repeat; index++) {
@@ -183,15 +175,11 @@ async function getToken(number, switchNumber) {
 }
 
 async function seatLogin() {
-  // const headers = {
-  //   ...defaultHeader(),
-  //   token
-  // }
   console.log(chalk.cyan('seatLogin ...'))
   const result = await axiosReq({
     url: '/BSClient/seatLogin',
     method: 'POST',
-    headers: defaultHeader(),
+    headers: { token },
     data: {
       switch_number: switchNumber,
       work_number: number,
@@ -201,8 +189,33 @@ async function seatLogin() {
   if (result.status != 200) {
     console.log(chalk.red('Failed to seatLogin'))
     return
+  }
+  seatCheckin()
+}
+
+async function seatCheckin() {
+  data = {
+    call_group_id: '1000003218',
+    call_group_name: 'bs测试技能组',
+    callintype: 2,
+    device_number: '',
+    preStatusId: 2,
+    number,
+    seid,
+    ccgeid
+  }
+  console.log(chalk.cyan('seatCheckin ...'))
+  const result = await axiosReq({
+    url: '/BSClient/seatCheckin',
+    method: 'POST',
+    headers: { token },
+    data
+  })
+  if (result.status != 200) {
+    console.log(chalk.red('Failed to seatCheckin'))
+    return
   } else {
-    console.log(chalk.cyan(`${JSON.stringify(result.data)}`))
+    console.log(chalk.cyan(`seatCheckin succeed!!`))
   }
 }
 
