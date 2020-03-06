@@ -1,3 +1,5 @@
+#! /usr/bin/env node --no-deprecation
+
 // 这是 testable.io 提供模板，本地执行不能这样引入
 // const socket = socketio('https://hjguang.emicmh.com/5b0663f07a75d800207ea6c4', {
 //   transports: ['websocket']
