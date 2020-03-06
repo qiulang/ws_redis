@@ -12,6 +12,7 @@ const cliProgress = require('cli-progress')
 var randomstring = require('randomstring')
 const chalk = require('chalk')
 const argv = require('yargs').argv
+const _ = require('lodash')
 
 const server1 = 'https://docker1.emicloud.com/'
 const server2 = 'http://localhost:3000'
@@ -20,16 +21,12 @@ let token = 'unknow'
 const userid = '1000988323'
 const seid = '134'
 const ccgeid = '243'
-const number = '7820'
-const switchNumber = '02566687671'
+const number = '1000'
+const switchNumber = '02566609090'
+const password = 'cczx123456'
 
-let buff = new Buffer('123456')
+let buff = new Buffer(password)
 let base64data = buff.toString('base64')
-
-const axiosReq = axios.create({
-  baseURL: 'https://emicall-cmb.emicloud.com/',
-  headers: { source: 'client.bs' }
-})
 
 var wait = +argv.w || 10
 var repeat = +argv.r || 1
@@ -42,6 +39,11 @@ const sleep = milliseconds => {
   return new Promise(resolve => setTimeout(resolve, milliseconds))
 }
 
+const axiosReq = axios.create({
+  baseURL: 'https://emicall-cmb.emicloud.com/',
+  headers: { source: 'client.bs' }
+})
+
 function sha256(secret) {
   return crypto
     .createHash('sha256')
@@ -51,6 +53,26 @@ function sha256(secret) {
 
 function timestampINS() {
   return Math.ceil(new Date().getTime() / 1000)
+}
+
+async function request({ url, body, headers = {}, method = 'post' }) {
+  console.log(chalk.cyan(`${method} ${url} ...`))
+  if (_.isEmpty(headers)) {
+    headers = { token }
+  }
+  const result = await axiosReq({
+    url: url,
+    method: method,
+    headers: headers,
+    data: body
+  })
+  if (result.status != 200) {
+    console.log(chalk.red(`Failed to ${url}`))
+    return false
+  } else {
+    console.log(chalk.cyan(`${url} succeed!!`))
+    return result.data
+  }
 }
 
 async function runLoop() {
@@ -137,7 +159,6 @@ async function getToken(number, switchNumber) {
   let timestamp = timestampINS()
   let domain = 'docker1.emicloud.com'
   const seat = `${number}@${switchNumber}`
-  const password = '123456'
 
   let str =
     `auth-type=${authType}&login_type=${loginType}` +
@@ -156,40 +177,32 @@ async function getToken(number, switchNumber) {
     timestamp,
     domain
   }
-  console.log(chalk.cyan('Getting token'))
-  const result = await axiosReq({
+  const result = await request({
     url: '/user/bsToken',
-    method: 'POST',
-    headers,
-    data: {
-      login_type: loginType
-    }
+    body: { login_type: loginType },
+    headers
   })
-  if (result.status != 200) {
-    console.log(chalk.red('Failed to get token'))
-    return
-  }
-  token = result.data.data.token
-  console.log(chalk.cyan(`Got token:${token}`))
+  if (result == false) return
+  token = result.data.token
+  // console.log(chalk.cyan(`Got token:${token}`))
   seatLogin()
 }
 
 async function seatLogin() {
-  console.log(chalk.cyan('seatLogin ...'))
-  const result = await axiosReq({
+  const result = await request({
     url: '/BSClient/seatLogin',
-    method: 'POST',
-    headers: { token },
-    data: {
+    body: {
       switch_number: switchNumber,
       work_number: number,
       password: base64data
     }
   })
-  if (result.status != 200) {
+  if (result == false) {
     console.log(chalk.red('Failed to seatLogin'))
     return
   }
+  let uid = result['data']['id']
+  console.log(chalk.cyan(`${number}'s uid is ${uid}`))
   seatCheckin()
 }
 
@@ -204,19 +217,15 @@ async function seatCheckin() {
     seid,
     ccgeid
   }
-  console.log(chalk.cyan('seatCheckin ...'))
-  const result = await axiosReq({
+  const result = await request({
     url: '/BSClient/seatCheckin',
-    method: 'POST',
-    headers: { token },
-    data
+    body: data
   })
-  if (result.status != 200) {
+  if (result == false) {
     console.log(chalk.red('Failed to seatCheckin'))
     return
-  } else {
-    console.log(chalk.cyan(`seatCheckin succeed!!`))
   }
+  console.log(chalk.cyan(`seatCheckin succeed!!`))
 }
 
 // runLoop()
