@@ -70,12 +70,22 @@ async function request({ url, body, headers = {}, method = 'post' }) {
     console.log(chalk.red(`Failed to ${url}`))
     return false
   } else {
-    console.log(chalk.cyan(`${url} succeed!!`))
+    console.log(chalk.cyan(`${url} succeed.`))
     return result.data
   }
 }
 
-async function runLoop() {
+async function runHttpLoop() {
+  //no build in range in javascript
+  for (let index = 0; index < repeat; index++) {
+    let uid = +number + index
+    getToken(uid)
+    log.debug(`test ${uid} , now wait ${pause} second`)
+    await sleep(pause * 1000)
+  }
+}
+
+async function runWebsocketLoop() {
   //no build in range in javascript
   for (let index = 0; index < repeat; index++) {
     uid = +userid + index
@@ -151,7 +161,7 @@ function websocketTest(uid) {
   })
 }
 
-async function getToken(number, switchNumber) {
+async function getToken(number) {
   let authType = 'signature'
   let source = 'client.bs'
   let loginType = 1
@@ -177,6 +187,7 @@ async function getToken(number, switchNumber) {
     timestamp,
     domain
   }
+  console.log(chalk.cyan(`user :${number} is about to login`))
   const result = await request({
     url: '/user/bsToken',
     body: { login_type: loginType },
@@ -185,10 +196,10 @@ async function getToken(number, switchNumber) {
   if (result == false) return
   token = result.data.token
   // console.log(chalk.cyan(`Got token:${token}`))
-  seatLogin()
+  seatLogin(number)
 }
 
-async function seatLogin() {
+async function seatLogin(number) {
   const result = await request({
     url: '/BSClient/seatLogin',
     body: {
@@ -203,10 +214,10 @@ async function seatLogin() {
   }
   let uid = result['data']['id']
   console.log(chalk.cyan(`${number}'s uid is ${uid}`))
-  seatCheckin()
+  seatCheckin(number)
 }
 
-async function seatCheckin() {
+async function seatCheckin(number) {
   data = {
     call_group_id: '1000003218',
     call_group_name: 'bs测试技能组',
@@ -225,8 +236,8 @@ async function seatCheckin() {
     console.log(chalk.red('Failed to seatCheckin'))
     return
   }
-  console.log(chalk.cyan(`seatCheckin succeed!!`))
+  console.log(chalk.cyan(`${number} seatCheckin succeed!!`))
 }
 
-// runLoop()
-getToken(number, switchNumber)
+// runWebsocketLoop()
+runHttpLoop()
