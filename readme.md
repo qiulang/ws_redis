@@ -741,8 +741,8 @@ pm2 `max_memory_restart` 这项配置去掉
 压力测试过程中发现 sub.unsubscribe 有问题：
 
 1. 通常情况，socket连接断开要  `sub.unsubscribe` ，所以 `socket.on('disconnect'` 事件里必须处理一次。
-2. commit `fdee291` "两个容器处理同一个账号重复登录发bug，没法  sub.unsubscribe(user_id)" 处理的问题是当重复连接发现 ，即后一个连接在执行 `dupCheck` 时候不能   await redis.hdel('websocket:socket_user', old_socket)	因为前一个连接可能另一个容器处理的，当前一个连接收到`disconnect`时候要  `sub.unsubscribe`  会找不到 user_id ，因为被删了。当时造成问题就是同一个账号在不同地方登陆，都会收到websocket通知
+2. commit `fdee291` "两个容器处理同一个账号重复登录发bug，没法  sub.unsubscribe(user_id)" 处理的问题是当重复连接发现 ，即后一个连接在执行 `dupCheck` 时候不能   await redis.hdel('websocket:socket_user', old_socket)	因为前一个连接可能另一个容器处理的，当前一个连接收到`disconnect`时候要  `sub.unsubscribe`  会找不到 user_id ，因为被删了。当时造成问题就是同一个账号在不同地方登陆，都会收到websocket通知。也不能在`dupCheck` 时候就`sub.unsubscribe(user_id)` ，同样是因为可能不是一个容器执行的 `sub.subscribe(user_id)`。 而且因为收到 disconnect 还是要处理。
 3. 当时改动基于的现象是处理同一个账号的两个不同连接被分配到**两个不同容器处理**， 一个容器处理完新连接的login请求就会 `sub.subscribe`  而另一个容器处理旧的连接可以**安全**的`sub.unsubscribe` 。
-4. 这个假设有错，所以没有发现可能问题： 如果**只有一个**服务器在跑（或者只有一个容器），旧的连接处理`sub.unsubscribe(user_id)` 在新的连接处理 `sub.subscribe`之后，所以会把新连接的订阅也取消 “calling a single unsubscribe will unsubscribe your other subscriptions for that channel/pattern as well.” 。。。
+4. 这个假设有漏洞： 如果**只有一个**服务器在跑（或者只有一个容器），旧的连接处理`sub.unsubscribe(user_id)` 在新的连接处理 `sub.subscribe`之后，所以会把新连接的订阅也取消 “calling a single unsubscribe will unsubscribe your other subscriptions for that channel/pattern as well.” 。。。
 5. 这个方案不可行！ ： 改动考虑做在`disconnect` 里，判断下用户是不是有新连接了。不能在`dupCheck` 里直接`sub.unsubscribe(user_id)`  是因为收到 disconnect 还是要处理！因为如果两个docker，第一个docker必须要取消订阅，我们难点是如何知道我们运行多少服务器实例？
 

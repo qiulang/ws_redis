@@ -10,6 +10,7 @@ const axios = require('axios')
 var log = require('testable-utils').log
 const cliProgress = require('cli-progress')
 var randomstring = require('randomstring')
+//使用tee时候颜色自动去掉，所以可以放心使用chalk
 const chalk = require('chalk')
 const argv = require('yargs').argv
 const _ = require('lodash')
@@ -18,10 +19,10 @@ const server1 = 'https://docker1.emicloud.com/'
 const server2 = 'http://localhost:3000'
 let token = 'unknow'
 
-const userid = '1000988323'
+const userid = '1000988323' //7820
 const seid = '134'
 const ccgeid = '243'
-const number = '1000'
+const numberBase = '1000'
 const switchNumber = '02566609090'
 const password = 'cczx123456'
 
@@ -70,7 +71,7 @@ async function request({ url, body, headers = {}, method = 'post' }) {
     console.log(chalk.red(`Failed to ${url}`))
     return false
   } else {
-    console.log(chalk.cyan(`${url} succeed.`))
+    console.log(chalk.cyan(`${method} ${url} succeed.`))
     return result.data
   }
 }
@@ -78,9 +79,10 @@ async function request({ url, body, headers = {}, method = 'post' }) {
 async function runHttpLoop() {
   //no build in range in javascript
   for (let index = 0; index < repeat; index++) {
-    let uid = +number + index
-    getToken(uid)
-    log.debug(`test ${uid} , now wait ${pause} second`)
+    let number = +numberBase + index
+    await getToken(number)
+    if (+pause == 0) continue
+    log.debug(`test http & webspcket login, now wait ${pause} second`)
     await sleep(pause * 1000)
   }
 }
@@ -110,8 +112,10 @@ function websocketTest(uid) {
     }, total * 1000 + 500)
   }
 
-  function smokeTest(wait = 10, showProgress = false) {
-    log.info(`${socket.id} aka ${uid} connected, send login request next`)
+  function connectHandler(wait = 10, showProgress = false) {
+    log.info(
+      `${chalk.yellow(socket.id)} aka ${chalk.yellow(uid)} connected, send login request next`
+    )
     socket.emit('login', uid, seid, ccgeid, function(data) {
       if (data != uid) {
         log.fatal('websocket server went wrong, login reply is incorrect')
@@ -144,7 +148,7 @@ function websocketTest(uid) {
   }
 
   socket.on('connect', function() {
-    smokeTest(wait, showP)
+    connectHandler(wait, showP)
   })
 
   socket.on('cr_msg', function(data) {
@@ -213,7 +217,8 @@ async function seatLogin(number) {
     return
   }
   let uid = result['data']['id']
-  console.log(chalk.cyan(`${number}'s uid is ${uid}`))
+  console.log(chalk.cyan(`${chalk.yellow(number)}'s uid is ${chalk.yellow(uid)}, has login!!`))
+  websocketTest(uid)
   seatCheckin(number)
 }
 
