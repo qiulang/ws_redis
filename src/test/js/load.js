@@ -22,7 +22,7 @@ let token = 'unknow'
 const userid = '1000988323' //7820
 const seid = '134'
 const ccgeid = '243'
-const numberBase = '1000'
+const numberBase = 1000
 const switchNumber = '02566609090'
 const password = 'cczx123456'
 
@@ -45,6 +45,11 @@ let argv = yargs
     describe: 'test docker1 or localhost',
     type: 'number'
   })
+  .option('c', {
+    default: 2,
+    describe: 'how many concurrent requests to send',
+    type: 'number'
+  })
   .option('p', {
     default: 0.5,
     describe: 'pause n seconds to run the next login',
@@ -56,6 +61,7 @@ var repeat = argv.r
 var showP = repeat == 1
 var pause = argv.p
 var server = argv.s == 0 ? server1 : server2
+const step = argv.c
 
 const sleep = milliseconds => {
   return new Promise(resolve => setTimeout(resolve, milliseconds))
@@ -97,14 +103,16 @@ async function request({ url, body, headers = {}, method = 'post' }) {
   }
 }
 
-async function runHttpLoop() {
+async function runLoop() {
   //no build in range in javascript
-  for (let index = 0; index < repeat; index++) {
-    let number = +numberBase + index
-    //await getToken(number)
-    getToken(number)
-    if (+pause == 0) continue
-    log.debug(`test http & webspcket login, now wait ${pause} second`)
+  let number = numberBase - 1
+  for (let index = 0; index < repeat / step; index++) {
+    for (let i = 0; i < step; i++) {
+      number = number + 1
+      getToken(number)
+    }
+    if (pause == 0) continue
+    log.debug(`wait ${pause} second to test ${number + 1}`)
     await sleep(pause * 1000)
   }
 }
@@ -145,7 +153,7 @@ function websocketTest(uid) {
       }
       // log.info(`Tell server ${socket.id} aka ${uid} says hi`)
       socket.emit('chat-message', `Hi from ${uid}`)
-      log.info(`${socket.id} waits for ${wait} seconds to send another message`)
+      // log.info(`${socket.id} waits for ${wait} seconds to send another message`)
       if (showProgress) progress(wait)
       setTimeout(function() {
         if (socket.connected) {
@@ -182,7 +190,7 @@ function websocketTest(uid) {
   })
 
   socket.on('disconnect', function() {
-    log.debug(`disconnected ${uid}`)
+    log.debug(`disconnected ${chalk.yellow(uid)}`)
   })
 }
 
@@ -238,7 +246,11 @@ async function seatLogin(number) {
     return
   }
   let uid = result['data']['id']
-  console.log(chalk.cyan(`${chalk.yellow(number)}'s uid is ${chalk.yellow(uid)}, has login!!`))
+  console.log(
+    chalk.cyan(
+      `${chalk.yellow(number)}'s uid is ${chalk.yellow(uid)} has login, websocket test next`
+    )
+  )
   websocketTest(uid)
   seatCheckin(number)
 }
@@ -266,4 +278,4 @@ async function seatCheckin(number) {
 }
 
 // runWebsocketLoop()
-runHttpLoop()
+runLoop()
