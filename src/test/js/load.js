@@ -12,7 +12,7 @@ const cliProgress = require('cli-progress')
 var randomstring = require('randomstring')
 //使用tee时候颜色自动去掉，所以可以放心使用chalk
 const chalk = require('chalk')
-const argv = require('yargs').argv
+const yargs = require('yargs')
 const _ = require('lodash')
 
 const server1 = 'https://docker1.emicloud.com/'
@@ -29,12 +29,33 @@ const password = 'cczx123456'
 let buff = new Buffer(password)
 let base64data = buff.toString('base64')
 
-var wait = +argv.w || 10
-var repeat = +argv.r || 1
+let argv = yargs
+  .option('w', {
+    default: 10,
+    describe: 'wait 20*n seconds to end websocket connection',
+    type: 'number'
+  })
+  .option('r', {
+    default: 1,
+    describe: 'repeat time(s)',
+    type: 'number'
+  })
+  .option('s', {
+    default: 0,
+    describe: 'test docker1 or localhost',
+    type: 'number'
+  })
+  .option('p', {
+    default: 0.5,
+    describe: 'pause n seconds to run the next login',
+    type: 'number'
+  }).argv
+
+var wait = argv.w
+var repeat = argv.r
 var showP = repeat == 1
-var tmp = +argv.s || 0
-var server = tmp == 0 ? server2 : server1
-var pause = +argv.p || 0.5
+var pause = argv.p
+var server = argv.s == 0 ? server1 : server2
 
 const sleep = milliseconds => {
   return new Promise(resolve => setTimeout(resolve, milliseconds))
@@ -57,7 +78,7 @@ function timestampINS() {
 }
 
 async function request({ url, body, headers = {}, method = 'post' }) {
-  console.log(chalk.cyan(`${method} ${url} ...`))
+  // console.log(chalk.cyan(`${method} ${url} ...`))
   if (_.isEmpty(headers)) {
     headers = { token }
   }
@@ -71,7 +92,7 @@ async function request({ url, body, headers = {}, method = 'post' }) {
     console.log(chalk.red(`Failed to ${url}`))
     return false
   } else {
-    console.log(chalk.cyan(`${method} ${url} succeed.`))
+    // console.log(chalk.cyan(`${method} ${url} succeed.`))
     return result.data
   }
 }
@@ -80,7 +101,8 @@ async function runHttpLoop() {
   //no build in range in javascript
   for (let index = 0; index < repeat; index++) {
     let number = +numberBase + index
-    await getToken(number)
+    //await getToken(number)
+    getToken(number)
     if (+pause == 0) continue
     log.debug(`test http & webspcket login, now wait ${pause} second`)
     await sleep(pause * 1000)
@@ -88,7 +110,6 @@ async function runHttpLoop() {
 }
 
 async function runWebsocketLoop() {
-  //no build in range in javascript
   for (let index = 0; index < repeat; index++) {
     uid = +userid + index
     websocketTest(userid)
@@ -122,7 +143,7 @@ function websocketTest(uid) {
         socket.close()
         return
       }
-      log.info(`Tell server ${socket.id} aka ${uid} says hi`)
+      // log.info(`Tell server ${socket.id} aka ${uid} says hi`)
       socket.emit('chat-message', `Hi from ${uid}`)
       log.info(`${socket.id} waits for ${wait} seconds to send another message`)
       if (showProgress) progress(wait)
