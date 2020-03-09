@@ -88,18 +88,23 @@ async function request({ url, body, headers = {}, method = 'post' }) {
   if (_.isEmpty(headers)) {
     headers = { token }
   }
-  const result = await axiosReq({
-    url: url,
-    method: method,
-    headers: headers,
-    data: body
-  })
-  if (result.status != 200) {
-    console.log(chalk.red(`Failed to ${url}`))
+  try {
+    const result = await axiosReq({
+      url: url,
+      method: method,
+      headers: headers,
+      data: body
+    })
+    if (result.status != 200) {
+      console.log(chalk.red(`Failed to ${url}`))
+      return false
+    } else {
+      // console.log(chalk.cyan(`${method} ${url} succeed.`))
+      return result.data
+    }
+  } catch (err) {
+    console.log(chalk.red(`Failed to ${url} using ${JSON.stringify(body)}`))
     return false
-  } else {
-    // console.log(chalk.cyan(`${method} ${url} succeed.`))
-    return result.data
   }
 }
 
