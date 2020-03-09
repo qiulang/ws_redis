@@ -734,6 +734,8 @@ pm2 `max_memory_restart` 这项配置去掉
 
 > Conversely, calling a single unsubscribe will unsubscribe your other subscriptions for that channel/pattern as well.
 
+发现是 nginx worker_connections 缺省1024的问题，改成20K (因为是代理websocket,两个链接才算一个真正websocket)就好了。其他的优化设置没有再深入研究。
+
 
 
 ### 3.6 sub.unsubscribe 问题
