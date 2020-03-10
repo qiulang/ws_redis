@@ -38,7 +38,9 @@
 
     2. publish channel message 返回值显示几个通道收到了
 
-       
 
 
+注: redis不像RMDB一样提供看数据库表信息方法，key-value store 需要使用者自己维护结构信息，这是为什么看到key的值经常用`:`分隔几段。
+
+常用手段看表信息有 `keys` 和 `scan match` 可以先用 `info keyspace`  看目前有多少key
 
