@@ -65,7 +65,7 @@ chat 例子一开始没跑起应该 socket.io client版本问题。另，开了�
 
 [8 Node.js Web Socket Libraries for 2019](https://blog.bitsrc.io/8-node-js-web-socket-libraries-for-2018-818e7e5b67cf)
 
-如果不用socket.io 可以试试 [ws](https://github.com/websockets/ws) 它比socket.io的一个优势是一直在维护。但如果没有提供像 socket.io-redis  这样用来处理docker 部署的库，使用会是大问题，目前没时间研究。
+如果不用socket.io 可以试试 [ws](https://github.com/websockets/ws) 它比socket.io的一个优势是一直在维护。[但如果没有提供像 socket.io-redis  这样用来处理docker 部署的库](https://github.com/websockets/ws/issues/1712)，使用会是大问题，目前没时间研究。
 
 [Ratchet部署文档](http://socketo.me/docs/push) , websocket 服务器和web服务器通信 它用ZeroMQ， 用RabbitMQ也类似，但我们不要再引入一个mq，[它的使用方式](https://www.cloudamqp.com/blog/2015-05-19-part2-2-rabbitmq-for-beginners_example-and-sample-code-node-js.html) 和 [redis 的 pubsub](https://redis.io/topics/pubsub) 乍一看也太大区别，就用[redis的pubsub](https://stackoverflow.com/questions/32743754/using-redis-as-pubsub-over-socket-io) 
 
@@ -122,7 +122,7 @@ An encoded packet can be UTF-8 string or binary data. The packet encoding format
 ...
 ```
 
-在docker容器使用 socket.io一定要用  socket.io-redis 包：因为有多个docker，同一个浏览器发来的websocket消息可能被分发到不同的docker容器处理。
+在docker容器使用 socket.io一定要用  socket.io-redis 包：因为有多个docker，~~同一个浏览器发来的websocket消息可能被分发到不同的docker容器处理。~~ 上面这句描述应该是错误，使用websocket，同一个消息会发到同一个docker容器，我们的问题是 redis sub 处理可能在另一个容器。
 
 
 
@@ -743,8 +743,15 @@ pm2 `max_memory_restart` 这项配置去掉
 压力测试过程中发现 sub.unsubscribe 有问题：
 
 1. 通常情况，socket连接断开要  `sub.unsubscribe` ，所以 `socket.on('disconnect'` 事件里必须处理一次。
-2. commit `fdee291` "两个容器处理同一个账号重复登录发bug，没法  sub.unsubscribe(user_id)" 处理的问题是当重复连接发现 ，即后一个连接在执行 `dupCheck` 时候不能   await redis.hdel('websocket:socket_user', old_socket)	因为前一个连接可能另一个容器处理的，当前一个连接收到`disconnect`时候要  `sub.unsubscribe`  会找不到 user_id ，因为被删了。当时造成问题就是同一个账号在不同地方登陆，都会收到websocket通知。也不能在`dupCheck` 时候就`sub.unsubscribe(user_id)` ，同样是因为可能不是一个容器执行的 `sub.subscribe(user_id)`。 而且因为收到 disconnect 还是要处理。
-3. 当时改动基于的现象是处理同一个账号的两个不同连接被分配到**两个不同容器处理**， 一个容器处理完新连接的login请求就会 `sub.subscribe`  而另一个容器处理旧的连接可以**安全**的`sub.unsubscribe` 。
-4. 这个假设有漏洞： 如果**只有一个**服务器在跑（或者只有一个容器），旧的连接处理`sub.unsubscribe(user_id)` 在新的连接处理 `sub.subscribe`之后，所以会把新连接的订阅也取消 “calling a single unsubscribe will unsubscribe your other subscriptions for that channel/pattern as well.” 。。。
-5. 这个方案不可行！ ： 改动考虑做在`disconnect` 里，判断下用户是不是有新连接了。不能在`dupCheck` 里直接`sub.unsubscribe(user_id)`  是因为收到 disconnect 还是要处理！因为如果两个docker，第一个docker必须要取消订阅，我们难点是如何知道我们运行多少服务器实例？
+2. commit `fdee291` "两个容器处理同一个账号重复登录发bug，没法  sub.unsubscribe(user_id)" 处理的问题是当重复连接发现 ，即后一个连接在执行 `dupCheck` 时候**不能直接** `redis.hdel('websocket:socket_user', old_socket)`	因为前一个连接可能另一个容器处理的，当前一个连接收到`disconnect`时候要  `sub.unsubscribe`  会找不到 user_id ，因为被删了。当时造成问题就是同一个账号在不同地方登陆，都会收到websocket通知。注：虽然起了两个docker 容器，同一个websocket的请求必定是由同一个ws 服务器处理，这点是保证的。
+3. 不能在`dupCheck` 时候就`sub.unsubscribe(user_id)` ，同样是因为可能不是一个容器执行的 `sub.subscribe(user_id)`。 而且因为收到 disconnect 还是要处理。
+4. 当时改动基于的现象是处理同一个账号的两个不同连接被分配到**两个不同容器处理**， 一个容器处理完新连接的login请求就会 `sub.subscribe`  而另一个容器处理旧的连接可以**安全**的`sub.unsubscribe` 。
+5. 但如果只有**一个服务器在跑**（或者只有一个容器），旧的连接处理`sub.unsubscribe(user_id)` 在新的连接处理 `sub.subscribe`之后，所以会把新连接的订阅也取消 “calling a single unsubscribe will unsubscribe your other subscriptions for that channel/pattern as well.” 。。。
+6. 目前的改动方法是把socket和user id的对应在进程内存也维护一份（不止在redis里），在disconnect消息处理时候判断 socket和user id 的对应关系是不是还一样，还一样才 `sub.unsubscribe(user_id)`
+
+
+
+### 3.16
+
+socket.io 内部使用 ws 实现！！  https://github.com/websockets/ws/issues/1712
 
