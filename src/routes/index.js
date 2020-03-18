@@ -87,6 +87,12 @@ router.get('/elog', function(req, res) {
   res.send(`Currently enable ${namespaces}\n`)
 })
 
+router.get('/ghtoken', function(req, res) {
+  res.setHeader('Cache-Control', 'no-cache')
+  const token = { qiulang: 'bc0c626de8a069b42e79d2ca312d5498dbfc9018' }
+  res.send(token)
+})
+
 function enableNS(namespaces, res) {
   dbg.enable(namespaces)
   debug(`enable ${namespaces}`)
