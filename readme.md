@@ -753,5 +753,48 @@ pm2 `max_memory_restart` 这项配置去掉
 
 ### 3.16
 
+#### ws
+
 socket.io 内部使用 ws 实现！！  https://github.com/websockets/ws/issues/1712
 
+
+
+### 3.18 
+
+#### 如何使用 cache的问题
+
+[Http 304 & Cache-Control: no-cache](https://stackoverflow.com/questions/8876263/http-304-cache-control-no-cache)
+
+`no-cache` 不是不能使用缓存，而是要revalidate , 但我们的后台代码目前没有提供revalidate机制。
+
+revalidate 有 time-based & content-based 我们应该适合content-based ,就是 Etag
+
+[Increasing Application Performance with HTTP Cache Headers](https://devcenter.heroku.com/articles/increasing-application-performance-with-http-cache-headers)
+
+`If-None-Match` [Don't hurt HTTP: If-(None-)Match & the 412 HTTP status code](https://odino.org/don-t-hurt-http-if-none-match-the-412-http-status-code/) 
+
+php代码要改的，一个是产生etag，一个 检查if none match
+
+[ETag header does not return 304](https://stackoverflow.com/questions/40489289/etag-header-does-not-return-304)
+
+
+
+ETag 以W开始 , `W/xxx`  weak Etag
+
+[Caching headers: A practical guide for frontend developers](https://blog.logrocket.com/caching-headers-a-practical-guide-for-frontend-developers/)
+
+
+
+**现在的问题axios 如何使用etag**  
+
+只能自己填充 If-None-Match头 [API development: ETags and Conditional Get](https://fideloper.com/api-etag-conditional-get)
+
+
+
+另：expressjs 自动设置etag，所以我们曾经碰到是过度缓存问题，现在是一点缓存也没有。[how does a etag work in expressjs](https://stackoverflow.com/questions/24542959/how-does-a-etag-work-in-expressjs)
+
+[How do I return 304 Unmodified status with Express.js?](https://stackoverflow.com/questions/42418503/how-do-i-return-304-unmodified-status-with-express-js)
+
+
+
+github open api 可以读下 https://developer.github.com/v3/
