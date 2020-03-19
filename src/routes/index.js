@@ -88,7 +88,8 @@ router.get('/elog', function(req, res) {
 })
 
 router.get('/ghtoken', function(req, res) {
-  res.setHeader('Cache-Control', 'no-cache')
+  // res.setHeader('Cache-Control', 'no-cache')
+  console.log(JSON.stringify(req.headers))
   const token = { qiulang: 'bc0c626de8a069b42e79d2ca312d5498dbfc9018' }
   res.send(token)
 })

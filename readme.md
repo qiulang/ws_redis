@@ -809,7 +809,15 @@ chrome 为什么不对github使用 If-None-Match ?  [Why doesn't Chrome use Etag
 
 
 
-[Are browsers supposed to handle 304 responses automagically?](https://stackoverflow.com/questions/49751311/are-browsers-supposed-to-handle-304-responses-automagically) 如果浏览器处理了，那我们的js代码都可以不用处理
+[Are browsers supposed to handle 304 responses automagically?](https://stackoverflow.com/questions/49751311/are-browsers-supposed-to-handle-304-responses-automagically) 如果浏览器处理了，那我们的js代码都可以不用处理!
+
+但是发现 Chrome 80有问题 ，不能正确处理etag, 像是bug，给chrome开了问题单
+
+https://bugs.chromium.org/p/chromium/issues/detail?id=1062935
+
+https://stackoverflow.com/questions/60750417/why-doesnt-chrome-use-etag-if-none-match-as-http-protocol-said
+
+没有问题！ 是 disable cache导致
 
 
 
