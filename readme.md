@@ -798,3 +798,12 @@ ETag 以W开始 , `W/xxx`  weak Etag
 
 
 github open api 可以读下 https://developer.github.com/v3/
+
+
+
+### 3.19
+
+chrome 为什么不对github使用 If-None-Match ?  [Why doesn't Chrome use Etag & If-None-Match as HTTP protocol said?](https://stackoverflow.com/questions/60750417/why-doesnt-chrome-use-etag-if-none-match-as-http-protocol-said)
+
+[ETag vs Header Expires](https://stackoverflow.com/questions/499966/etag-vs-header-expires)
+
