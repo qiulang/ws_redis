@@ -4,6 +4,7 @@ const chalk = require('chalk')
 const _ = require('lodash')
 const user = 'qiulang'
 const token = 'bc0c626de8a069b42e79d2ca312d5498dbfc9018'
+const origin = 'https://docker1.emicloud.com'
 let cache = {} //url:{tag,data}
 
 const sleep = milliseconds => {
@@ -12,13 +13,19 @@ const sleep = milliseconds => {
 
 //使用 github 的 api 做实验，
 //https://developer.github.com/v3/guides/getting-started/
-const axiosReq = axios.create(
+
+const axiosReq = axios.create({
   //https://stackoverflow.com/questions/2044340/http-basic-authentication-whats-the-expected-browser-experience
   //curl -i -u qiulang:bc0c626de8a069b42e79d2ca312d5498dbfc9018 https://api.github.com/user
-  {
-    baseURL: `https://${user}:${token}@api.github.com`
+  // {
+  //   baseURL: `https://${user}:${token}@api.github.com`
+  // }
+  baseURL: 'https://emicall-cmb.emicloud.com/',
+  headers: {
+    source: 'client.bs',
+    origin
   }
-)
+})
 
 let resInterceptors = response => {
   //https://stackoverflow.com/a/34245366/301513
@@ -67,7 +74,7 @@ async function request(url) {
   }
 }
 
-async function cacheTest() {
+async function cacheTestGithub() {
   let result = await request('/user')
   let plan1 = result.plan
   console.log('Sleep 1 second')
@@ -81,4 +88,17 @@ async function cacheTest() {
   }
 }
 
-cacheTest()
+async function cacheTestBK() {
+  console.log(chalk.cyan(`Getting logo.`))
+  let result = await request('/logo')
+  if (result.code == 200) {
+    console.log(chalk.cyan(`Get logo Succeed!`))
+  }
+  console.log(chalk.cyan(`Getting logo again!`))
+  result = await request('/logo')
+  if (result.code == 200) {
+    console.log(chalk.cyan(`Get logo Succeed!`))
+  }
+}
+
+cacheTestBK()

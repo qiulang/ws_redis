@@ -803,21 +803,25 @@ github open api 可以读下 https://developer.github.com/v3/
 
 ### 3.19
 
-chrome 为什么不对github使用 If-None-Match ?  [Why doesn't Chrome use Etag & If-None-Match as HTTP protocol said?](https://stackoverflow.com/questions/60750417/why-doesnt-chrome-use-etag-if-none-match-as-http-protocol-said)
-
 [ETag vs Header Expires](https://stackoverflow.com/questions/499966/etag-vs-header-expires)
 
+[How does “304 Not Modified” work exactly?](https://stackoverflow.com/questions/20978189/how-does-304-not-modified-work-exactly)
 
+[Are browsers supposed to handle 304 responses automagically?](https://stackoverflow.com/questions/49751311/are-browsers-supposed-to-handle-304-responses-automagically) **浏览器处理了我们的js代码都可以不用处理!**
 
-[Are browsers supposed to handle 304 responses automagically?](https://stackoverflow.com/questions/49751311/are-browsers-supposed-to-handle-304-responses-automagically) 如果浏览器处理了，那我们的js代码都可以不用处理!
-
-但是发现 Chrome 80有问题 ，不能正确处理etag, 像是bug，给chrome开了问题单
+~~但是发现 Chrome 80有问题 ，不能正确处理etag, 像是bug，给chrome开了问题单. chrome 为什么不对github使用 If-None-Match ?~~ 
 
 https://bugs.chromium.org/p/chromium/issues/detail?id=1062935
 
 https://stackoverflow.com/questions/60750417/why-doesnt-chrome-use-etag-if-none-match-as-http-protocol-said
 
-没有问题！ 是 disable cache导致
+没有问题！ **是 disable cache导致, 尴尬了！**
+
+但是 [Why does Chrome show 304 in Response Headers section but 200 in status code?](https://stackoverflow.com/questions/60755020/why-does-chrome-show-304-in-response-headers-section-but-200-in-status-code) 确实很容易让人混淆.
+
+
+
+所以今天一整天测试验证结论是，后端通过 laravel 框架设置 etag后，所有前端相应处理浏览器都做了，我们代码不用做什么修改就“坐享其成”！ 只有当代码不跑在浏览器里我们才需要单独处理`etag` 和`If-None-Match`
 
 
 
