@@ -64,7 +64,8 @@
   </form>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.dev.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
-  <script>
+  <script src=https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.2/axios.min.js></script>
+  <!-- <script>
     $(function () {
       fetch('login').then(response => response.json()).then(data => {
         var userid = data.user;//模拟一个userid
@@ -116,6 +117,20 @@
         });
       });
     });
+  </script> -->
+  <script>
+    console.log('test axios for etag')
+    // const user = 'qiulang'
+    // const token = 'bc0c626de8a069b42e79d2ca312d5498dbfc9018'
+    // const axiosReq = axios.create({ baseURL: `https://${user}:${token}@api.github.com` })
+    const axiosReq = axios.create({ baseURL: 'http://localhost:3000' })
+    async function cacheTest() {
+      let result = await axiosReq({ url: '/ghtoken' })
+      console.log(JSON.stringify(result))
+      result = await await axiosReq({ url: '/ghtoken' })
+      console.log(JSON.stringify(result))
+    }
+    cacheTest()
   </script>
 </body>
 

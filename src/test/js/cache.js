@@ -20,33 +20,33 @@ const axiosReq = axios.create(
   }
 )
 
-//参看 https://github.com/raulanatol/axios-etag-cache
-
-axiosReq.interceptors.response.use(
-  function(response) {
-    //https://stackoverflow.com/a/34245366/301513
-    let etag = JSON.parse(response.headers.etag)
-    if (etag) {
-      console.log(chalk.cyan(`Get ${etag} succeed.`))
-      cache[response.config.url]['etag'] = etag
-    }
-    return response
-  },
-  function(error) {
-    if (!error.response || error.response.status != 304) {
-      return Promise.reject(error)
-    }
-
-    const getCachedResult = cache[error.response.config.url]['data']
-    if (!getCachedResult) {
-      return Promise.reject(error)
-    }
-    const newResponse = error.response
-    newResponse.status = 200
-    newResponse.data = getCachedResult
-    return Promise.resolve(newResponse)
+let resInterceptors = response => {
+  //https://stackoverflow.com/a/34245366/301513
+  let etag = JSON.parse(response.headers.etag)
+  if (etag) {
+    console.log(chalk.cyan(`Get ${etag} succeed.`))
+    cache[response.config.url]['etag'] = etag
   }
-)
+  return response
+}
+
+let resErrInterceptors = error => {
+  if (!error.response || error.response.status != 304) {
+    return Promise.reject(error)
+  }
+
+  const getCachedResult = cache[error.response.config.url]['data']
+  if (!getCachedResult) {
+    return Promise.reject(error)
+  }
+  const newResponse = error.response
+  newResponse.status = 200
+  newResponse.data = getCachedResult
+  console.log(chalk.cyan(`Return data from cache.`))
+  return Promise.resolve(newResponse)
+}
+
+axiosReq.interceptors.response.use(resInterceptors, resErrInterceptors)
 
 async function request(url) {
   let config = { url }

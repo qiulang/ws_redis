@@ -807,3 +807,10 @@ chrome 为什么不对github使用 If-None-Match ?  [Why doesn't Chrome use Etag
 
 [ETag vs Header Expires](https://stackoverflow.com/questions/499966/etag-vs-header-expires)
 
+
+
+[Are browsers supposed to handle 304 responses automagically?](https://stackoverflow.com/questions/49751311/are-browsers-supposed-to-handle-304-responses-automagically) 如果浏览器处理了，那我们的js代码都可以不用处理
+
+
+
+
