@@ -105,6 +105,16 @@ def get_token(i=0, client="p", **kwargs):
     date = datetime.fromtimestamp(expire)
     cprint(
         f"round #{i}: token:{token}, expire@{date:%Y-%m-%d %H:%M:%S} ", 'green')
+    # 目前只有pc 客户端串行测试才会再测试删除
+    if 'del_token' in kwargs:
+        cprint(f"let us delete the token:{token} after 0.5 second", "green")
+        sleep(0.5)
+        start = time()
+        del_token(token, source)
+        end = time()
+        cprint(f"Takes {end-start:.3f} seconds", 'green')
+    else:
+        return token
 
 
 if __name__ == '__main__':
