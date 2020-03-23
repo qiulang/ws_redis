@@ -6,9 +6,13 @@ from datetime import datetime
 import math
 from hashlib import sha256
 from time import time, sleep
+import argparse
+import urllib3
 
 import requests
 from termcolor import cprint
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 token_url = "https://emicall-cmb.emicloud.com/user/token"
 bstoken_url = "https://emicall-cmb.emicloud.com/user/bsToken"
@@ -101,13 +105,14 @@ def get_token(i=0, client="p", **kwargs):
     date = datetime.fromtimestamp(expire)
     cprint(
         f"round #{i}: token:{token}, expire@{date:%Y-%m-%d %H:%M:%S} ", 'green')
-    # 目前只有pc 客户端串行测试才会再测试删除
-    if 'del_token' in kwargs:
-        cprint(f"let us delete the token:{token} after 0.5 second", "green")
-        sleep(0.5)
-        start = time()
-        del_token(token, source)
-        end = time()
-        cprint(f"Takes {end-start:.3f} seconds", 'green')
-    else:
-        return token
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-c", help="pc client, web client or BS client", default="w")
+    args = parser.parse_args()
+    client = args.c
+    if (client != "w" and client != "b" and client != "p"):
+        client = "w"
+    get_token(client=client)
