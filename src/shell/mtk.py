@@ -24,6 +24,9 @@ token_urls = {"p": token_url, "b": bstoken_url, "w": token_url}
 
 number = '7820'
 password = '123456'
+userid = '1000988323'  # 7820
+seid = '134'
+ccgeid = '243'
 pwdsha = sha256(password.encode()).hexdigest()
 switch_number = '02566687671'
 seat = f"{number}@{switch_number}"
@@ -46,6 +49,7 @@ def del_token(token, source):
         "token": token,
         "nonce": get_nouce()
     }
+    # disable SSL Certificate verification
     response = requests.delete(token_url, headers=headers, verify=False)
     result = response.json()
     if (result['code'] != 200):

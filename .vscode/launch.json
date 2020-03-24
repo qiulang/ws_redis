@@ -10,7 +10,7 @@
       "request": "launch",
       "program": "${file}",
       "console": "integratedTerminal",
-      "args": ["-c", "s"]
+      "logToFile": true
     },
     {
       "type": "node",

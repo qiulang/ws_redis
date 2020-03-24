@@ -1,15 +1,11 @@
 #! /usr/bin/env python3
 # encoding=utf-8
-import random
+
 import string
-from hashlib import sha256
-from datetime import datetime
 from timeit import timeit
-import math
 from time import time, sleep
 from multiprocessing import Process
 import argparse
-import urllib3
 
 import requests
 from termcolor import cprint
