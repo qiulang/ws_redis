@@ -37,7 +37,7 @@ def api_test(url, input={}, client='b'):
         return result['data']
 
 
-def getTransferSeatList():
+def get_transfer_eatList():
     data = api_test(test_url, {"group_per_page": 10,
                                "group_page": 1})
     for group in data:
@@ -49,4 +49,4 @@ def getTransferSeatList():
             cprint(seat, "green")
 
 
-getTransferSeatList()
+get_transfer_eatList()

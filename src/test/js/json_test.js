@@ -29,3 +29,24 @@ const Moudles = ['app', 'phone-bar']
 
 let debug = Moudles.reduce((a, b) => `${b}*,${a}`, '')
 console.log(`${debug}`)
+
+function overload({ un, pwd, type = 1, number }, cb) {
+  console.log(`${un}:${pwd}:${type}:${number}`)
+  if (!cb || typeof cb != 'function') {
+    console.log('no callback provided')
+  } else {
+    cb(type)
+  }
+}
+
+function o2(un, pwd, fn) {
+  return overload({ un, pwd }, fn)
+}
+
+o2('qiu', 'lang', input => {
+  console.log(`callback input:${input}`)
+})
+
+o2('qiu', input => {
+  console.log(`callback input:${input}`)
+})

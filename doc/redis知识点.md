@@ -66,6 +66,8 @@
 
 
 
+Redis 管道技术——Pipeline 我们代码在用[transaction](https://github.com/luin/ioredis#transaction) 已经用到，但是当时没有太深入了解[pipeline到底什么含义](https://redis.io/topics/pipelining)，其实很简单，因为redis的一个tcp 服务器，每条命令执行都是一个请求相应对
+
 #### digital ocean tutorial
 
 [How To Manage a Redis Database](https://www.digitalocean.com/community/tutorial_series/how-to-manage-a-redis-database)
