@@ -24,7 +24,7 @@
       "type": "node",
       "request": "launch",
       "name": "Launch cache test script",
-      "program": "${workspaceFolder}/src/test/js/cache.js"
+      "program": "${workspaceFolder}/src/test/js/cache_bk.js"
     },
     {
       "type": "node",

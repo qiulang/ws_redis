@@ -94,6 +94,11 @@ router.get('/ghtoken', function(req, res) {
   res.send(token)
 })
 
+router.get('/failme', function(req, res) {
+  let detailed = { info: 'detailed info about the error', subStstua: 50111 }
+  res.status(503).send(detailed)
+})
+
 function enableNS(namespaces, res) {
   dbg.enable(namespaces)
   debug(`enable ${namespaces}`)
