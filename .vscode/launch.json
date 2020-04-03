@@ -23,8 +23,8 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Launch cache test script",
-      "program": "${workspaceFolder}/src/test/js/cache_bk.js"
+      "name": "Launch json script",
+      "program": "${workspaceFolder}/src/test/js/json_test.js"
     },
     {
       "type": "node",
