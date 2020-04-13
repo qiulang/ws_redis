@@ -10,22 +10,30 @@ import mtk
 
 trans_url = "https://emic-cmb.emicloud.com/BSClient/getTransferSeatList"
 ivr_url = "https://emic-cmb.emicloud.com/BSClient/tanferIvrResponse"
+ent_setting = "https://emic-cmb.emicloud.com/enterprise/setting/:seid/:ccgeid"
+base = {
+    "seid": mtk.seid,
+    "ccgeid": mtk.ccgeid,
+    "uid": mtk.userid,
+}
 
 
-def api_test(url, method='get', input={}, client='b'):
+def api_test(url, method='get', input={}, client='b', update_url=False):
     cprint(f'test {url}, get token first', 'green')
     token = get_token(client=client)
     headers = {
         "source": mtk.sources[client],
         "token": token,
     }
-    base_params = {
-        "seid": mtk.seid,
-        "ccgeid": mtk.ccgeid,
-        "uid": mtk.userid,
-    }
-    if len(input) > 0:
-        base_params.update(input)
+    if not update_url:
+        base_params = base
+        if len(input) > 0:
+            base_params.update(input)
+    else:
+        for item in base:
+            if item in url:
+                url = url.replace(':'+item, base[item])
+        base_params = input
 
     if method == 'get':
         response = requests.get(url, headers=headers,
@@ -42,6 +50,8 @@ def api_test(url, method='get', input={}, client='b'):
         cprint(
             f"{url} failed: reason:{response.reason}, status:{response.status_code}")
     else:
+        if method == 'post':
+            return result
         return result['data']
 
 
@@ -75,4 +85,11 @@ def ivr_test():
     cprint(data, "cyan")
 
 
-ivr_test()
+def setting():
+    param = {"vos_arrears": 1}
+    data = api_test(
+        url=ent_setting, method='post', input=param, update_url=True, client='b')
+    cprint(data, "cyan")
+
+
+setting()

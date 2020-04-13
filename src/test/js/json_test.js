@@ -44,11 +44,11 @@ function o2(un, pwd, fn) {
   return overload({ un, pwd }, fn)
 }
 
-o2('qiu', 'lang', input => {
+o2('qiu', 'lang', (input) => {
   console.log(`callback input:${input}`)
 })
 
-o2('qiu', input => {
+o2('qiu', (input) => {
   console.log(`callback input:${input}`)
 })
 
@@ -88,10 +88,10 @@ try {
   //   console.log(`name:${name} -- label:${label}`)
   // }
 
-  let vars = ivrData.variables.filter(v => v.type === 0)
+  let vars = ivrData.variables.filter((v) => v.type === 0)
   if (vars.length <= 0) return
   let ivrFormItem = vars
-  let keys = vars.map(v => v.label)
+  let keys = vars.map((v) => v.label)
   // let params = {}
   // for (let idx of keys) {
   //   params[idx] = 'qiu'
@@ -137,3 +137,59 @@ function compose(path, json) {
     //for ()
   }
 }
+
+const CALL_TYPE = (() => {
+  const customer = 0
+  const seat = 1
+  const predict = 3
+  return {
+    customer,
+    seat,
+    predict,
+    [customer]: {
+      label: '呼入',
+      key: 0,
+    },
+    [seat]: {
+      label: '呼出',
+      key: 1,
+    },
+    [predict]: {
+      label: '预测式外呼',
+      key: 3,
+    },
+  }
+})()
+
+const { customer: callIn, seat: callOut } = CALL_TYPE
+console.log(`${callIn}, ${callOut}`)
+
+const msg2 = {
+  hello: {
+    qiu: 'lang',
+  },
+  data: {
+    reason: null,
+    fail: 2,
+  },
+}
+
+let reason = _.get(msg2, 'data.reason', 0)
+
+const callFailedReason = (code) => {
+  switch (code) {
+    case null:
+    case 0:
+      return '成功'
+    case 29:
+      return '通话已被强拆'
+    case 30:
+      return '通话已被拦截'
+    // case undefined:
+    //   return '不知道什么原因'
+    default:
+      return '未知原因'
+  }
+}
+
+console.log(`reason ${callFailedReason()}`)
