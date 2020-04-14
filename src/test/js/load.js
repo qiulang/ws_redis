@@ -5,15 +5,17 @@
 //   transports: ['websocket']
 // })
 const crypto = require('crypto')
-const socketClient = require('socket.io-client')
+// const socketClient = require('socket.io-client')
 const axios = require('axios')
 var log = require('testable-utils').log
-const cliProgress = require('cli-progress')
+// const cliProgress = require('cli-progress')
 var randomstring = require('randomstring')
 //使用tee时候颜色自动去掉，所以可以放心使用chalk
 const chalk = require('chalk')
 const yargs = require('yargs')
 const _ = require('lodash')
+
+let websocketTest = require('./wsTest')
 
 const server1 = 'https://docker1.emicloud.com/'
 const server2 = 'http://localhost:3000'
@@ -33,27 +35,27 @@ let argv = yargs
   .option('w', {
     default: 10,
     describe: 'wait 20*n seconds to end websocket connection',
-    type: 'number'
+    type: 'number',
   })
   .option('r', {
     default: 1,
     describe: 'repeat time(s)',
-    type: 'number'
+    type: 'number',
   })
   .option('s', {
     default: 0,
     describe: 'test docker1 or localhost',
-    type: 'number'
+    type: 'number',
   })
   .option('c', {
     default: 2,
     describe: 'how many concurrent requests to send',
-    type: 'number'
+    type: 'number',
   })
   .option('p', {
     default: 0.5,
     describe: 'pause n seconds to run the next login',
-    type: 'number'
+    type: 'number',
   }).argv
 
 var wait = argv.w
@@ -63,20 +65,17 @@ var pause = argv.p
 var server = argv.s == 0 ? server1 : server2
 const step = argv.c
 
-const sleep = milliseconds => {
-  return new Promise(resolve => setTimeout(resolve, milliseconds))
+const sleep = (milliseconds) => {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds))
 }
 
 const axiosReq = axios.create({
   baseURL: 'https://emicall-cmb.emicloud.com/',
-  headers: { source: 'client.bs' }
+  headers: { source: 'client.bs' },
 })
 
 function sha256(secret) {
-  return crypto
-    .createHash('sha256')
-    .update(secret)
-    .digest('hex')
+  return crypto.createHash('sha256').update(secret).digest('hex')
 }
 
 function timestampINS() {
@@ -93,7 +92,7 @@ async function request({ url, body, headers = {}, method = 'post' }) {
       url: url,
       method: method,
       headers: headers,
-      data: body
+      data: body,
     })
     if (result.status != 200) {
       console.log(chalk.red(`Failed to ${url}`))
@@ -125,78 +124,10 @@ async function runLoop() {
 async function runWebsocketLoop() {
   for (let index = 0; index < repeat; index++) {
     uid = +userid + index
-    websocketTest(userid)
+    websocketTest(server, { uid: userid, seid, ccgeid }, { showProgress: showP, wait })
     log.debug(`test ${uid} , now wait ${pause} second`)
     await sleep(pause * 1000)
   }
-}
-
-function websocketTest(uid) {
-  var socket = socketClient(server, { forceNew: true, transports: ['websocket'] })
-  var bar = new cliProgress.SingleBar()
-
-  function progress(total) {
-    bar.start(total, 0)
-    let timer = setInterval(() => {
-      bar.increment(1)
-    }, 1000)
-    setTimeout(() => {
-      console.log(' ...')
-      clearInterval(timer)
-    }, total * 1000 + 500)
-  }
-
-  function connectHandler(wait = 10, showProgress = false) {
-    log.info(
-      `${chalk.yellow(socket.id)} aka ${chalk.yellow(uid)} connected, send login request next`
-    )
-    socket.emit('login', uid, seid, ccgeid, function(data) {
-      if (data != uid) {
-        log.fatal('websocket server went wrong, login reply is incorrect')
-        socket.close()
-        return
-      }
-      // log.info(`Tell server ${socket.id} aka ${uid} says hi`)
-      socket.emit('chat-message', `Hi from ${uid}`)
-      // log.info(`${socket.id} waits for ${wait} seconds to send another message`)
-      if (showProgress) progress(wait)
-      setTimeout(function() {
-        if (socket.connected) {
-          socket.emit('user-reconnect', 'load test')
-          log.info(`${socket.id} waits for another ${wait * 20} seconds to goodbye`)
-          if (showProgress) progress(wait * 20)
-          setTimeout(function() {
-            bar.stop()
-            if (socket.connected) {
-              log.info(`${socket.id} is about to close`)
-              socket.close()
-            } else {
-              log.info(`${uid} is not connected, just return`)
-            }
-          }, wait * 20000 + 1000)
-        } else {
-          log.info(`${uid} is not connected, just return`)
-        }
-      }, wait * 1000 + 1000)
-    })
-  }
-
-  socket.on('connect', function() {
-    connectHandler(wait, showP)
-  })
-
-  socket.on('cr_msg', function(data) {
-    log.info(`Got CR message ${JSON.stringify(data)}`)
-  })
-
-  socket.on('logoff', data => {
-    log.debug(`We were told to logoff ${socket.id}`)
-    socket.close()
-  })
-
-  socket.on('disconnect', function() {
-    log.debug(`disconnected ${chalk.yellow(uid)}`)
-  })
 }
 
 async function getToken(number) {
@@ -213,9 +144,7 @@ async function getToken(number) {
     `&nonce=${nonce}&seat=${seat}&source=${source}` +
     `&timestamp=${timestamp}&signatureKey=${password}`
 
-  let signature = sha256(str)
-    .toString()
-    .toUpperCase()
+  let signature = sha256(str).toString().toUpperCase()
 
   const headers = {
     'auth-type': 'signature',
@@ -223,13 +152,13 @@ async function getToken(number) {
     seat,
     nonce,
     timestamp,
-    domain
+    domain,
   }
   console.log(chalk.cyan(`user :${number} is about to login`))
   const result = await request({
     url: '/user/bsToken',
     body: { login_type: loginType },
-    headers
+    headers,
   })
   if (result == false) return
   token = result.data.token
@@ -243,8 +172,8 @@ async function seatLogin(number) {
     body: {
       switch_number: switchNumber,
       work_number: number,
-      password: base64data
-    }
+      password: base64data,
+    },
   })
   if (result == false) {
     console.log(chalk.red('Failed to seatLogin'))
@@ -256,8 +185,8 @@ async function seatLogin(number) {
       `${chalk.yellow(number)}'s uid is ${chalk.yellow(uid)} has login, websocket test next`
     )
   )
-  websocketTest(uid)
-  seatCheckin(number)
+  await seatCheckin(number)
+  websocketTest(server, { uid, seid, ccgeid }, { showProgress: showP, wait })
 }
 
 async function seatCheckin(number) {
@@ -269,11 +198,11 @@ async function seatCheckin(number) {
     preStatusId: 2,
     number,
     seid,
-    ccgeid
+    ccgeid,
   }
   const result = await request({
     url: '/BSClient/seatCheckin',
-    body: data
+    body: data,
   })
   if (result == false) {
     console.log(chalk.red('Failed to seatCheckin'))
@@ -282,5 +211,5 @@ async function seatCheckin(number) {
   console.log(chalk.cyan(`${number} seatCheckin succeed!!`))
 }
 
-// runWebsocketLoop()
-runLoop()
+runWebsocketLoop()
+// runLoop()
