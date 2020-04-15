@@ -176,7 +176,28 @@ const msg2 = {
 
 let reason = _.get(msg2, 'data.reason', 0)
 
-const callFailedReason = (code) => {
+const CALL_TYPE_DESCRI = {
+  0: '客户呼入',
+  1: '座席呼出',
+  2: '语音通知',
+  3: '预测式外呼',
+  10: '内部呼出',
+  11: '内部呼入',
+  12: '转接技能组',
+  13: '转接座席',
+  14: '转接外线',
+  15: '班长监听',
+  16: '多方通话',
+  17: '班长强插',
+  18: '班长强拆',
+  19: '班长拦截',
+}
+
+const callFailedReason = (input = 4) => {
+  let tmp = CALL_TYPE_DESCRI[input]
+  tmp = tmp || '未知'
+  console.log(tmp)
+  return tmp
   switch (code) {
     case null:
     case 0:
@@ -192,4 +213,4 @@ const callFailedReason = (code) => {
   }
 }
 
-console.log(`reason ${callFailedReason()}`)
+console.log(`reason ${callFailedReason(msg2.data.ddd)}`)
