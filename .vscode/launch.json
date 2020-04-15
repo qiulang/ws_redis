@@ -23,8 +23,8 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Launch json script",
-      "program": "${workspaceFolder}/src/test/js/json_test.js"
+      "name": "Launch ws script",
+      "program": "${workspaceFolder}/src/test/js/wsTest.js"
     },
     {
       "type": "node",

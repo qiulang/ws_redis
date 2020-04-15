@@ -9,7 +9,7 @@ var { redis, pub } = require('../database/redis')
 /* 测试 publish 有没有问题. */
 
 /* 两级路由就取不到body内容，没有深入研究为什么*/
-router.post('/dpub', async function(req, res) {
+router.post('/dpub', async function (req, res) {
   //for debug only
   let uid = req.body.uid
   let sid = req.body.sid
@@ -32,7 +32,7 @@ router.post('/dpub', async function(req, res) {
   let msg = {
     op_code: 'debug publish',
     uid: uid,
-    data: { msg: `can you get this ${uuidv1()}?` }
+    data: { msg: `can you get this ${uuidv1()}?` },
   }
   let receiver = await pub.publish(uid, JSON.stringify(msg))
   if (receiver == 0) {
@@ -45,7 +45,7 @@ router.post('/dpub', async function(req, res) {
   }
 })
 
-router.put('/clog', function(req, res) {
+router.put('/clog', function (req, res) {
   //only 3 levels: debug,info,warn
   let log_level = { d: 'app:*', i: 'app:info,app:warn', w: 'app:warn' }
   let tmp = req.body.level
@@ -80,23 +80,27 @@ router.put('/clog', function(req, res) {
   enableNS(namespaces, res)
 })
 
-router.get('/elog', function(req, res) {
+router.get('/elog', function (req, res) {
   namespaces = dbg.disable()
   dbg.enable(namespaces)
   debug(`Currently enable ${namespaces}`)
   res.send(`Currently enable ${namespaces}\n`)
 })
 
-router.get('/ghtoken', function(req, res) {
+router.get('/ghtoken', function (req, res) {
   // res.setHeader('Cache-Control', 'no-cache')
   console.log(JSON.stringify(req.headers))
   const token = { qiulang: 'bc0c626de8a069b42e79d2ca312d5498dbfc9018' }
   res.send(token)
 })
 
-router.get('/failme', function(req, res) {
+router.get('/failme', function (req, res) {
   let detailed = { info: 'detailed info about the error', subStstua: 50111 }
   res.status(503).send(detailed)
+})
+
+router.get('/login', function (req, res) {
+  res.send({ ws: 'proceed', user: '1001' })
 })
 
 function enableNS(namespaces, res) {

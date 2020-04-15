@@ -15,7 +15,7 @@ const chalk = require('chalk')
 const yargs = require('yargs')
 const _ = require('lodash')
 
-let websocketTest = require('./wsTest')
+let websocketTest = require('./socket')
 
 const server1 = 'https://docker1.emicloud.com/'
 const server2 = 'http://localhost:3000'
@@ -124,7 +124,7 @@ async function runLoop() {
 async function runWebsocketLoop() {
   for (let index = 0; index < repeat; index++) {
     uid = +userid + index
-    websocketTest(server, { uid: userid, seid, ccgeid }, { showProgress: showP, wait })
+    await websocketTest(server, { uid: userid, seid, ccgeid }, { showProgress: showP, wait })
     log.debug(`test ${uid} , now wait ${pause} second`)
     await sleep(pause * 1000)
   }

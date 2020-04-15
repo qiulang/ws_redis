@@ -59,7 +59,7 @@ chat 例子一开始没跑起应该 socket.io client版本问题。另，开了�
 
 [WebSocket vs socket.io](https://stackoverflow.com/questions/10112178/differences-between-socket-io-and-websockets)
 
-[Moving from socket.io to raw websockets?](https://stackoverflow.com/questions/38546496/moving-from-socket-io-to-raw-websockets)
+[Moving from socket.io to raw websockets?](https://stackoverflow.com/questions/38546496/moving-from-socket-io-to-raw-websockets) 回答其实是列出socket.io 比原生websocket提供的功能
 
 [Which websocket library to use with Node.js?](https://stackoverflow.com/questions/16392260/which-websocket-library-to-use-with-node-js)
 
@@ -825,4 +825,72 @@ https://stackoverflow.com/questions/60750417/why-doesnt-chrome-use-etag-if-none-
 
 
 
+###websocket client 
+
+小程序websocket尝试连接我们的websocket 服务器失败 `Error during WebSocket handshake: Unexpected response code: 200` 尝试用 [ws](https://github.com/websockets/ws) 连也报错（连ws的服务器没问题）：
+
+```javascript
+Error: socket hang up
+    at createHangUpError (_http_client.js:322:15)
+    at Socket.socketOnEnd (_http_client.js:425:23)
+    at Socket.emit (events.js:187:15)
+    at endReadableNT (_stream_readable.js:1094:12)
+    at process._tickCallback (internal/process/next_tick.js:63:19)
+```
+
+
+
+查了 ws问题单，发现 [Error: socket hang up](https://github.com/websockets/ws/issues/1390) 终于发现原因:
+
+> You are not connecting to the same path, look at the url in your screenshot and the url you used in the WebSocket constructor, they are not the same.
+>
+> Also using plain WebSocket to talk with a Socket.IO server does not work seamlessly.
+
+
+
+**连接url 不能只写**   `ws://localhost:3000` 必须是 `'ws://localhost:3000/socket.io/?EIO=3&transport=websocket'` 
+
+`EIO=3` 的含义是 https://socket.io/docs/internals/
+
+```
+GET wss://myhost.com/socket.io/?EIO=3&transport=websocket&sid=36Yib8-rSutGQYLfAAAD
+
+with:
+
+  "EIO=3"                     # again, the current version of the Engine.IO protocol
+  "transport=websocket"       # the new transport being probed
+  "sid=36Yib8-rSutGQYLfAAAD"  # the unique session id
+
+```
+
+
+
+用了这个完整url后ws连接就成功，但是连接马上就断开了, 是不是就是ws作者说的 "using plain WebSocket to talk with a Socket.IO server does not work seamlessly." 暂时没有再深入研究。
+
+```
+on message 0{"sid":"YsmSkuo5AJlhkXMJAAAD","upgrades":[],"pingInterval":25000,"pingTimeout":5000}
+on message 40
+....
+服务器端错误信息是
+socket id ZSGdCWEfouFeP2N9AAAA has disconnected with reason parse error
+```
+
+
+
+直接在浏览器用浏览器原生的websocket https://developer.mozilla.org/en-US/docs/Web/API/WebSocket
+
+| Constant               | Value |
+| ---------------------- | ----- |
+| `WebSocket.CONNECTING` | `0`   |
+| `WebSocket.OPEN`       | `1`   |
+| `WebSocket.CLOSING`    | `2`   |
+| `WebSocket.CLOSED`     | `3`   |
+
+```javascript
+var ws = new WebSocket('wss://docker1.emicloud.com/socket.io/?EIO=3&transport=websocket')
+//1 表示 open
+WebSocket {url: "wss://docker1.emicloud.com/socket.io/?EIO=3&transport=websocket", readyState: 1, bufferedAmount: 0, onopen: null, onerror: null, …} 
+//更多代码示例可以参见
+https://www.tutorialspoint.com/html5/html5_websocket.htm
+```
 
