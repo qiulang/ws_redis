@@ -6,9 +6,6 @@ wss.on('connection', function connection(ws) {
   ws.on('message', function incoming(message) {
     console.log('on message:received: %s', message)
   })
-  ws.on('login', (msg) => {
-    console.log('Can this work?')
-  })
 
   ws.send('something')
 })

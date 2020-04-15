@@ -24,7 +24,7 @@
       "type": "node",
       "request": "launch",
       "name": "Launch ws script",
-      "program": "${workspaceFolder}/src/test/js/wsTest.js"
+      "program": "${workspaceFolder}/src/test/js/wsServer.js"
     },
     {
       "type": "node",
