@@ -65,9 +65,15 @@ chat 例子一开始没跑起应该 socket.io client版本问题。另，开了�
 
 [8 Node.js Web Socket Libraries for 2019](https://blog.bitsrc.io/8-node-js-web-socket-libraries-for-2018-818e7e5b67cf)
 
-如果不用socket.io 可以试试 [ws](https://github.com/websockets/ws) 它比socket.io的一个优势是一直在维护。[但如果没有提供像 socket.io-redis  这样用来处理docker 部署的库](https://github.com/websockets/ws/issues/1712)，使用会是大问题，目前没时间研究。
+如果不用socket.io 可以试试 [ws](https://github.com/websockets/ws) 它比socket.io的一个优势是一直在维护。[但如果没有提供像 socket.io-redis  这样用来处理docker 部署的库](https://github.com/websockets/ws/issues/1712)，使用会是大问题，目前没时间研究。注：见下面补充 websocket client
 
 [Ratchet部署文档](http://socketo.me/docs/push) , websocket 服务器和web服务器通信 它用ZeroMQ， 用RabbitMQ也类似，但我们不要再引入一个mq，[它的使用方式](https://www.cloudamqp.com/blog/2015-05-19-part2-2-rabbitmq-for-beginners_example-and-sample-code-node-js.html) 和 [redis 的 pubsub](https://redis.io/topics/pubsub) 乍一看也太大区别，就用[redis的pubsub](https://stackoverflow.com/questions/32743754/using-redis-as-pubsub-over-socket-io) 
+
+
+
+注：socket.io始终是第一选择，而且作者也确保还在开发中 https://github.com/socketio/socket.io/issues/3311
+
+v3 roadmap https://github.com/socketio/socket.io/issues/3250
 
 
 
@@ -121,6 +127,8 @@ An encoded packet can be UTF-8 string or binary data. The packet encoding format
 4 message
 ...
 ```
+
+具体的通信协议 https://github.com/socketio/socket.io-protocol
 
 在docker容器使用 socket.io一定要用  socket.io-redis 包：因为有多个docker，~~同一个浏览器发来的websocket消息可能被分发到不同的docker容器处理。~~ 上面这句描述应该是错误，使用websocket，同一个消息会发到同一个docker容器，我们的问题是 redis sub 处理可能在另一个容器。
 
@@ -865,7 +873,7 @@ with:
 
 
 
-用了这个完整url后ws连接就成功，但是连接马上就断开了, 是不是就是ws作者说的 "using plain WebSocket to talk with a Socket.IO server does not work seamlessly." 暂时没有再深入研究。
+用了这个完整url后ws连接就成功，但是连接马上就断开了, ~~是不是~~就是ws作者说的 "using plain WebSocket to talk with a Socket.IO server does not work seamlessly." ~~暂时没有再深入研究~~。
 
 ```
 on message 0{"sid":"YsmSkuo5AJlhkXMJAAAD","upgrades":[],"pingInterval":25000,"pingTimeout":5000}
@@ -893,4 +901,18 @@ WebSocket {url: "wss://docker1.emicloud.com/socket.io/?EIO=3&transport=websocket
 //更多代码示例可以参见
 https://www.tutorialspoint.com/html5/html5_websocket.htm
 ```
+
+用浏览器原生的 websocket连接socket.io服务器，和 ws一样错误所以需要研究下!
+
+`socket id E0y-r0Fq0KSzQs0pAAAB has disconnected with reason parse error` 
+
+
+
+#### 更新
+
+ws 和 浏览器原生websocket连接 socket.io 服务器都报 `parse error` 肯定是没有处理socket.io的协议，再仔细看socket.io文档**其实写得很清楚**：
+
+> Socket.IO is not a WebSocket implementation. Although Socket.IO indeed uses WebSocket as a transport when possible, it adds some metadata to each packet: the packet type, the namespace and the ack id when a message acknowledgement is needed. That is why a WebSocket client will not be able to successfully connect to a Socket.IO server, and a Socket.IO client will not be able to connect to a WebSocket server (like `ws://echo.websocket.org`) either.
+
+总结这个这些天调查结果 [Why HTML WebSocket access Socket.io web socket server failed?](https://stackoverflow.com/questions/25116394/why-html-websocket-access-socket-io-web-socket-server-failed)
 

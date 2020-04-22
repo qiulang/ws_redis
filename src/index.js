@@ -27,9 +27,9 @@ app.use(cors())
 
 app.use('/', indexRouter)
 
-io.on('connection', async function(socket) {
+io.on('connection', async function (socket) {
   //客户端连接成功后会主动发login消息，redis记录 user 到 socketio.id的对应
-  socket.on('login', async function(user_id, seid, ccgeid, fn) {
+  socket.on('login', async function (user_id, seid, ccgeid, fn) {
     debug(`user ${user_id}, seid:${seid}, ccgeid:${ccgeid} login using socket ${socket.id}`)
     let exist = await dupCheck(user_id, socket.id, fn)
     if (exist) {
@@ -52,17 +52,17 @@ io.on('connection', async function(socket) {
     user_socket[user_id] = socket.id
     await sub.subscribe(user_id)
     info(`store in hash table user_socket ${user_id} => ${socket.id} AND SUB subscribe`)
-    fn(`${user_id}`)
+    if (typeof fn === 'function') fn(`${user_id}`)
   })
   //Server do NOT have reconnect event
   //https://socket.io/docs/emit-cheatsheet/
-  socket.on('user-reconnect', async function(reason, fn) {
+  socket.on('user-reconnect', async function (reason, fn) {
     debug(`Client emit a reconnect event with reason:${reason}, ${socket.id}`)
     if (fn && typeof value === 'function') fn(`${socket.id}`)
   })
 
   //用户关闭页面，断网都会触发disconnect消息
-  socket.on('disconnect', async function(reason) {
+  socket.on('disconnect', async function (reason) {
     //https://socket.io/docs/server-api/#Event-%E2%80%98disconnect%E2%80%99
     debug(`socket id ${socket.id} has disconnected with reason ${reason}`)
     //客户端断开，重连，比如重刷浏览器原因是 'transport close'
@@ -111,7 +111,7 @@ io.on('connection', async function(socket) {
   })
 
   //chat-message这个现在意义不大，可以用于测试连接
-  socket.on('chat-message', async msg => {
+  socket.on('chat-message', async (msg) => {
     debug(`用收到消息模拟CS发给我的用户属性:${msg}`)
     let user_id = await redis.hget('websocket:socket_user', socket.id)
     redis.hset(`websocket:${user_id}`, 'chat-message', msg)
@@ -119,7 +119,7 @@ io.on('connection', async function(socket) {
 })
 
 //订购 redis 消息处理，一般是web服务器发给我们的
-sub.on('message', async function(channel, message) {
+sub.on('message', async function (channel, message) {
   debug('SUB channel %s received message %s', channel, message)
   let socketid = await redis.hget(`websocket:${channel}`, 'socketid')
   if (!socketid) {
@@ -193,15 +193,11 @@ async function notifyDisconnect(socket_id, user_id) {
     seid: seid,
     ccgeid: ccgeid,
     op_code: 'check_out',
-    channel_id: user_id
+    channel_id: user_id,
   }
   pub.publish('seat_message_channel', JSON.stringify(msg))
   info(`publish to seat_message_channel ${user_id} check_out`)
-  await redis
-    .multi()
-    .hdel('websocket:socket_user', socket_id)
-    .del(`websocket:${user_id}`)
-    .exec()
+  await redis.multi().hdel('websocket:socket_user', socket_id).del(`websocket:${user_id}`).exec()
   debug(`Delete ${socket_id} related data ${user_id} after ${RTIME} seconds`)
 }
 
@@ -218,7 +214,7 @@ async function startServer() {
     portfinder.basePort = port
     port = await portfinder.getPortPromise()
   }
-  http.listen(port, function() {
+  http.listen(port, function () {
     debug('server starts, listening on *:' + port)
   })
 }
