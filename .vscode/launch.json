@@ -23,8 +23,8 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Launch ws script",
-      "program": "${workspaceFolder}/src/test/js/wsServer.js"
+      "name": "Launch walk script",
+      "program": "${workspaceFolder}/src/test/js/deepWalk.js"
     },
     {
       "type": "node",

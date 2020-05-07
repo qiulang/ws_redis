@@ -916,3 +916,4 @@ ws 和 浏览器原生websocket连接 socket.io 服务器都报 `parse error` �
 
 总结这个这些天调查结果 [Why HTML WebSocket access Socket.io web socket server failed?](https://stackoverflow.com/questions/25116394/why-html-websocket-access-socket-io-web-socket-server-failed)
 
+如果要浏览器原生websocket，服务器需要用ws，可以参见 https://lostmoa.com/blog/WebSocketDemoServerInNodeJS/
