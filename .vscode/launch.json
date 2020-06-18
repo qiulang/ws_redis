@@ -24,7 +24,7 @@
       "type": "node",
       "request": "launch",
       "name": "Launch walk script",
-      "program": "${workspaceFolder}/src/test/js/deepWalk.js"
+      "program": "${workspaceFolder}/src/test/js/lettest.js"
     },
     {
       "type": "node",

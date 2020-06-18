@@ -103,6 +103,10 @@ router.get('/login', function (req, res) {
   res.send({ ws: 'proceed', user: '1001' })
 })
 
+router.post('/pcclient', function (req, res) {
+  res.send('switchnumber=02566687671&logintype=1&usernumber=7820')
+})
+
 function enableNS(namespaces, res) {
   dbg.enable(namespaces)
   debug(`enable ${namespaces}`)

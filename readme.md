@@ -75,6 +75,8 @@ chat 例子一开始没跑起应该 socket.io client版本问题。另，开了�
 
 v3 roadmap https://github.com/socketio/socket.io/issues/3250
 
+[Everything You Need To Know About Socket.IO](https://www.ably.io/concepts/socketio) 几个模块介绍
+
 
 
 #### websocket 的url 能带 query string吗 ？
@@ -917,3 +919,12 @@ ws 和 浏览器原生websocket连接 socket.io 服务器都报 `parse error` �
 总结这个这些天调查结果 [Why HTML WebSocket access Socket.io web socket server failed?](https://stackoverflow.com/questions/25116394/why-html-websocket-access-socket-io-web-socket-server-failed)
 
 如果要浏览器原生websocket，服务器需要用ws，可以参见 https://lostmoa.com/blog/WebSocketDemoServerInNodeJS/
+
+浏览器原生ws的一大问题是没有断线重连机制:
+
+1.  [Reconnection and KeepAlive](https://github.com/websockets/ws/issues/767)   
+
+   >  That's correct, there is no auto reconnect.
+
+2. https://github.com/websockets/ws#how-to-detect-and-close-broken-connections 
+
