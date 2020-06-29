@@ -16,9 +16,11 @@ const portfinder = require('portfinder')
 let RTIME = process.env.RTIME || 45
 
 startServer()
-//不需要redis来存
+//不在redis，一旦socket.id的信息记录到redis就清楚在dup的记录
+//不是100%确认一定必要，而且要避免内存泄漏情况
 var dup = {}
-//不在redis，只记录本进程
+//不在redis只记录本进程处理的，目的是在disconnect里判断要不要unsubscribe
+//从收集到的日志看这种情况是存在的，而且目前看不会有内存泄漏情况
 var user_socket = {}
 
 app.use(express.json()) //https://stackoverflow.com/a/47232318/301513
@@ -85,7 +87,7 @@ io.on('connection', async function (socket) {
       delete user_socket[user_id]
     } else {
       //说明有新的连接，而且是同一个进程处理的，就不能 unsubscribe
-      info(`SUB ${user_id} has new subscription`)
+      info(`SUB ${user_id} has new subscription: ${local} vs ${socket.id}`)
     }
     //RTIME后查是不是用户主动下线， reason 'client namespace disconnect'
     setTimeout(
@@ -173,6 +175,7 @@ async function dupCheck(user_id, socket_id, fn) {
   }
   if (old_socket == socket_id) {
     debug(`Another login with the existing ${socket_id}, just return.`)
+    delete dup[socket.id]
     return true
   }
   //now we assume it is another login
