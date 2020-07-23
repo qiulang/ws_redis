@@ -17,7 +17,12 @@
       "request": "launch",
       "name": "debug server",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run-script", "debug"],
+      "runtimeArgs": ["run-script", "debug"]
+    },
+    {
+      "name": "Attach to NPM",
+      "type": "node",
+      "request": "attach",
       "port": 9229
     },
     {

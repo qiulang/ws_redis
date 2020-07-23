@@ -93,14 +93,16 @@ io.on('connection', async function (socket) {
     setTimeout(
       async (sid, uid) => {
         debug(`${RTIME} seconds later, check ${sid} with reason ${reason}`)
-        let new_socket = await redis.hget(`websocket:${user_id}`, 'socketid')
+        let new_socket = await redis.hget(`websocket:${uid}`, 'socketid')
         if (new_socket == sid) {
           debug(`${sid} remains the same so assume we disconnected`)
+          debug(`Delete ${sid} related data ${uid} after ${RTIME} seconds`)
+          await redis.multi().hdel('websocket:socket_user', sid).del(`websocket:${uid}`).exec()
           if (reason == 'client namespace disconnect') {
             info(`Assume ${uid} logoff and told CR, so we do NOT send check_out message`)
           } else {
             debug(`Assume ${uid} just closes tab, so we need to tell CR`)
-            await notifyDisconnect(sid, uid)
+            notifyDisconnect(sid, uid)
           }
         } else {
           debug(`Indeed client reconnect with ${new_socket}`)
@@ -139,7 +141,7 @@ sub.on('message', async function (channel, message) {
     io.to(socketid).emit('cr_msg', message)
     info(`SUB emit ${message} to ${socketid}`)
   } catch (err) {
-    info(`SUB message ${message} is not a valid JSON string so we did not sent to client`)
+    info(`io.to(socketid).emit failed:${JSON.stringify(err)}`)
   }
 })
 //连接的时候调用检查
@@ -200,8 +202,6 @@ async function notifyDisconnect(socket_id, user_id) {
   }
   pub.publish('seat_message_channel', JSON.stringify(msg))
   info(`publish to seat_message_channel ${user_id} check_out`)
-  await redis.multi().hdel('websocket:socket_user', socket_id).del(`websocket:${user_id}`).exec()
-  debug(`Delete ${socket_id} related data ${user_id} after ${RTIME} seconds`)
 }
 
 async function startServer() {
