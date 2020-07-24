@@ -928,3 +928,25 @@ ws 和 浏览器原生websocket连接 socket.io 服务器都报 `parse error` �
 
 2. https://github.com/websockets/ws#how-to-detect-and-close-broken-connections 
 
+
+
+### disconnect的原因 
+
+[5 个disconnect 原因](https://socket.io/docs/server-api/#Event-'disconnect') 通过查现场日志偶尔有 `transport error` 这到底是什么错误原因不明，过去一个断线原因分析
+
+```shell
+'has disconnected with reason' 107195
+'has disconnected with reason' and 'transport close'  84,841  重刷浏览器
+'has disconnected with reason' and 'ping timeout'  17259  网络断线
+'has disconnected with reason' and 'client namespace disconnect' 5087  主动下线
+'has disconnected with reason' and 'transport error'  8 未知原因
+```
+
+https://github.com/socketio/engine.io-protocol#timeouts
+
+> The client must use the `pingTimeout` and the `pingInterval` sent as part of the handshake (with the `open` packet) to determine whether the server is unresponsive.
+>
+> The server sends a `ping` packet. If no packet type is received within `pingTimeout`, the server considers the socket disconnected. If a `pong` packet is actually received, the server will wait `pingInterval` before sending a `ping` packet again.
+>
+> Since the two values are shared between the server and the client, the client will also be able to detect whether the server becomes unresponsive when it does not receive any data within `pingTimeout + pingInterval`.
+

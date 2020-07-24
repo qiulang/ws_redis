@@ -3,7 +3,10 @@ var app = express()
 var cors = require('cors')
 var http = require('http').Server(app)
 var redisAdapter = require('socket.io-redis')
-var io = require('socket.io')(http)
+var io = require('socket.io')(http, {
+  pingInterval: 10000,
+  pingTimeout: 5000,
+})
 // var io = require('socket.io')(http, { path: 'rep' })
 var { info, warn } = require('./logger')
 var debug = require('debug')('app:websocket:debug')
