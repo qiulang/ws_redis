@@ -25,8 +25,10 @@ const userid = '1000988323' //7820
 const seid = '134'
 const ccgeid = '243'
 const numberBase = 1000
-const switchNumber = '02566609090'
-const password = 'cczx123456'
+// const switchNumber = '02566687671'
+const switchNumber = '243'
+const password = '12345678'
+const is_ccgeid = 1
 
 let buff = Buffer.from(password)
 let base64data = buff.toString('base64')
@@ -71,7 +73,7 @@ const sleep = (milliseconds) => {
 
 const axiosReq = axios.create({
   baseURL: 'https://emicall-cmb.emicloud.com/',
-  headers: { source: 'client.bs' },
+  headers: { source: 'client.pc.common' },
 })
 
 function sha256(secret) {
@@ -87,13 +89,18 @@ async function request({ url, body, headers = {}, method = 'post' }) {
   if (_.isEmpty(headers)) {
     headers = { token }
   }
+  let param = {
+    url: url,
+    method: method,
+    headers: headers,
+  }
+  if (method == 'post') {
+    param.data = body
+  } else {
+    param.params = body
+  }
   try {
-    const result = await axiosReq({
-      url: url,
-      method: method,
-      headers: headers,
-      data: body,
-    })
+    const result = await axiosReq(param)
     if (result.status != 200) {
       console.log(chalk.red(`Failed to ${url}`))
       return false
@@ -132,7 +139,7 @@ async function runWebsocketLoop() {
 
 async function getToken(number) {
   let authType = 'signature'
-  let source = 'client.bs'
+  let source = 'client.pc.common'
   let loginType = 1
   let nonce = randomstring.generate(32)
   let timestamp = timestampINS()
@@ -140,11 +147,13 @@ async function getToken(number) {
   const seat = `${number}@${switchNumber}`
 
   let str =
-    `auth-type=${authType}&login_type=${loginType}` +
+    `auth-type=${authType}&is_ccgeid=${is_ccgeid}&login_type=${loginType}` +
     `&nonce=${nonce}&seat=${seat}&source=${source}` +
     `&timestamp=${timestamp}&signatureKey=${password}`
 
   let signature = sha256(str).toString().toUpperCase()
+
+  console.log(chalk.cyan(`signature :${signature} is about to login`))
 
   const headers = {
     'auth-type': 'signature',
@@ -153,17 +162,34 @@ async function getToken(number) {
     nonce,
     timestamp,
     domain,
+    source,
   }
   console.log(chalk.cyan(`user :${number} is about to login`))
   const result = await request({
-    url: '/user/bsToken',
-    body: { login_type: loginType },
+    url: '/user/token',
+    body: { login_type: loginType, is_ccgeid },
     headers,
   })
-  if (result == false) return
+  if (result.code != 200) {
+    console.log(chalk.cyan(`Got token failed`))
+    return
+  }
   token = result.data.token
   console.log(chalk.cyan(`Got token:${token}`))
   // seatLogin(number)
+  // getSetting()
+}
+
+async function getSetting() {
+  let url = `enterprise/setting/${seid}/${ccgeid}`
+  let body = { key: 'extension_start,extension_end' }
+  console.log(chalk.cyan(`call ${url}`))
+  let result = await request({
+    url,
+    body,
+    method: 'get',
+  })
+  console.log(chalk.cyan(`Got token:${JSON.stringify(result)}`))
 }
 
 async function seatLogin(number) {
@@ -213,4 +239,4 @@ async function seatCheckin(number) {
 
 // runWebsocketLoop()
 // runLoop()
-getToken(1000)
+getToken(7821)

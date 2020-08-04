@@ -12,6 +12,10 @@ let input = JSON.parse(tmp).data
 /** @type {Menu[]} */
 
 function walk(menuInput) {
+  if (!menuInput) {
+    console.log('null or empty')
+    return
+  }
   let menus = []
   for (const item of menuInput) {
     let i = {}
@@ -25,6 +29,12 @@ function walk(menuInput) {
   }
   return menus
 }
+
+var a
+
+walk()
+walk('')
+walk(a)
 
 let menus = walk(input)
 console.log(JSON.stringify(menus))
