@@ -28,7 +28,7 @@ const numberBase = 1000
 const switchNumber = '02566609090'
 const password = 'cczx123456'
 
-let buff = new Buffer(password)
+let buff = Buffer.from(password)
 let base64data = buff.toString('base64')
 
 let argv = yargs
@@ -162,8 +162,8 @@ async function getToken(number) {
   })
   if (result == false) return
   token = result.data.token
-  // console.log(chalk.cyan(`Got token:${token}`))
-  seatLogin(number)
+  console.log(chalk.cyan(`Got token:${token}`))
+  // seatLogin(number)
 }
 
 async function seatLogin(number) {
@@ -211,5 +211,6 @@ async function seatCheckin(number) {
   console.log(chalk.cyan(`${number} seatCheckin succeed!!`))
 }
 
-runWebsocketLoop()
+// runWebsocketLoop()
 // runLoop()
+getToken(1000)
