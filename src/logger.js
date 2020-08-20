@@ -9,5 +9,5 @@ let warn = log('app:warn')
 // warn.log = console.log.bind(console)
 
 //以后其他模块如果要用debug，ns建议用本模块名字，app:xxx:debug,
-//缺省debug打开，但info和warn就共用一个
+//缺省把本模块的debug打开，但info和warn 整个进程共用一个
 module.exports = { debug, info, warn }

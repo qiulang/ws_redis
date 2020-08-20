@@ -100,13 +100,13 @@ io.on('connection', async function (socket) {
         if (new_socket == sid) {
           debug(`${sid} remains the same so assume we disconnected`)
           debug(`Delete ${sid} related data ${uid} after ${RTIME} seconds`)
-          await redis.multi().hdel('websocket:socket_user', sid).del(`websocket:${uid}`).exec()
           if (reason == 'client namespace disconnect') {
             info(`Assume ${uid} logoff and told CR, so we do NOT send check_out message`)
           } else {
             debug(`Assume ${uid} just closes tab, so we need to tell CR`)
-            notifyDisconnect(sid, uid)
+            await notifyDisconnect(sid, uid)
           }
+          await redis.multi().hdel('websocket:socket_user', sid).del(`websocket:${uid}`).exec()
         } else {
           debug(`Indeed client reconnect with ${new_socket}`)
         }
