@@ -107,9 +107,11 @@ v3 roadmap https://github.com/socketio/socket.io/issues/3250
 
 **关于socket.io启动 http server 和 express的不同**
 
-1. https://stackoverflow.com/questions/26921117/http-createserverapp-v-http-serverapp
+1. [http.createServer(app) v. http.Server(app)](https://stackoverflow.com/questions/26921117/http-createserverapp-v-http-serverapp)
 
-2. https://stackoverflow.com/questions/27492101/what-is-happening-when-requirehttp-server-is-evaluated-with-an-express-app
+2. [What is happening when require(“http”).Server() is evaluated with an Express app as its argument?](https://stackoverflow.com/questions/27492101/what-is-happening-when-requirehttp-server-is-evaluated-with-an-express-app)
+
+3. [Express.js - app.listen vs server.listen](https://stackoverflow.com/questions/17696801/express-js-app-listen-vs-server-listen)
 
 **关于关闭页面，断网 socket.io的处理**
 

@@ -8,6 +8,7 @@ var io = require('socket.io')(http, {
   pingTimeout: 5000,
 })
 // var io = require('socket.io')(http, { path: 'rep' })
+let unserialize = require('locutus/php/var/unserialize')
 var { info, warn } = require('./logger')
 var debug = require('debug')('app:websocket:debug')
 var { redis, pub, sub } = require('./database/redis')
@@ -18,7 +19,6 @@ const portfinder = require('portfinder')
 
 let RTIME = process.env.RTIME || 45
 
-startServer()
 //不在redis，一旦socket.id的信息记录到redis就清楚在dup的记录
 //不是100%确认一定必要，而且要避免内存泄漏情况
 var dup = {}
@@ -26,38 +26,29 @@ var dup = {}
 //从收集到的日志看这种情况是存在的，而且目前看不会有内存泄漏情况
 var user_socket = {}
 
-app.use(express.json()) //https://stackoverflow.com/a/47232318/301513
-app.use(express.urlencoded({ extended: false }))
-app.use(cors())
-
-app.use('/', indexRouter)
+//入口函数
+startServer()
 
 io.on('connection', async function (socket) {
   //客户端连接成功后会主动发login消息，redis记录 user 到 socketio.id的对应
-  socket.on('login', async function (user_id, seid, ccgeid, fn) {
-    debug(`user ${user_id}, seid:${seid}, ccgeid:${ccgeid} login using socket ${socket.id}`)
+  socket.on('login', async function ({ user_id, seid, ccgeid, token }, fn) {
+    debug(
+      `user ${user_id}, seid:${seid}, ccgeid:${ccgeid}, token:${token} login using socket ${socket.id}`
+    )
+    let tcheck = await tokenCheck(user_id, token)
+    if (!tcheck) {
+      if (typeof fn === 'function') fn(`${user_id}:logoff`)
+      //BS 客户端连上来带了 fn ,这个修改本来就是为了防止别人来连我们的 ws，他们应该就不会带fn
+      warn(`${user_id} uses invalid token ${token}, close ws connection in 3 seconds`)
+      setTimeout(() => socket.disconnect(true), 3000)
+      return
+    }
     let exist = await dupCheck(user_id, socket.id, fn)
     if (exist) {
       return
     }
-    await redis
-      .multi()
-      .hset('websocket:socket_user', socket.id, user_id) //socket.io 状态变化取到对用用户
-      .hset(
-        `websocket:${user_id}`,
-        'socketid',
-        socket.id, //pub-sub 取到对应的 socket.io
-        'seid',
-        seid,
-        'ccgeid',
-        ccgeid
-      )
-      .exec()
-    delete dup[socket.id]
-    user_socket[user_id] = socket.id
-    await sub.subscribe(user_id)
-    info(`store in hash table user_socket ${user_id} => ${socket.id} AND SUB subscribe`)
-    if (typeof fn === 'function') fn(`${user_id}`)
+    await login({ user_id, seid, ccgeid, socket })
+    if (typeof fn === 'function') fn(`${user_id}:login`)
   })
   //Server do NOT have reconnect event
   //https://socket.io/docs/emit-cheatsheet/
@@ -147,6 +138,20 @@ sub.on('message', async function (channel, message) {
     info(`io.to(socketid).emit failed:${JSON.stringify(err)}`)
   }
 })
+
+//token检查做身份认证
+async function tokenCheck(user_id, token) {
+  if (process.env.TOKEN_CHECK === '0') {
+    debug(`Local redis, skip token check: ${user_id}:${token}`)
+    return true
+  }
+  if (!token) return false
+  let tr = await redis.get(`cc-cm:user:tokens:seat:${user_id}`)
+  debug(`${token} vs redis value ${tr}`)
+  const t = unserialize(tr)
+  return t['client.bs'] === token
+}
+
 //连接的时候调用检查
 async function dupCheck(user_id, socket_id, fn) {
   if (!user_id) {
@@ -193,6 +198,26 @@ async function dupCheck(user_id, socket_id, fn) {
   return false //更新 socketid
 }
 
+async function login({ user_id, seid, ccgeid, socket }) {
+  await redis
+    .multi()
+    .hset('websocket:socket_user', socket.id, user_id) //socket.io 状态变化取到对用用户
+    .hset(
+      `websocket:${user_id}`,
+      'socketid',
+      socket.id, //pub-sub 取到对应的 socket.io
+      'seid',
+      seid,
+      'ccgeid',
+      ccgeid
+    )
+    .exec()
+  delete dup[socket.id]
+  user_socket[user_id] = socket.id
+  await sub.subscribe(user_id)
+  info(`store in hash table user_socket ${user_id} => ${socket.id} AND SUB subscribe`)
+}
+
 async function notifyDisconnect(socket_id, user_id) {
   let seid = await redis.hget(`websocket:${user_id}`, 'seid')
   let ccgeid = await redis.hget(`websocket:${user_id}`, 'ccgeid')
@@ -223,4 +248,8 @@ async function startServer() {
   http.listen(port, function () {
     debug('server starts, listening on *:' + port)
   })
+  app.use(express.json()) //https://stackoverflow.com/a/47232318/301513
+  app.use(express.urlencoded({ extended: false }))
+  app.use(cors())
+  app.use('/', indexRouter)
 }

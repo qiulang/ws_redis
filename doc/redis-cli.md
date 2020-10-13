@@ -81,7 +81,7 @@ emic-cm-redis.redis.rds.aliyuncs.com:6379> hkeys websocket:socket_user
 3) "3bfMtpeGITNg2bLcAAAB"
 4) "BwaNplVtl2r4E-dAAAAH"
 5) "chjwBQNIQvMIHP1AAAAI"
-//进一步再参看每个连接信息，每个坐席hash是websocket:uid(uid是seid_ccgeid_eid)
+//进一步再查看每个连接信息，每个坐席hash是websocket:uid(uid是seid_ccgeid_eid)
 emic-cm-redis.redis.rds.aliyuncs.com:6379> hgetall websocket:134_243_1000962235
 1) "socketid"
 2) "3bfMtpeGITNg2bLcAAAB"
@@ -89,7 +89,7 @@ emic-cm-redis.redis.rds.aliyuncs.com:6379> hgetall websocket:134_243_1000962235
 4) "134"
 5) "ccgeid"
 6) "243"
-//参看目前redis消息通道
+//查看目前redis消息通道
 emic-cm-redis.redis.rds.aliyuncs.com:6379> pubsub channels
 1) "134_243_1000998469"
 2) "socket.io-response#/#"
@@ -99,5 +99,9 @@ emic-cm-redis.redis.rds.aliyuncs.com:6379> pubsub channels
 6) "seat_message_channel"
 7) "134_243_1000988323"
 8) "134_243_1000962235"
+//查看目前的token， 用key 命令
+emic-cm-redis.redis.rds.aliyuncs.com:6379> keys cc-cm:user:tokens:*
+//查看可以的类型
+emic-cm-redis.redis.rds.aliyuncs.com:6379> type cc-cm:user:tokens:seat:1000988323
 ```
 
