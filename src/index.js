@@ -35,12 +35,19 @@ io.on('connection', async function (socket) {
     debug(
       `user ${user_id}, seid:${seid}, ccgeid:${ccgeid}, token:${token} login using socket ${socket.id}`
     )
+    if (!user_id || !token) {
+      //Thru logs we keep see this and I have no idea why that can happene
+      //user undefined, seid:undefined, ccgeid:undefined  login using socket
+      socket.disconnect(true)
+      return
+    }
     let tcheck = await tokenCheck(user_id, token)
     if (!tcheck) {
       if (typeof fn === 'function') fn(`${user_id}:logoff`)
       //BS 客户端连上来带了 fn ,这个修改本来就是为了防止别人来连我们的 ws，他们应该就不会带fn
-      warn(`${user_id} uses invalid token ${token}, close ws connection in 3 seconds`)
-      setTimeout(() => socket.disconnect(true), 3000)
+      warn(`${user_id} uses invalid token ${token}, close ws connection `)
+      socket.disconnect(true)
+      // setTimeout(() => socket.disconnect(true), 3000)
       return
     }
     let exist = await dupCheck(user_id, socket.id, fn)
@@ -61,6 +68,10 @@ io.on('connection', async function (socket) {
   socket.on('disconnect', async function (reason) {
     //https://socket.io/docs/server-api/#Event-%E2%80%98disconnect%E2%80%99
     debug(`socket id ${socket.id} has disconnected with reason ${reason}`)
+    if (reason.includes(`server namespace disconnect`)) {
+      debug(`We close it, so just return`)
+      return
+    }
     //客户端断开，重连，比如重刷浏览器原因是 'transport close'
     //客户端调用 websocket.close 原因是  'client namespace disconnect'
     let get_del = await redis
@@ -145,9 +156,14 @@ async function tokenCheck(user_id, token) {
     debug(`Local redis, skip token check: ${user_id}:${token}`)
     return true
   }
-  if (!token) return false
-  let tr = await redis.get(`cc-cm:user:tokens:seat:${user_id}`)
-  debug(`${token} vs redis value ${tr}`)
+  let tmp = user_id.split('_')
+  if (tmp.length != 3) {
+    debug('user_id/channel_id should have the format of seid_ccgeid_userid')
+    return false
+  }
+  let uid = tmp[2]
+  let tr = await redis.get(`cc-cm:user:tokens:seat:${uid}`)
+  debug(`${token} vs redis value cc-cm:user:tokens:seat:${uid} for ${tr}`)
   const t = unserialize(tr)
   return t['client.bs'] === token
 }

@@ -7,3 +7,25 @@ let ts =
 
 let t = unserialize(ts)
 console.log(t['client.bs'])
+
+let uid = `134_243_1000988323`
+let tmp = uid.split('_')
+if (tmp.length != 3) {
+  console.log('invalid format')
+} else {
+  console.log('valid format')
+}
+let user = tmp[2]
+console.log(`${user}`)
+
+function check({ user, seid }) {
+  if (!user || !seid) {
+    console.log(`Invalid input`)
+    return
+  }
+  console.log(`${user}:${seid}`)
+}
+
+check({ user: 'aa', seid: '123' })
+check({ user2: 'aa', seid2: '1234' })
+check({ user: 'aa', seid2: '1235' })
