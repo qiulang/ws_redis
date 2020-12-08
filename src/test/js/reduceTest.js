@@ -27,8 +27,6 @@ let sortByAge2 = R.pipe(
 works = sortByAge2(employees)
 console.log(works)
 
-return
-
 const euro = [29.76, 41.85, 46.5]
 
 const above30 = euro.reduce((total, amount) => {
@@ -41,9 +39,7 @@ const above30 = euro.reduce((total, amount) => {
 console.log(above30)
 
 var str = 'Lorem ipsum dolor sit amet consectetur adipiscing elit'
-let strArray = str.split(' ').map((item) => {
-  return { word: item, length: item.length }
-})
+let strArray = str.split(' ').map((item) => ({ word: item, length: item.length }))
 let biggest = strArray.reduce((max, cur) => (cur.length > max.length ? cur : max), strArray[0])
 console.log(biggest)
 
