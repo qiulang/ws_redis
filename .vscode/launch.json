@@ -28,8 +28,8 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Launch walk script",
-      "program": "${workspaceFolder}/src/test/js/lettest.js"
+      "name": "Launch test script",
+      "program": "${workspaceFolder}/src/test/js/reduceTest.js"
     },
     {
       "type": "node",
