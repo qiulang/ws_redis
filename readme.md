@@ -701,6 +701,8 @@ es5 的 `forEach` 主要有两个问题，所以es6才引入 `for in` 和 `for o
 
 比如 axios 会自动对参数做JSON转化， 返回结果 response.data就是转化的json数据 (可参见我们webrtc工具条)
 
+设置请求超时功能也是 axios 比 fetch优势。
+
 ```javascript
 // axios
 axios.get('https://api.github.com/orgs/axios')
@@ -718,6 +720,13 @@ fetch('https://api.github.com/orgs/axios')
   })
   .catch(error => console.error(error));
 ```
+
+
+
+对比还可以参见：
+
+1. [What is difference between Axios and Fetch?](https://stackoverflow.com/questions/40844297/what-is-difference-between-axios-and-fetch)
+2. [[Question] what advantage does axios give us over fetch?](https://github.com/axios/axios/issues/314)
 
 
 
@@ -951,4 +960,22 @@ https://github.com/socketio/engine.io-protocol#timeouts
 > The server sends a `ping` packet. If no packet type is received within `pingTimeout`, the server considers the socket disconnected. If a `pong` packet is actually received, the server will wait `pingInterval` before sending a `ping` packet again.
 >
 > Since the two values are shared between the server and the client, the client will also be able to detect whether the server becomes unresponsive when it does not receive any data within `pingTimeout + pingInterval`.
+
+
+
+### 2020/12.30
+
+[The Trello Tech Stack 2016](https://tech.trello.com/the-trello-tech-stack/) 提到Trello的技术栈和我们有点类似 ws+node+redis pubsub, 但是提到
+
+> RabbitMQ is our replacement for Redis PubSub. Unfortunately, Redis PubSub just isn’t meant for the scale that our instant update infrastructure is moving towards. It has also been our biggest single point of failure for awhile, although to Redis’s credit it doesn’t seem to fail.
+
+提到这三点也有意思
+
+
+
+We have a few requirements that together make this a bit complicated:
+
+1. Fairly high message throughput - we currently peak in the high hundreds to low thousands per second.
+2. **High subscribe/unsubscribe rate** - WebSockets are constantly connecting/disconnecting. In order to avoid overloading the web servers with messages they don’t care about, we need proper routing.
+3. Lack of a shard key - each client opens a single socket and requests updates to potentially a dozen or more boards. There’s no way to ensure that each web server only has to deal with a known subset of the messages.
 
