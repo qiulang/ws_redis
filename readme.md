@@ -963,7 +963,7 @@ https://github.com/socketio/engine.io-protocol#timeouts
 
 
 
-### 2020/12.30
+### 2020-12.30
 
 [The Trello Tech Stack 2016](https://tech.trello.com/the-trello-tech-stack/) 提到Trello的技术栈和我们有点类似 ws+node+redis pubsub, 但是提到
 
@@ -978,4 +978,16 @@ We have a few requirements that together make this a bit complicated:
 1. Fairly high message throughput - we currently peak in the high hundreds to low thousands per second.
 2. **High subscribe/unsubscribe rate** - WebSockets are constantly connecting/disconnecting. In order to avoid overloading the web servers with messages they don’t care about, we need proper routing.
 3. Lack of a shard key - each client opens a single socket and requests updates to potentially a dozen or more boards. There’s no way to ensure that each web server only has to deal with a known subset of the messages.
+
+
+
+### 2021-2.1
+
+etag 的问题 2020 [3.18](#3.18) 就花不少时间研究过，但是突然发现还是没生效。首先确实陈欢加的etag 只加在v5，第二 v5即便用了etag 也没有返回 304 当时记录是 php代码要自己实现 304返回，有点文档说要自己加` If-Node-Match` 的判断，但是这么基本功能，我觉得框架应该提供，查了 [symfony](https://symfony.com/doc/current/http_cache/validation.html#validation-with-the-last-modified-header) 确实提供这个功能，但为什么我们还是没有返回 304？
+
+另外几个问题 cache-control: no-cache不是没有缓存，但是记录了，又忘了 。这样困惑应该很常见 [Does the ETag header make the Cache-Control header obsolete? How to make sure Cache-Control is not harmful then?](https://stackoverflow.com/questions/55025948/does-the-etag-header-make-the-cache-control-header-obsolete-how-to-make-sure-ca) 可查看这篇文档描述 [Best practices for cache control settings for your website](https://medium.com/pixelpoint/best-practices-for-cache-control-settings-for-your-website-ff262b38c5a2)
+
+
+
+还有 200 from memory/disk cache 和 304 到底什么关系，原来 200 from memory/disk cache是 设置 cache-control:expire 参见 [区分http请求状态码来理解缓存（协商缓存和强制缓存）](https://www.cnblogs.com/fangsmile/p/13072940.html)
 
