@@ -669,7 +669,7 @@ vuex 的todo例子， 如果不用箭头函数， this 指向 window； “Arrow
 
 #### forEach的问题
 
-es5 的 `forEach` 主要有两个问题，所以es6才引入 `for in` 和 `for of` 和 this，也是老忘了
+es5 的 `forEach` 主要有两个问题，所以es6才引入 `for in` 和 `for of` 和对 this使用一样，我老是忘了
 
 1. [没法break](https://hacks.mozilla.org/2015/04/es6-in-depth-iterators-and-the-for-of-loop/)
 2. [没法await](https://stackoverflow.com/questions/37576685/using-async-await-with-a-foreach-loop)
@@ -727,6 +727,32 @@ fetch('https://api.github.com/orgs/axios')
 
 1. [What is difference between Axios and Fetch?](https://stackoverflow.com/questions/40844297/what-is-difference-between-axios-and-fetch)
 2. [[Question] what advantage does axios give us over fetch?](https://github.com/axios/axios/issues/314)
+
+有一个重要区别以前一直没注意，就是他们什么情况下会promise.reject: 
+
+1. fetch: ''Basically `fetch()` will only reject a promise if the user is offline, or some unlikely networking error occurs, such a DNS lookup failure(anything prevented the request from completing)."
+
+   ```javascript
+    try {
+       let response = await fetch('http://no-such-url'); //这样才会reject
+     } catch(err) {
+       alert(err); // TypeError: failed to fetch
+     }
+   ```
+
+   
+
+2. axios: 通过`validateStatus`来决定什么情况reject
+
+   ```javascript
+     // `validateStatus` defines whether to resolve or reject the promise for a given
+     // HTTP response status code. If `validateStatus` returns `true` (or is set to `null`
+     // or `undefined`), the promise will be resolved; otherwise, the promise will be
+     // rejected.
+     validateStatus: function (status) {
+       return status >= 200 && status < 300; // default
+     },
+   ```
 
 
 
