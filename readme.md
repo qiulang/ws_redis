@@ -950,3 +950,9 @@ https://github.com/socketio/engine.io-protocol#timeouts
 >
 > Since the two values are shared between the server and the client, the client will also be able to detect whether the server becomes unresponsive when it does not receive any data within `pingTimeout + pingInterval`.
 
+
+
+### socket.io 3.x
+
+2021.3.1 发现socket.io 已经从2.3升级到3.x 我们没时间做相应升级。
+

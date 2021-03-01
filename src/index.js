@@ -144,7 +144,7 @@ sub.on('message', async function (channel, message) {
     io.to(socketid).emit('cr_msg', message)
     info(`SUB emit ${message} to ${socketid}`)
   } catch (err) {
-    info(`io.to(socketid).emit failed:${JSON.stringify(err)}`)
+    info(`io.to ${socketid} emit failed:${JSON.stringify(err)}`)
   }
 })
 //连接的时候调用检查
@@ -179,8 +179,9 @@ async function dupCheck(user_id, socket_id, fn) {
     return false
   }
   if (old_socket == socket_id) {
+    //比如用户登录页面输了密码到了下一步选通话模式，但点了返回重新输入用户名
     debug(`Another login with the existing ${socket_id}, just return.`)
-    delete dup[socket.id]
+    delete dup[socket_id]
     return true
   }
   //now we assume it is another login
