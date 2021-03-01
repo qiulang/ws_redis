@@ -57,7 +57,9 @@ io.on('connection', async function (socket) {
     user_socket[user_id] = socket.id
     await sub.subscribe(user_id)
     info(`store in hash table user_socket ${user_id} => ${socket.id} AND SUB subscribe`)
-    if (typeof fn === 'function') fn(`${user_id}`)
+    //考虑了半天代码用什么做版本号好，必须是打包代码能自动生成的，不能每次都手动修改
+    //一开始考虑commit id，但是commit id 没法比较代码的新旧，暂定 time stamp
+    if (typeof fn === 'function') fn({ uid: user_id, ver: 'xxxxxx' })
   })
   //Server do NOT have reconnect event
   //https://socket.io/docs/emit-cheatsheet/

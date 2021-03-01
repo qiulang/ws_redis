@@ -956,3 +956,9 @@ https://github.com/socketio/engine.io-protocol#timeouts
 
 2021.3.1 发现socket.io 已经从2.3升级到3.x 我们没时间做相应升级。
 
+[Why Socket.IO in 2020?](https://socket.io/blog/socket-io-3-release/)
+
+- auto-reconnection
+- a way to broadcast data to a given set of clients (rooms/namespace)
+- the Redis adapter to broadcast across Socket.IO servers 对我们最重要，docker使用必须
+
