@@ -962,3 +962,52 @@ https://github.com/socketio/engine.io-protocol#timeouts
 - a way to broadcast data to a given set of clients (rooms/namespace)
 - the Redis adapter to broadcast across Socket.IO servers 对我们最重要，docker使用必须
 
+
+
+### ws vs socket.io   cont.
+
+[Building realtime apps with Node.js and WebSockets: client-side considerations](https://ably.com/topic/websockets-nodejs) 长，但文章提到几个考量确实需要花时间再仔细研究下，比如 Authentication 我们在v5实现了， heartbeats 我们再 wssip自己实现了， 断线重连是我们用socket.io一个原因
+
+[Everything You Need To Know About Socket.IO](https://ably.com/topic/socketio) 总结的不如我们自己的总结，这篇更多意义是知道这家公司 [Ably](https://ably.com/topics/protocols) 写了些关于ws的文章。
+
+### 如何确认 ws 消息确实收到
+
+如何能知道ws client收到消息了 [What is the proper way for the socket.io server to know the client actually receives its emit message?](https://github.com/socketio/socket.io/discussions/3846) 作者给了答复就是下面方法，但是timeout取多大好
+
+在 socket.io 3.0的文档找到一个答案 https://socket.io/docs/v3/emitting-events/  可以适当考虑引入
+
+> Timeout are not supported by default, but it is quite straightforward to implement:
+
+```
+const withTimeout = (onSuccess, onTimeout, timeout) => {
+  let called = false;
+
+  const timer = setTimeout(() => {
+    if (called) return;
+    called = true;
+    onTimeout();
+  }, timeout);
+
+  return (...args) => {
+    if (called) return;
+    called = true;
+    clearTimeout(timer);
+    onSuccess.apply(this, args);
+  }
+}
+
+socket.emit("hello", 1, 2, withTimeout(() => {
+  console.log("success!");
+}, () => {
+  console.log("timeout!");
+}, 1000));
+```
+
+[Getting an acknowledgment on server send/emit](https://stackoverflow.com/questions/9568467/getting-an-acknowledgment-on-server-send-emit)
+
+
+
+我以前有自问自答 [How do I let socket.io server re-emit message to a particular socket when that socket re-connect?](https://stackoverflow.com/questions/62992888/how-do-i-let-socket-io-server-re-emit-message-to-a-particular-socket-when-that-s)
+
+
+
