@@ -55,7 +55,9 @@ io.on('connection', async function (socket) {
       return
     }
     await login({ user_id, seid, ccgeid, socket })
-    if (typeof fn === 'function') fn(`${user_id}:login`)
+    //考虑了半天代码用什么做版本号好，必须是打包代码能自动生成的，不能每次都手动修改
+    //一开始考虑commit id，但是commit id 没法比较代码的新旧，暂定 time stamp
+    if (typeof fn === 'function') fn({ user_id: 'login', ver: 'xxxxxx' })
   })
   //Server do NOT have reconnect event
   //https://socket.io/docs/emit-cheatsheet/
@@ -146,7 +148,7 @@ sub.on('message', async function (channel, message) {
     io.to(socketid).emit('cr_msg', message)
     info(`SUB emit ${message} to ${socketid}`)
   } catch (err) {
-    info(`io.to(socketid).emit failed:${JSON.stringify(err)}`)
+    info(`io.to ${socketid} emit failed:${JSON.stringify(err)}`)
   }
 })
 
@@ -200,8 +202,9 @@ async function dupCheck(user_id, socket_id, fn) {
     return false
   }
   if (old_socket == socket_id) {
+    //比如用户登录页面输了密码到了下一步选通话模式，但点了返回重新输入用户名
     debug(`Another login with the existing ${socket_id}, just return.`)
-    delete dup[socket.id]
+    delete dup[socket_id]
     return true
   }
   //now we assume it is another login
