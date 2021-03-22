@@ -17,7 +17,7 @@ new Redis("redis://:authpassword@127.0.0.1:6380/4");
 
 const setting = {
   port: process.env.REDIS_PORT || 6379,
-  host: process.env.REDIS_HOST || 'localhost'
+  host: process.env.REDIS_HOST || 'localhost',
 }
 
 //https://stackoverflow.com/questions/11704267/in-javascript-how-to-conditionally-add-a-member-to-an-object/38483660
@@ -31,7 +31,7 @@ var redis = new Redis(setting)
 var sub = new Redis(setting)
 var pub = new Redis(setting)
 
-redis.on('error', err => {
+redis.on('error', (err) => {
   if (err.message.includes('invalid password')) {
     //By default debug will log to stderr.
     warn('Invalid password so redis fails to work, so just exit')
@@ -47,6 +47,7 @@ async function cleaup() {
   debug('每次启动都清空redis数据，假定浏览器会重连，我们再重写入新的数据')
   //await will wait for redis connect
   let tables = await redis.keys('websocket:*')
+  debug(`${tables.length} websocket connections will be deleted`)
   for (let t of tables) {
     debug(`delete ${t}`)
     redis.del(t)
@@ -58,5 +59,5 @@ cleaup()
 module.exports = {
   redis,
   pub,
-  sub
+  sub,
 }
