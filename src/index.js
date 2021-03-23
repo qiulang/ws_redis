@@ -43,7 +43,7 @@ io.on('connection', async function (socket) {
     }
     let tcheck = await tokenCheck(user_id, token)
     if (!tcheck) {
-      if (typeof fn === 'function') fn(`${user_id}:logoff`)
+      if (typeof fn === 'function') fn({ user_id: 'logoff', ver: 'xxxxxx' })
       //BS 客户端连上来带了 fn ,这个修改本来就是为了防止别人来连我们的 ws，他们应该就不会带fn
       warn(`${user_id} uses invalid token ${token}, close ws connection `)
       socket.disconnect(true)
