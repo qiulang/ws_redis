@@ -41,4 +41,9 @@ setTimeout(() => {
   console.log(`return`, r)
   r = asyncCall(1)
   console.log(`return`, r)
+  setTimeout(async () => {
+    console.log('又等了4秒')
+    let r2 = await r
+    console.log(`return`, r2)
+  }, 4000)
 }, 3000)
