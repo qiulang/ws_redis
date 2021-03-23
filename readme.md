@@ -1021,7 +1021,8 @@ etag 的问题 2020 [3.18](#3.18) 就花不少时间研究过，但是突然发�
 
 ### socket.io 3.x
 
-2021.3.1 发现socket.io 已经从2.3升级到3.x 我们没时间做相应升级。
+2021.3.1 发现socket.io 已经从2.3升级到3.x 我们没时间做相应升级。3.8号又升级到 4.x 目前没有精力跟进
+
 
 [Why Socket.IO in 2020?](https://socket.io/blog/socket-io-3-release/)
 
@@ -1075,3 +1076,24 @@ socket.emit("hello", 1, 2, withTimeout(() => {
 
 
 我以前有自问自答 [How do I let socket.io server re-emit message to a particular socket when that socket re-connect?](https://stackoverflow.com/questions/62992888/how-do-i-let-socket-io-server-re-emit-message-to-a-particular-socket-when-that-s)
+
+
+
+### 服务器重启后浏览器重连问题
+
+在 [处理重连和重复登录问题](#处理重连和重复登录问题) 章节， commit id `5257e8e` 引入每次ws服务器重启就清空redis数据，当时已经知道服务器重启后，浏览器会重连，重新写入redis数据。但是既然重连后重新写入,删掉旧的数据就没必要。
+
+过去一周现场频繁发生ws服务器重启，重启后找不到socket.io 连接信息，比如
+
+```javascript
+app:warn Got {"ccgeid":385,"seid":219,"uid":39529,"seat_state":6,"state_name":"\u8bdd\u540e\u5904\u7406","busy_state_id":0,"busy_state_name":"","op_code":"hang_up","data":{"cc_number":"cc_bs_385_2009_000146d2_1616037747_261327978","cr_derail_id":0,"gid":"1000006378","groupName":"\u67f3\u5dde","reason":19,"cm_fail_reason":null,"outlineNumber":"18278220356","callType":1,"encNumber":"VVeKstBC+6Qk0sJMeafaUA==","taskId":null,"jobId":null}} but channel 219_385_39529 does NOT exist.
+
+//对应代码
+let socketid = await redis.hget(`websocket:${channel}`, 'socketid')
+//websocket:${channel} 有两处会被删，断开连接就是ws服务器重启
+```
+
+因为断开连接的日志有，而且发生在ws重启后，所以开始一直以为是ws重启后，浏览器重连没生效，还给[socket.io开了问题单](https://github.com/socketio/socket.io/discussions/3850) 得到有用信息是 3.x 和 4.x 没有引入什么重连的改动（升级动力就小了写），客户端可以升级到2.3支持IE就很好。
+
+今天少峰突然提醒很可能是一台容器重启，删了所有redis信息，但是浏览器连到另一台容器，所以没有重连，但redis相关信息已经被删了。查了日志还真是这样。所以把清空记录的调用去掉！
+
