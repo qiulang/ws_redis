@@ -54,7 +54,8 @@ async function cleaup() {
   }
 }
 
-cleaup()
+// 没必要清空，参见readme，当时清空没有什么道理
+// cleaup()
 
 module.exports = {
   redis,
