@@ -31,22 +31,26 @@ class api_test:
         self.keyname, self.secret = self.init_keyname, self.init_secret
         self.request_apikey()
 
-    def _get_nouce(self, length=8):
+    @staticmethod
+    def _get_nouce(length=8):
         return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
-    def _get_ts(self):
+    @staticmethod
+    def _get_ts():
         now = datetime.now()
         timestamp = datetime.timestamp(now)
         ts = str(math.ceil(timestamp))
         return ts
 
-    def _get_querystr(self, dic):
+    @staticmethod
+    def _get_querystr(dic):
         return '&'.join([f'{key}={value}' for key, value in dic.items()])
 
-    def _url_update(self, input, dict):
-        for key in dict.keys():
-            input = input.replace(f":{key}", dict[key])
-        return input
+    @staticmethod
+    def _url_update(input_url, url_dict):
+        for key in url_dict.keys():
+            input_url = input_url.replace(f":{key}", url_dict[key])
+        return input_url
 
     def get_headers(self, extra=None):
         nonce = self._get_nouce()
@@ -59,7 +63,7 @@ class api_test:
             "timestamp": ts
         }
         tmp = headers.copy()
-        if (extra != None):
+        if extra is not None:
             tmp.update(extra)
         od = OrderedDict(sorted(tmp.items()))
         sig = self._get_querystr(od)
@@ -74,7 +78,7 @@ class api_test:
         headers = self.get_headers()
         response = requests.post(self.sign_url, headers=headers, verify=False)
         result = response.json()
-        if (result['code'] != 200):
+        if result['code'] != 200:
             cprint(f'result: {result}', 'red')
             raise Exception('获取签名失败，请检查程序代码')
         data = result['data']
@@ -87,7 +91,7 @@ class api_test:
         result = response.json()
         # cprint(f'result: {result}', 'green')
         return_code = result['code']
-        if (return_code != 200):
+        if return_code != 200:
             cprint(f'请求失败 {url}', 'red')
             return return_code, result['info']
         else:
@@ -99,7 +103,7 @@ class api_test:
         response = requests.put(url, headers=headers, data=data)
         result = response.json()
         return_code = result['code']
-        if (return_code != 200):
+        if return_code != 200:
             cprint(f"{url} : {data} 修改结果 {result} 失败", 'yellow')
             return False
         cprint(f"{url} : {data} 修改结果 {result} 成功", 'green')
@@ -109,7 +113,7 @@ class api_test:
         test_query = {"key": "view_customer_history", "seid": "134"}
         test_url = self.backend + "/enterprise/super/settings"
         code, data = self.get_helper(test_url, test_query)
-        if (code != 200):
+        if code != 200:
             return
         key = data[0]['key']
         if test_query['key'] != key:
@@ -118,8 +122,9 @@ class api_test:
             desc = data[0]['description']
             cprint(f'返回结果正确: {desc}', 'green')
 
-    def _verify_ent(self, code, data, total=1):
-        if (code != 200):
+    @staticmethod
+    def _verify_ent(code, data, total=1):
+        if code != 200:
             return
         meta = data.pop('meta', {})
         cprint(f"total: {meta['total']}", 'cyan')
@@ -202,7 +207,7 @@ class api_test:
         ep_type = data['ep_type']
         max_concurrent = data['max_concurrent']
         enterprise_max_account = data['enterprise_max_account']
-        mod = {"ep_code": ep_code+"1", "ep_type": "3",
+        mod = {"ep_code": ep_code+"1", "ep_type": "2",
                "max_concurrent": str(int(max_concurrent)+1),
                "enterprise_max_account": str(int(enterprise_max_account)-1)}
         cprint(f"当前值 ep_code:'{ep_code}' -- ep_type:'{ep_type}'"
@@ -221,11 +226,11 @@ class api_test:
             cprint('成功修改企业信息', "green")
         else:
             cprint('修改企业信息失败', "red")
-        cprint('测试输入参数错误情况', "magenta")
+        cprint('测试输入参数错误情况', "yellow")
         mod = {"ep_code": ep_code+"-1", "ep_type": "3"}
         result = self.put_helper(url, mod)
         if not result:
-            cprint('通过输入参数错误测试', 'magenta')
+            cprint('通过输入参数错误测试', 'yellow', attrs=['underline', 'bold'])
 
 
 def pyver_check():
@@ -243,8 +248,8 @@ def main():
     # test.super_list()
     # test.ent_list()
     # test.ent_info()
-    test.super_mod()
-    # test.ent_mod()
+    # test.super_mod()
+    test.ent_mod()
 
 
 if __name__ == '__main__':

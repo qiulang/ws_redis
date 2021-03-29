@@ -2,3 +2,5 @@
 
 需要的第三方包在 `requirements.txt` 如果使用 `pipenv` 使用相应的 `Pipfile & Pipfile.lock`
 
+`Pipfile` 不能指定 python 最小版本，[所以 `Pipefile.lock` 不入库](https://pipenv.pypa.io/en/latest/basics/#general-recommendations-version-control)
+
