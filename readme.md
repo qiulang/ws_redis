@@ -140,7 +140,7 @@ An encoded packet can be UTF-8 string or binary data. The packet encoding format
 
 ### 目前socket.io 的设计
 
-**redis 数据**
+#### redis 数据
 
 1. `socket_user ` 哈希表 存 `socket.id` 到 `user_id`映射 ： 客户端成功连接到服务器就发`login`事件（自定义事件），消息内容是 `user_id`, 服务器收到 `login`事件，在redis的`socket_user `表添加一对`key:value`对 `socket.id`： `user_id` 
 2. 服务器对每个登录`sub.subscribe(user_id)` , 即为每个坐席建立一个通道，订阅从web服务器发来消息。
@@ -162,11 +162,11 @@ An encoded packet can be UTF-8 string or binary data. The packet encoding format
 
 
 
-**socket.io 事件**
+#### socket.io 事件
 
 1. socket.io系统事件要处理
 
-2. 我们自定义事件目前只有两个： `login`（客户端发，服务器收） 和 `cr_msg` （服务器发，客户端收）
+2. 我们自定义事件目前只有两个： `login`（客户端发，服务器收） 和 `cr_msg` （服务器发，客户端收）`disconnect` 
 
 3. `login`在客户端websocket连到服务器后发送，服务器负责监听，作用是把`userid`发给服务器，以便服务器把`userid` 和`socketid` 做绑定。 服务器处理login消息之后会给客户端一个相应。
 
@@ -177,6 +177,15 @@ An encoded packet can be UTF-8 string or binary data. The packet encoding format
    
 
 http 服务器和websocket 服务器监听不同端口的方法暂时没试出来，但目前也不需要, **注意**：已确认必须相同。
+
+
+
+#### Application structure
+
+参见 https://socket.io/docs/v4/server-application-structure/  两种方式 You will find below two suggestions on how to register your event handlers.
+
+1. Each file registers its own event handlers. Tidy but the event listeners may be less discoverable 以前在线客服代码用
+2. All event handlers are registered in the `index.js` file, which is great for discoverability, but could get out of hand in a medium/big application. 我们只有三个事件，所以用这种方式。
 
 
 
@@ -481,6 +490,8 @@ OK
 
 以后起了多个docker，多个websocket 服务器。登录处理可能是第一台websocket , 但sub 处理可能是另一台服务器，所以发送消息就不成功。必须引入 https://github.com/socketio/socket.io-redis 
 
+参见 [Passing events between nodes](https://socket.io/docs/v4/using-multiple-nodes/)
+
 https://github.com/socketio/socket.io-redis#custom-client-eg-with-authentication 
 
 > If you need to create a redisAdapter to a redis instance that has a password, use pub/sub options instead of passing a connection string.
@@ -490,6 +501,30 @@ io.adapter(redisAdapter({ pubClient: pub, subClient: sub }));
 ```
 
 - [x] 客户端断开连接两个原因 `client namespace disconnect` 和 `transport close` 要区分
+
+
+
+### disconnect的原因
+
+[5 个disconnect 原因](https://socket.io/docs/server-api/#Event-'disconnect') 通过查现场日志偶尔有 `transport error` 这到底是什么错误原因不明，过去一个断线原因分析
+
+```shell
+'has disconnected with reason' 107195
+'has disconnected with reason' and 'transport close'  84,841  重刷浏览器
+'has disconnected with reason' and 'ping timeout'  17259  网络断线
+'has disconnected with reason' and 'client namespace disconnect' 5087  主动下线
+'has disconnected with reason' and 'transport error'  8 未知原因
+```
+
+https://github.com/socketio/engine.io-protocol#timeouts
+
+> The client must use the `pingTimeout` and the `pingInterval` sent as part of the handshake (with the `open` packet) to determine whether the server is unresponsive.
+>
+> The server sends a `ping` packet. If no packet type is received within `pingTimeout`, the server considers the socket disconnected. If a `pong` packet is actually received, the server will wait `pingInterval` before sending a `ping` packet again.
+>
+> Since the two values are shared between the server and the client, the client will also be able to detect whether the server becomes unresponsive when it does not receive any data within `pingTimeout + pingInterval`.
+
+
 
 ### log 的问题
 
@@ -606,6 +641,11 @@ map $remote_addr $log_ip {
 10. 前端打包代码如何能使用运行时环境变量，[难点参见](https://medium.com/@oprearocks/environment-variables-in-webpack-builds-vs-node-js-apps-bc2b26261e66)， [可能方案参见](https://www.freecodecamp.org/news/how-to-implement-runtime-environment-variables-with-create-react-app-docker-and-nginx-7f9d42a91d70/) 这其实和我们ccfront做法一样。在index.html 引入script [会碰到错误参见](https://forum.vuejs.org/t/add-script-tag-to-index-html/51525)
 
     
+
+**注  readme 里记录碰到问题是和服务器客户端开发密切相关的，"碰到一些问题.md"更多就是是一些知识点的梳理总结。**
+
+
+
 
 ### 12.18发现重复登录一个问题
 
@@ -850,6 +890,8 @@ github open api 可以读下 https://developer.github.com/v3/
 
 ### 3.19
 
+#### etag
+
 [ETag vs Header Expires](https://stackoverflow.com/questions/499966/etag-vs-header-expires)
 
 [How does “304 Not Modified” work exactly?](https://stackoverflow.com/questions/20978189/how-does-304-not-modified-work-exactly)
@@ -872,7 +914,7 @@ https://stackoverflow.com/questions/60750417/why-doesnt-chrome-use-etag-if-none-
 
 
 
-###websocket client 
+### websocket client
 
 小程序websocket尝试连接我们的websocket 服务器失败 `Error during WebSocket handshake: Unexpected response code: 200` 尝试用 [ws](https://github.com/websockets/ws) 连也报错（连ws的服务器没问题）：
 
@@ -899,7 +941,7 @@ Error: socket hang up
 
 `EIO=3` 的含义是 https://socket.io/docs/internals/
 
-```
+```js
 GET wss://myhost.com/socket.io/?EIO=3&transport=websocket&sid=36Yib8-rSutGQYLfAAAD
 
 with:
@@ -907,6 +949,14 @@ with:
   "EIO=3"                     # again, the current version of the Engine.IO protocol
   "transport=websocket"       # the new transport being probed
   "sid=36Yib8-rSutGQYLfAAAD"  # the unique session id
+  
+GET https://myhost.com/socket.io/?EIO=3&transport=polling&t=ML4jUwU&b64=1
+
+with:
+
+  "EIO=3"               # the current version of the Engine.IO protocol
+  "transport=polling"   # the transport being established
+  "t=ML4jUwU&b64=1"     # a hashed timestamp for cache-busting
 
 ```
 
@@ -967,29 +1017,10 @@ ws 和 浏览器原生websocket连接 socket.io 服务器都报 `parse error` �
 
 
 
-### disconnect的原因 
-
-[5 个disconnect 原因](https://socket.io/docs/server-api/#Event-'disconnect') 通过查现场日志偶尔有 `transport error` 这到底是什么错误原因不明，过去一个断线原因分析
-
-```shell
-'has disconnected with reason' 107195
-'has disconnected with reason' and 'transport close'  84,841  重刷浏览器
-'has disconnected with reason' and 'ping timeout'  17259  网络断线
-'has disconnected with reason' and 'client namespace disconnect' 5087  主动下线
-'has disconnected with reason' and 'transport error'  8 未知原因
-```
-
-https://github.com/socketio/engine.io-protocol#timeouts
-
-> The client must use the `pingTimeout` and the `pingInterval` sent as part of the handshake (with the `open` packet) to determine whether the server is unresponsive.
->
-> The server sends a `ping` packet. If no packet type is received within `pingTimeout`, the server considers the socket disconnected. If a `pong` packet is actually received, the server will wait `pingInterval` before sending a `ping` packet again.
->
-> Since the two values are shared between the server and the client, the client will also be able to detect whether the server becomes unresponsive when it does not receive any data within `pingTimeout + pingInterval`.
-
-
 
 ### 2020-12.30
+
+#### ws+node+redis pubsub stack
 
 [The Trello Tech Stack 2016](https://tech.trello.com/the-trello-tech-stack/) 提到Trello的技术栈和我们有点类似 ws+node+redis pubsub, 但是提到
 
@@ -1008,6 +1039,8 @@ We have a few requirements that together make this a bit complicated:
 
 
 ### 2021-2.1
+
+#### etag again
 
 etag 的问题 2020 [3.18](#3.18) 就花不少时间研究过，但是突然发现还是没生效。首先确实陈欢加的etag 只加在v5，第二 v5即便用了etag 也没有返回 304 当时记录是 php代码要自己实现 304返回，有点文档说要自己加` If-Node-Match` 的判断，但是这么基本功能，我觉得框架应该提供，查了 [symfony](https://symfony.com/doc/current/http_cache/validation.html#validation-with-the-last-modified-header) 确实提供这个功能，但为什么我们还是没有返回 304？
 
@@ -1028,7 +1061,7 @@ etag 的问题 2020 [3.18](#3.18) 就花不少时间研究过，但是突然发�
 
 - auto-reconnection
 - a way to broadcast data to a given set of clients (rooms/namespace)
-- the Redis adapter to broadcast across Socket.IO servers 对我们最重要，docker使用必须
+- **the Redis adapter to broadcast across Socket.IO servers 对我们最重要，docker使用必须**
 
 
 
@@ -1037,6 +1070,16 @@ etag 的问题 2020 [3.18](#3.18) 就花不少时间研究过，但是突然发�
 [Building realtime apps with Node.js and WebSockets: client-side considerations](https://ably.com/topic/websockets-nodejs) 长，但文章提到几个考量确实需要花时间再仔细研究下，比如 Authentication 我们在v5实现了， heartbeats 我们再 wssip自己实现了， 断线重连是我们用socket.io一个原因
 
 [Everything You Need To Know About Socket.IO](https://ably.com/topic/socketio) 总结的不如我们自己的总结，这篇更多意义是知道这家公司 [Ably](https://ably.com/topics/protocols) 写了些关于ws的文章。
+
+https://socket.io/docs/v4/ 提到 **Here are the features provided by Socket.IO over plain WebSockets:**
+
+1. 重连是我们最需要的，但是和重连相关的 [package buffering](https://socket.io/docs/v4/client-offline-behavior/#Buffered-events) 注意没太关注
+2. [消息确认 ack](https://socket.io/docs/v4/emitting-events/#Acknowledgements) 我们现在用来[回传服务器版本号](https://softwareengineering.stackexchange.com/questions/423068/solution-to-notify-users-single-page-application-spa-static-resources-have-upd)，也成一个必要功能
+3. 广播、namespace、room 我们目前不需要
+
+
+
+
 
 ### 如何确认 ws 消息确实收到
 
@@ -1093,7 +1136,7 @@ let socketid = await redis.hget(`websocket:${channel}`, 'socketid')
 //websocket:${channel} 有两处会被删，断开连接就是ws服务器重启
 ```
 
-因为断开连接的日志有，而且发生在ws重启后，所以开始一直以为是ws重启后，浏览器重连没生效，还给[socket.io开了问题单](https://github.com/socketio/socket.io/discussions/3850) 得到有用信息是 3.x 和 4.x 没有引入什么重连的改动（升级动力就小了写），客户端可以升级到2.3支持IE就很好。
+因为断开连接的日志有，而且发生在ws重启后，所以开始一直以为是ws重启后，浏览器重连没生效，还给[socket.io开了问题单](https://github.com/socketio/socket.io/discussions/3850) 得到有用信息是 3.x 和 4.x 没有引入什么重连的改动（升级动力就小了些），客户端可以升级到2.3支持IE就很好。
 
 今天少峰突然提醒很可能是一台容器重启，删了所有redis信息，但是浏览器连到另一台容器，所以没有重连，但redis相关信息已经被删了。查了日志还真是这样。所以把清空记录的调用去掉！
 
