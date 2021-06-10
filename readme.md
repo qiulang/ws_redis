@@ -1140,3 +1140,37 @@ let socketid = await redis.hget(`websocket:${channel}`, 'socketid')
 
 今天少峰突然提醒很可能是一台容器重启，删了所有redis信息，但是浏览器连到另一台容器，所以没有重连，但redis相关信息已经被删了。查了日志还真是这样。所以把清空记录的调用去掉！
 
+
+
+### 升级 socket.io 4.x
+
+首先细读以下两份升级文档，确认应该可以只升级 server端，需要实际动手试试。you can update each server one by one (no big bang is needed)  then, update the clients
+
+1. [Migrating from 2.x to 3.0](https://socket.io/docs/v4/migrating-from-2-x-to-3-0/) 
+2. [Migrating from 3.x to 4.0](https://socket.io/docs/v4/migrating-from-3-x-to-4-0/) 
+
+仔细读下来，其实增加的功能和所做修改基本和 ns/room 相关，其实和我们关系不大。breaking change 是 [disable CORS](https://socket.io/blog/socket-io-2-4-0/) 我们不用，但是本机联调可能要设置。完善文档其实socket.io 4.x 一大工作
+
+对我们来说最大变化是 https://socket.io/blog/engine-io-4-release/#Major-breaking-changes 里说的 Heartbeat mechanism reversal，心跳包从服务器发给浏览器。但是因为 `socket.io-client` 还是 2.x , 所以我们还是浏览器发ping
+
+4.x 需要[Redis Adapter v6.0.0](https://socket.io/blog/socket-io-redis-adapter-6-release/) 我们只是使用，所以改动对我们透明。you must use `socket.io-redis@5` with `socket.io@2` and `socket.io-redis@6` with `socket.io@3`
+
+目前看我们要做代码改动就是
+
+```
+const io = require("socket.io")({
+  allowEIO3: true // false by default
+});
+```
+
+
+
+另 pm2 最新版本 [5.x](https://github.com/Unitech/pm2/blob/master/CHANGELOG.md) 暂时没空理，改动我们也不需要。
+
+更新大版本
+
+```shell
+npm install socket.io@latest --save
+npm install socket.io-redis@latest --save
+npm update ioredis
+```

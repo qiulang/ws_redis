@@ -4,8 +4,7 @@ var cors = require('cors')
 var http = require('http').Server(app)
 var redisAdapter = require('socket.io-redis')
 var io = require('socket.io')(http, {
-  pingInterval: 10000,
-  pingTimeout: 5000,
+  allowEIO3: true,
 })
 // var io = require('socket.io')(http, { path: 'rep' })
 let unserialize = require('locutus/php/var/unserialize')
