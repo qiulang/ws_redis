@@ -126,6 +126,12 @@ io.on('connection', async function (socket) {
     let user_id = await redis.hget('websocket:socket_user', socket.id)
     redis.hset(`websocket:${user_id}`, 'chat-message', msg)
   })
+  //log the browser message
+  socket.on('browser-log', ({ browser, seid, ccgeid, uid, msg }) => {
+    //https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent/Firefox
+    //All starts with Mozilla/5.0
+    warn(`${browser} ---> ${seid}:${ccgeid}:${uid} ---> ${msg}`)
+  })
 })
 
 //订购 redis 消息处理，一般是web服务器发给我们的
