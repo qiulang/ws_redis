@@ -65,6 +65,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.dev.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
   <script src=https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.2/axios.min.js></script>
+  <script async src="//cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"
+    onload="initFingerprintJS()"></script>
   <script>
     $(function () {
       fetch('login').then(response => response.json()).then(data => {
@@ -138,6 +140,21 @@
         // });
       });
     });
+    function initFingerprintJS() {
+      // Initialize an agent at application startup.
+      const fpPromise = FingerprintJS.load()
+
+      // Get the visitor identifier when you need it.
+      fpPromise
+        .then(fp => fp.get())
+        .then(result => {
+          // This is the visitor identifier:
+          const visitorId = result.visitorId
+          console.log(`show my id ${visitorId}`)
+        })
+      // var fingerprint = new Fingerprint().get();
+      // console.log(`show my id ${fingerprint}`)
+    }
   </script>
   <script>
     console.log('test axios for etag')
