@@ -30,9 +30,10 @@ startServer()
 
 io.on('connection', async function (socket) {
   //客户端连接成功后会主动发login消息，redis记录 user 到 socketio.id的对应
-  socket.on('login', async function ({ user_id, seid, ccgeid, token }, fn) {
+  socket.on('login', async function ({ user_id, seid, ccgeid, token, client }, fn) {
+    client = client || 'client.bs'
     debug(
-      `user ${user_id}, seid:${seid}, ccgeid:${ccgeid}, token:${token} login using socket ${socket.id}`
+      `user ${user_id}, seid:${seid}, ccgeid:${ccgeid}, token:${token} ${client} login using socket ${socket.id}`
     )
     if (!user_id || !token) {
       //Thru logs we keep see this and I have no idea why that can happene
@@ -40,7 +41,7 @@ io.on('connection', async function (socket) {
       socket.disconnect(true)
       return
     }
-    let tcheck = await tokenCheck(user_id, token)
+    let tcheck = await tokenCheck(user_id, token, client)
     if (!tcheck) {
       if (typeof fn === 'function') fn({ user_id: 'logoff', ver: 'xxxxxx' })
       //BS 客户端连上来带了 fn ,这个修改本来就是为了防止别人来连我们的 ws，他们应该就不会带fn
@@ -158,7 +159,7 @@ sub.on('message', async function (channel, message) {
 })
 
 //token检查做身份认证
-async function tokenCheck(user_id, token) {
+async function tokenCheck(user_id, token, client) {
   if (process.env.TOKEN_CHECK === '0') {
     debug(`Local redis, skip token check: ${user_id}:${token}`)
     return true
@@ -172,7 +173,7 @@ async function tokenCheck(user_id, token) {
   let tr = await redis.get(`cc-cm:user:tokens:seat:${uid}`)
   debug(`${token} vs redis value cc-cm:user:tokens:seat:${uid} for ${tr}`)
   const t = unserialize(tr)
-  return t['client.bs'] === token
+  return t[client] === token //'client.bs' or 'client.wechat'
 }
 
 //连接的时候调用检查
