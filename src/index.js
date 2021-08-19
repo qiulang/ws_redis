@@ -8,7 +8,7 @@ var io = require('socket.io')(http, {
 })
 // var io = require('socket.io')(http, { path: 'rep' })
 let unserialize = require('locutus/php/var/unserialize')
-var { info, warn } = require('./logger')
+var { info, warn, browserLog } = require('./logger')
 var debug = require('debug')('app:websocket:debug')
 var { redis, pub, sub } = require('./database/redis')
 io.adapter(redisAdapter({ pubClient: pub, subClient: sub }))
@@ -127,11 +127,12 @@ io.on('connection', async function (socket) {
     let user_id = await redis.hget('websocket:socket_user', socket.id)
     redis.hset(`websocket:${user_id}`, 'chat-message', msg)
   })
+
   //log the browser message
   socket.on('browser-log', ({ browser, seid, ccgeid, uid, msg }) => {
     //https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent/Firefox
     //All starts with Mozilla/5.0
-    warn(`${browser} ---> ${seid}:${ccgeid}:${uid} ---> ${msg}`)
+    browserLog(`${browser} ---> ${seid}:${ccgeid}:${uid} ---> ${msg}`)
   })
 })
 
@@ -150,9 +151,25 @@ sub.on('message', async function (channel, message) {
     //看来暂时不需要
     // pushData['id'] = uuidv1()
     // let tmp = JSON.stringify(pushData)
+
     //https://socket.io/docs/emit-cheatsheet/
-    io.to(socketid).emit('cr_msg', message)
-    info(`SUB emit ${message} to ${socketid}`)
+    //https://github.com/socketio/socket.io/discussions/3846
+
+    socket = io.sockets.sockets.get(socketid)
+    socket.emit(
+      'cr_msg',
+      message,
+      msgTimeout(
+        //curry function
+        (ack) => {
+          info(`SUB emit ${message} to ${socketid} and get ack ${ack}`)
+        },
+        () => {
+          warn(`SUB emit ${message} to ${socketid} NOT get ack in 6 seconds!!`)
+        },
+        6000
+      )
+    )
   } catch (err) {
     info(`io.to ${socketid} emit failed:${JSON.stringify(err)}`)
   }
@@ -279,4 +296,21 @@ async function startServer() {
   app.use(express.urlencoded({ extended: false }))
   app.use(cors())
   app.use('/', indexRouter)
+}
+
+function msgTimeout(onSuccess, onTimeout, timeout) {
+  let called = false
+
+  const timer = setTimeout(() => {
+    if (called) return
+    called = true
+    onTimeout()
+  }, timeout)
+
+  return (...args) => {
+    if (called) return
+    called = true
+    clearTimeout(timer)
+    onSuccess.apply(this, args)
+  }
 }
