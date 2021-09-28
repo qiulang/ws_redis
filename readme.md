@@ -961,7 +961,7 @@ https://github.com/socketio/engine.io-protocol#timeouts
 
 - auto-reconnection
 - a way to broadcast data to a given set of clients (rooms/namespace)
-- the Redis adapter to broadcast across Socket.IO servers 对我们最重要，docker使用必须
+- the [Redis adapter](https://socket.io/docs/v4/redis-adapter/) to broadcast across Socket.IO servers 对我们最重要，docker使用必须
 
 
 
