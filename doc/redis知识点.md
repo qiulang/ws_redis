@@ -91,3 +91,12 @@ Redis 管道技术——Pipeline 我们代码在用[transaction](https://github.
 https://redislabs.com/ebook/part-2-core-concepts/ 
 
 To restore redis data just move redis backup file (dump.rdb) into your redis directory and start the server.
+
+
+
+#### Use Cases by Core Data Structure Types
+
+https://scalegrid.io/blog/top-redis-use-cases-by-core-data-structure-types/
+
+[A Simple Redis Use Case for Sorted Sets](https://www.paperplanes.de/2010/11/29/a_simple_redis_use_case.html)
+

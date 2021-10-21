@@ -23,7 +23,7 @@ token_urls = {"p": token_url, "b": bstoken_url, "w": token_url}
 
 
 number = '7820'
-password = '123456'
+password = 'welcome123'
 userid = '1000988323'  # 7820
 seid = '134'
 ccgeid = '243'

@@ -1,6 +1,6 @@
-### 本项目常用到的redis命令
+## 本项目常用到的redis命令
 
-#### 常用命令
+### 常用命令
 
 首先，redis版本必须是 4.0以上，因为我用 hset 设置多个field，而不是用hmset （见下）
 
@@ -48,7 +48,33 @@
 
 
 
-#### 示例
+### 存数组
+
+我们php代码在存array时候，是把数组先序列化，再存成string类型，最典型例子就是token
+
+```
+key:  cc-cm:user:token:bedc824fcd88db8661298cb275acabf1a0f4f1990aa74264ef960b7a8ab36985
+value:  a:5:{s:6:"ccgeid";i:243;s:4:"seid";i:134;s:9:"user_type";s:4:"seat";s:7:"user_id";i:1001056417;s:6:"source";s:14:"client.pc.mini";}
+
+[
+ccgeid:243 				//企业ID
+seid:134   				//超级企业ID
+user_type:"seat"        //用户类型
+user_id:1001051061   	//用户id
+source:"client.pc.mini" //请求来源
+]
+//以上数组通过 serialize(), https://www.php.net/manual/en/function.serialize.php 序列化成对应字符串：
+a:size:{key definition;value definition;(repeated per element)}
+String  s:size:value;  Integer  i:value;
+```
+
+第一次看觉得有点奇怪，比如为什么不用list；或者不要用array，因为这本来就是hash , 就像 [Storing complex data structures in Redis](http://dmitrypol.github.io/redis/2017/06/21/redis-complex-data-struct.html#arrays) 说的。
+
+[Storing an array of data using Redis (from Laravel)](https://stackoverflow.com/questions/22718903/storing-an-array-of-data-using-redis-from-laravel) 有回答 The easiest way would be to `serialise` / `json_encode` the data on set then `unserialise`/`json_decode` on get.
+
+
+
+### 示例
 
 下面以阿里开发环境为例子，演示如何查看redis里记录的websocket相关信息，有三组信息跟websokcet通信相关：
 
