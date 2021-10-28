@@ -50,7 +50,7 @@
 
 ### 存数组
 
-我们php代码在存array时候，是把数组先序列化，再存成string类型，最典型例子就是token
+我们php代码在存array时候，是把数组先序列化，再存成string类型，最典型例子就是token ([通过`session_id`产生](https://www.hackingarticles.in/beginner-guide-understand-cookies-session-management/))
 
 ```
 key:  cc-cm:user:token:bedc824fcd88db8661298cb275acabf1a0f4f1990aa74264ef960b7a8ab36985
@@ -71,6 +71,23 @@ String  s:size:value;  Integer  i:value;
 第一次看觉得有点奇怪，比如为什么不用list；或者不要用array，因为这本来就是hash , 就像 [Storing complex data structures in Redis](http://dmitrypol.github.io/redis/2017/06/21/redis-complex-data-struct.html#arrays) 说的。
 
 [Storing an array of data using Redis (from Laravel)](https://stackoverflow.com/questions/22718903/storing-an-array-of-data-using-redis-from-laravel) 有回答 The easiest way would be to `serialise` / `json_encode` the data on set then `unserialise`/`json_decode` on get.
+
+
+
+### redis 不提供某个值存入的时间
+
+[Time of creation of key in redis](https://stackoverflow.com/questions/9917331/time-of-creation-of-key-in-redis)
+
+Redis doesn't store this information. You could use a separate key:
+
+```
+MULTI
+SET foo "bar spam"
+SET foo:time "13:30 20 Feb 2020"
+EXEC
+
+GET foo:time
+```
 
 
 
