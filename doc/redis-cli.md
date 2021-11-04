@@ -144,3 +144,11 @@ emic-cm-redis.redis.rds.aliyuncs.com:6379> pubsub channels
 8) "134_243_1000962235"
 ```
 
+
+
+注， 2021.11.4 发现开发环境 `websocket:socket_user` 包含很多无效数据，所以用 `hlen websocket:socket_user` 来查当前连接数就不准。通过查 `websocket:${uid}`的个数 (lua 脚本) 来查可以，但使用keys命令有性能上问题，所以考虑新版改进`websocket:${uid}` 存储方式。
+
+```
+eval "return #redis.call('keys','websocket:*')" 0
+```
+
