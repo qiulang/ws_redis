@@ -216,6 +216,7 @@ async function dupCheck(user_id, socket_id, fn) {
   //加入重刷浏览器的延迟处理会走到这，但是因为旧的连接已经没了我想调用emit也没啥
   //2021.3 还发现有的 ws 服务器docker容器会被 k8s重启，重启我们不删redis记录了
   //所以也有可能走到这，但是这时候的old_socket不存在，和重刷浏览器一样
+  //todo: 考虑加 msgTimeout
   io.to(old_socket).emit('logoff', 'another login')
   //不能在这里直接删除'websocket:socket_user'老的关联关系而没有sub.unsubscribe，
   //因为前一个连接可能是别的docker处理，必须在disconect 里一起处理 redis.hdel 和 sub.unsubscribe

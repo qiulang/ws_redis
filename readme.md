@@ -1030,3 +1030,12 @@ let socketid = await redis.hget(`websocket:${channel}`, 'socketid')
 
 今天少峰突然提醒很可能是一台容器重启，删了所有redis信息，但是浏览器连到另一台容器，所以没有重连，但redis相关信息已经被删了。查了日志还真是这样。所以把清空记录的调用去掉！
 
+
+
+### socket.io 的重连原理
+
+一次的 ping/pong失败 socket.io 即设置 ws 为 disconnect，并用新的ws重连 [One ping/pong failure will make the websocket disconnect, is that too sensitive ?](https://github.com/socketio/socket.io/discussions/4161)
+
+查redis记录发现 有很多无效数据没被删除，基本原因判断都是没有收到disconnect 事件 [ws client-side disconnect is not detected](https://github.com/socketio/socket.io/discussions/4169) 
+
+解决办法还没想到。
