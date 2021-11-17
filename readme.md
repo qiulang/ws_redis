@@ -1038,4 +1038,10 @@ let socketid = await redis.hget(`websocket:${channel}`, 'socketid')
 
 查redis记录发现 有很多无效数据没被删除，基本原因判断都是没有收到disconnect 事件 [ws client-side disconnect is not detected](https://github.com/socketio/socket.io/discussions/4169) 
 
-解决办法还没想到。
+解决办法还没想到。但这几天仔细排查原因发现很可能就是服务器重启（比如开发环境部署新镜像），而恰恰这时候浏览器发了disconnect事件，所以没处理到。问题集中在
+
+```
+io.to(old_socket).emit('logoff', 'another login')
+//这里因为各种场景，没有直接删除，而是在disconnect事件里再删，但是disconnect事件我们又可能没收到，所以就造成删不了
+```
+
