@@ -106,6 +106,7 @@ io.on('connection', async function (socket) {
           debug(`Delete ${sid} related data ${uid} after ${RTIME} seconds`)
           if (reason == 'client namespace disconnect') {
             info(`Assume ${uid} logoff and told CR, so we do NOT send check_out message`)
+            await notifyDisconnect(sid, uid)
           } else {
             debug(`Assume ${uid} just closes tab, so we need to tell CR`)
             await notifyDisconnect(sid, uid)
