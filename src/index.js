@@ -110,7 +110,7 @@ io.on('connection', async function (socket) {
           }
           await redis.del(`websocket:${uid}`)
         } else {
-          debug(`Indeed client reconnect with ${new_socket}`)
+          debug(`${uid} indeed client reconnect with ${new_socket}`)
         }
       },
       1000 * RTIME,
@@ -213,6 +213,7 @@ async function dupCheck(user_id, socket_id, fn) {
   }
   //now we assume it is another login
   //客户端收到后会close这个socket.io，所以我们还会再收到一条它的disconnect消息
+  //加入延迟删除`websocket:${user_id}` 也会走到这，但是因为旧的连接已经没了我想调用emit也没啥
   //2021.3 还发现有的 ws 服务器docker容器会被 k8s重启，重启我们不删redis记录了
   //所以也有可能走到这，但是这时候的old_socket不存在，和重刷浏览器一样
   //todo: 目前排查redis无效数据对应socket.io.id 最后都是显示这条
