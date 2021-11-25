@@ -6,3 +6,4 @@ dump.rdb
 .env.local
 .env.*.local
 *.pyc
+build/
