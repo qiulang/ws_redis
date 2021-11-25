@@ -1061,7 +1061,7 @@ etag 的问题 2020 [3.18](#3.18) 就花不少时间研究过，但是突然发�
 
 - auto-reconnection
 - a way to broadcast data to a given set of clients (rooms/namespace)
-- **the Redis adapter to broadcast across Socket.IO servers 对我们最重要，docker使用必须**
+- the [Redis adapter](https://socket.io/docs/v4/redis-adapter/) to broadcast across Socket.IO servers 对我们最重要，docker使用必须
 
 
 
@@ -1173,4 +1173,17 @@ const io = require("socket.io")({
 npm install socket.io@latest --save
 npm install socket.io-redis@latest --save
 npm update ioredis
+```
+
+### socket.io 的重连原理
+
+一次的 ping/pong失败 socket.io 即设置 ws 为 disconnect，并用新的ws重连 [One ping/pong failure will make the websocket disconnect, is that too sensitive ?](https://github.com/socketio/socket.io/discussions/4161)
+
+查redis记录发现 有很多无效数据没被删除，基本原因判断都是没有收到disconnect 事件 [ws client-side disconnect is not detected](https://github.com/socketio/socket.io/discussions/4169) 
+
+解决办法还没想到。但这几天仔细排查原因发现很可能就是服务器重启（比如开发环境部署新镜像），而恰恰这时候浏览器发了disconnect事件，所以没处理到。问题集中在
+
+```
+io.to(old_socket).emit('logoff', 'another login')
+//这里因为各种场景，没有直接删除，而是在disconnect事件里再删，但是disconnect事件我们又可能没收到，所以就造成删不了
 ```

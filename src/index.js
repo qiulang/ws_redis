@@ -105,15 +105,13 @@ io.on('connection', async function (socket) {
           debug(`${sid} remains the same so assume we disconnected`)
           debug(`Delete ${sid} related data ${uid} after ${RTIME} seconds`)
           if (reason == 'client namespace disconnect') {
-            info(`Assume ${uid} logoff and told CR, so we do NOT send check_out message`)
-            await notifyDisconnect(sid, uid)
+            info(`Assume ${uid} logoff, to fix 16312 we send check_out message`)
           } else {
             debug(`Assume ${uid} just closes tab, so we need to tell CR`)
-            await notifyDisconnect(sid, uid)
           }
-          await redis.multi().hdel('websocket:socket_user', sid).del(`websocket:${uid}`).exec()
+          await Promise.all([notifyDisconnect(sid, uid), redis.del(`websocket:${uid}`)])
         } else {
-          debug(`Indeed client reconnect with ${new_socket}`)
+          debug(`${uid} indeed client reconnect with ${new_socket}`)
         }
       },
       1000 * RTIME,
@@ -155,7 +153,6 @@ sub.on('message', async function (channel, message) {
 
     //https://socket.io/docs/emit-cheatsheet/
     //https://github.com/socketio/socket.io/discussions/3846
-
     socket = io.sockets.sockets.get(socketid)
     socket.emit(
       'cr_msg',
@@ -233,11 +230,12 @@ async function dupCheck(user_id, socket_id, fn) {
   }
   //now we assume it is another login
   //客户端收到后会close这个socket.io，所以我们还会再收到一条它的disconnect消息
-  //加入重刷浏览器的延迟处理会走到这，但是因为旧的连接已经没了我想调用emit也没啥
+  //加入延迟删除`websocket:${user_id}` 也会走到这，但是因为旧的连接已经没了我想调用emit也没啥
   //2021.3 还发现有的 ws 服务器docker容器会被 k8s重启，重启我们不删redis记录了
   //所以也有可能走到这，但是这时候的old_socket不存在，和重刷浏览器一样
+  //todo: 目前排查redis无效数据对应socket.io.id 最后都是显示这条
   io.to(old_socket).emit('logoff', 'another login')
-  //不能在这里直接删除'websocket:socket_user'老的关联关系而没有sub.unsubscribe，
+  //不能在这里直接删除'websocket:socket_user'，老的关联关系而没有sub.unsubscribe
   //因为前一个连接可能是别的docker处理，必须在disconect 里一起处理 redis.hdel 和 sub.unsubscribe
   info(`${user_id} exists with socket id ${old_socket}, tell it to logoff.`)
   return false //更新 socketid
