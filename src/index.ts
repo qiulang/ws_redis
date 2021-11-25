@@ -1,12 +1,13 @@
+import { Server, Socket } from "socket.io";
+
 var express = require('express')
 var app = express()
 var cors = require('cors')
 var http = require('http').Server(app)
 var redisAdapter = require('socket.io-redis')
-var io = require('socket.io')(http, {
+var io = new Server(http, {
   allowEIO3: true,
 })
-// var io = require('socket.io')(http, { path: 'rep' })
 let unserialize = require('locutus/php/var/unserialize')
 var { info, warn, browserLog } = require('./logger')
 var debug = require('debug')('app:websocket:debug')
@@ -28,10 +29,26 @@ var user_socket = {}
 //入口函数
 startServer()
 
-io.on('connection', async function (socket) {
+// https://stackoverflow.com/questions/37233735/interfaces-vs-types-in-typescript
+
+type loginData = {
+  user_id:string,
+  seid:string,
+  ccgeid:string,
+  token:string,
+  client?:string
+}
+
+type loginCBData = {
+  user_id:string,
+  ver:string
+}
+
+type loginCB = (arg: loginCBData) => void;
+
+io.on('connection', async function (socket:Socket) {
   //客户端连接成功后会主动发login消息，redis记录 user 到 socketio.id的对应
-  socket.on('login', async function ({ user_id, seid, ccgeid, token, client }, fn) {
-    client = client || 'client.bs'
+  socket.on('login', async function ({ user_id, seid, ccgeid, token, client = 'client.bs' }:loginData, fn:loginCB) {
     debug(
       `user ${user_id}, seid:${seid}, ccgeid:${ccgeid}, token:${token} ${client} login using socket ${socket.id}`
     )
@@ -63,7 +80,7 @@ io.on('connection', async function (socket) {
   //https://socket.io/docs/emit-cheatsheet/
   socket.on('user-reconnect', async function (reason, fn) {
     debug(`Client emit a reconnect event with reason:${reason}, ${socket.id}`)
-    if (fn && typeof value === 'function') fn(`${socket.id}`)
+    if (fn && typeof fn === 'function') fn(`${socket.id}`)
   })
 
   //用户关闭页面，断网都会触发disconnect消息
