@@ -39,11 +39,6 @@ interface socketData extends baseData{
   socket_id:string,
 }
 
-interface loginData extends baseData{
-  token:string,
-  client?:string
-}
-
 type loginCBData = {
   user_id:string,
   ver:string
