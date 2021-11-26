@@ -17,24 +17,29 @@ var indexRouter = require('./routes/index')
 const uuidv1 = require('uuid/v1')
 const portfinder = require('portfinder')
 
-let RTIME = process.env.RTIME || 45
-
-//不在redis，一旦socket.id的信息记录到redis就清楚在dup的记录
-//不是100%确认一定必要，而且要避免内存泄漏情况
-var dup = {}
-//不在redis只记录本进程处理的，目的是在disconnect里判断要不要unsubscribe
-//从收集到的日志看这种情况是存在的，而且目前看不会有内存泄漏情况
-var user_socket = {}
+let RTIME:number = +(process.env.RTIME || 45)
 
 //入口函数
 startServer()
 
 // https://stackoverflow.com/questions/37233735/interfaces-vs-types-in-typescript
 
-type loginData = {
+interface baseData {
   user_id:string,
   seid:string,
   ccgeid:string,
+}
+
+interface loginData extends baseData{
+  token:string,
+  client?:string
+}
+
+interface socketData extends baseData{
+  socket_id:string,
+}
+
+interface loginData extends baseData{
   token:string,
   client?:string
 }
@@ -45,6 +50,21 @@ type loginCBData = {
 }
 
 type loginCB = (arg: loginCBData) => void;
+// type subCB = (channel: string, message:string) => Promise<void>;
+interface UserSocket {
+  [key: string]: string;
+}
+
+interface SocketRecord {
+  [key: string]: 'exist' | undefined
+}
+
+//不在redis，一旦socket.id的信息记录到redis就清楚在dup的记录
+//不是100%确认一定必要，而且要避免内存泄漏情况
+var dup:SocketRecord = {}
+//不在redis只记录本进程处理的，目的是在disconnect里判断要不要unsubscribe
+//从收集到的日志看这种情况是存在的，而且目前看不会有内存泄漏情况
+var user_socket:UserSocket = {}
 
 io.on('connection', async function (socket:Socket) {
   //客户端连接成功后会主动发login消息，redis记录 user 到 socketio.id的对应
@@ -71,7 +91,7 @@ io.on('connection', async function (socket:Socket) {
     if (exist) {
       return
     }
-    await login({ user_id, seid, ccgeid, socket })
+    await login({ user_id, seid, ccgeid, socket_id:socket.id })
     //考虑了半天代码用什么做版本号好，必须是打包代码能自动生成的，不能每次都手动修改
     //一开始考虑commit id，但是commit id 没法比较代码的新旧，暂定 time stamp
     if (typeof fn === 'function') fn({ user_id: 'login', ver: 'xxxxxx' })
@@ -84,7 +104,7 @@ io.on('connection', async function (socket:Socket) {
   })
 
   //用户关闭页面，断网都会触发disconnect消息
-  socket.on('disconnect', async function (reason) {
+  socket.on('disconnect', async function (reason:string) {
     //https://socket.io/docs/server-api/#Event-%E2%80%98disconnect%E2%80%99
     debug(`socket id ${socket.id} has disconnected with reason ${reason}`)
     if (reason.includes(`server namespace disconnect`)) {
@@ -153,9 +173,9 @@ io.on('connection', async function (socket:Socket) {
 })
 
 //订购 redis 消息处理，一般是web服务器发给我们的
-sub.on('message', async function (channel, message) {
+sub.on('message', async function (channel:string, message:string) {
   debug('SUB channel %s received message %s', channel, message)
-  let socketid = await redis.hget(`websocket:${channel}`, 'socketid')
+  let socketid:string = await redis.hget(`websocket:${channel}`, 'socketid')
   if (!socketid) {
     warn(`Got ${message} but channel ${channel} does NOT exist.`)
     return
@@ -168,13 +188,13 @@ sub.on('message', async function (channel, message) {
     // pushData['id'] = uuidv1()
     // let tmp = JSON.stringify(pushData)
 
-    //https://socket.io/docs/emit-cheatsheet/
-    //https://github.com/socketio/socket.io/discussions/3846
-    socket = io.sockets.sockets.get(socketid)
-    socket.emit(
+    //https://stackoverflow.com/questions/27055989/socket-io-1-0-x-get-socket-by-id
+    let socket = io.sockets.sockets.get(socketid)
+    //https://socket.io/docs/v4/emit-cheatsheet/
+    socket?.emit(
       'cr_msg',
       message,
-      msgTimeout(
+      msgTimeout( //https://github.com/socketio/socket.io/discussions/3846
         //curry function
         (ack) => {
           info(`SUB emit ${message} to ${socketid} and get ack ${ack}`)
@@ -191,7 +211,7 @@ sub.on('message', async function (channel, message) {
 })
 
 //token检查做身份认证
-async function tokenCheck(user_id, token, client) {
+async function tokenCheck(user_id:string, token:string, client:string) {
   if (process.env.TOKEN_CHECK === '0') {
     debug(`Local redis, skip token check: ${user_id}:${token}`)
     return true
@@ -209,11 +229,11 @@ async function tokenCheck(user_id, token, client) {
 }
 
 //连接的时候调用检查
-async function dupCheck(user_id, socket_id, fn) {
+async function dupCheck(user_id:string, socket_id:string, fn:loginCB) {
   if (!user_id) {
     //happen in dev env a lot
-    debug('no user id so just return')
-    fn(`wrong user_id:${user_id}`)
+    debug('no user id so just return, probably no fn in this case')
+    //fn(`wrong user_id:${user_id}`)
     return true //to let the caller just return
   }
   //试验感觉这里存内存就好，没必要存reids
@@ -258,27 +278,27 @@ async function dupCheck(user_id, socket_id, fn) {
   return false //更新 socketid
 }
 
-async function login({ user_id, seid, ccgeid, socket }) {
+async function login({ user_id, seid, ccgeid, socket_id }:socketData) {
   await redis
     .multi()
-    .hset('websocket:socket_user', socket.id, user_id) //socket.io 状态变化取到对用用户
+    .hset('websocket:socket_user', socket_id, user_id) //socket.io 状态变化取到对用用户
     .hset(
       `websocket:${user_id}`,
       'socketid',
-      socket.id, //pub-sub 取到对应的 socket.io
+      socket_id, //pub-sub 取到对应的 socket.io
       'seid',
       seid,
       'ccgeid',
       ccgeid
     )
     .exec()
-  delete dup[socket.id]
-  user_socket[user_id] = socket.id
+  delete dup[socket_id]
+  user_socket[user_id] = socket_id
   await sub.subscribe(user_id)
-  info(`store in hash table user_socket ${user_id} => ${socket.id} AND SUB subscribe`)
+  info(`store in hash table user_socket ${user_id} => ${socket_id} AND SUB subscribe`)
 }
 
-async function notifyDisconnect(socket_id, user_id) {
+async function notifyDisconnect(socket_id:string, user_id:string) {
   let seid = await redis.hget(`websocket:${user_id}`, 'seid')
   let ccgeid = await redis.hget(`websocket:${user_id}`, 'ccgeid')
   //'{"seid": 134,"ccgeid": 243,"op_code":"check_out","channel_id":"134_243_1000962325"}'
@@ -314,7 +334,7 @@ async function startServer() {
   app.use('/', indexRouter)
 }
 
-function msgTimeout(onSuccess, onTimeout, timeout) {
+function msgTimeout(onSuccess:(any) => void, onTimeout:() => void, timeout:number) {
   let called = false
 
   const timer = setTimeout(() => {
