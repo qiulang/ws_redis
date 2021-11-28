@@ -15,9 +15,11 @@ Connect to 127.0.0.1:6380, db 4, using password "authpassword":
 new Redis("redis://:authpassword@127.0.0.1:6380/4");
 */
 
+//https://stackoverflow.com/questions/12710905/how-do-i-dynamically-assign-properties-to-an-object-in-typescript
 const setting = {
   port: process.env.REDIS_PORT || 6379,
   host: process.env.REDIS_HOST || 'localhost',
+  password:''
 }
 
 //https://stackoverflow.com/questions/11704267/in-javascript-how-to-conditionally-add-a-member-to-an-object/38483660
@@ -31,7 +33,7 @@ var redis = new Redis(setting)
 var sub = new Redis(setting)
 var pub = new Redis(setting)
 
-redis.on('error', (err) => {
+redis.on('error', (err:any) => {
   if (err.message.includes('invalid password')) {
     //By default debug will log to stderr.
     warn('Invalid password so redis fails to work, so just exit')

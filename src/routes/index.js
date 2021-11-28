@@ -50,6 +50,7 @@ router.put('/clog', function (req, res) {
   let log_level = { d: 'app:*', i: 'app:info,app:warn', w: 'app:warn' }
   let tmp = req.body.level
   let ns = req.body.ns
+  let namespaces
   //Note that calling enable() completely overrides previously set DEBUG variable
   if (!tmp && !ns) {
     return enableNS('app:*', res)
@@ -81,7 +82,7 @@ router.put('/clog', function (req, res) {
 })
 
 router.get('/elog', function (req, res) {
-  namespaces = dbg.disable()
+  let namespaces = dbg.disable()
   dbg.enable(namespaces)
   debug(`Currently enable ${namespaces}`)
   res.send(`Currently enable ${namespaces}\n`)
