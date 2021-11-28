@@ -1,5 +1,4 @@
-import { Server, Socket } from "socket.io";
-
+import { Server } from "socket.io";
 var express = require('express')
 var app = express()
 var cors = require('cors')
@@ -45,7 +44,6 @@ type loginCBData = {
 }
 
 type loginCB = (arg: loginCBData) => void;
-// type subCB = (channel: string, message:string) => Promise<void>;
 interface UserSocket {
   [key: string]: string;
 }
@@ -61,7 +59,7 @@ var dup:SocketRecord = {}
 //从收集到的日志看这种情况是存在的，而且目前看不会有内存泄漏情况
 var user_socket:UserSocket = {}
 
-io.on('connection', async function (socket:Socket) {
+io.on('connection', async function (socket) {
   //客户端连接成功后会主动发login消息，redis记录 user 到 socketio.id的对应
   socket.on('login', async function ({ user_id, seid, ccgeid, token, client = 'client.bs' }:loginData, fn:loginCB) {
     debug(
@@ -329,7 +327,8 @@ async function startServer() {
   app.use('/', indexRouter)
 }
 
-function msgTimeout(onSuccess:(any) => void, onTimeout:() => void, timeout:number) {
+// make sure `this` is unusable in this standalone function
+function msgTimeout(onSuccess:(this: void,...args:any[]) => void, onTimeout:(this: void) => void, timeout:number) {
   let called = false
 
   const timer = setTimeout(() => {
@@ -338,10 +337,10 @@ function msgTimeout(onSuccess:(any) => void, onTimeout:() => void, timeout:numbe
     onTimeout()
   }, timeout)
 
-  return (...args) => {
+  return (...args:any[]) => {
     if (called) return
     called = true
     clearTimeout(timer)
-    onSuccess.apply(this, args)
+    onSuccess(args)
   }
 }
