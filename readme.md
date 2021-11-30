@@ -562,7 +562,7 @@ https://github.com/socketio/engine.io-protocol#timeouts
 
 3. 提供动态修改log级别的接口。
 
-4. debug确实写得std.err, 不做修改了，不然要改的地方太多。pm2就都从 `/root/.pm2/logs/ws-redis-error.log` 看吧
+4. debug确实写到std.err, 不做修改了，不然要改的地方太多。pm2就都从 `/root/.pm2/logs/ws-redis-error.log` 看吧
 
 5. 不用chalk
 
@@ -597,6 +597,12 @@ map $remote_addr $log_ip {
 ```
 
 由于 容器的nginx 重定向到标准输出，所以看日志可以用 `docker logs -f <container id>`
+
+#### log to std.err
+
+不少log库都是把log记录到std.err, 参考 [Should I log messages to stderr or stdout?](https://stackoverflow.com/questions/4919093/should-i-log-messages-to-stderr-or-stdout) 
+
+> stderr is meant to be an output for all messages that are just some internal and/or debugging program information like logs and errors, rather than actual output, the result of the program.
 
 
 
