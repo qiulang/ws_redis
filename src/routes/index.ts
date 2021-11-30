@@ -1,4 +1,5 @@
-var express = require('express')
+import express, {Request, Response} from 'express';
+// const express = require('express');
 let dbg = require('debug')
 const uuidv1 = require('uuid/v1')
 var { info, warn } = require('../logger')
@@ -9,7 +10,7 @@ var { redis, pub } = require('../database/redis')
 /* 测试 publish 有没有问题. */
 
 /* 两级路由就取不到body内容，没有深入研究为什么*/
-router.post('/dpub', async function (req, res) {
+router.post('/dpub', async function (req:Request, res:Response) {
   //for debug only
   let uid = req.body.uid
   let sid = req.body.sid
@@ -45,12 +46,12 @@ router.post('/dpub', async function (req, res) {
   }
 })
 
-router.put('/clog', function (req, res) {
+router.put('/clog', function (req:Request, res:Response) {
   //only 3 levels: debug,info,warn
-  let log_level = { d: 'app:*', i: 'app:info,app:warn', w: 'app:warn' }
-  let tmp = req.body.level
-  let ns = req.body.ns
-  let namespaces
+  let log_level:Record<string, string> = { d: 'app:*', i: 'app:info,app:warn', w: 'app:warn' }
+  let tmp:string = req.body.level
+  let ns:string = req.body.ns
+  let namespaces:string
   //Note that calling enable() completely overrides previously set DEBUG variable
   if (!tmp && !ns) {
     return enableNS('app:*', res)
@@ -81,34 +82,34 @@ router.put('/clog', function (req, res) {
   enableNS(namespaces, res)
 })
 
-router.get('/elog', function (req, res) {
+router.get('/elog', function (req:Request, res:Response) {
   let namespaces = dbg.disable()
   dbg.enable(namespaces)
   debug(`Currently enable ${namespaces}`)
   res.send(`Currently enable ${namespaces}\n`)
 })
 
-router.get('/ghtoken', function (req, res) {
+router.get('/ghtoken', function (req:Request, res:Response) {
   // res.setHeader('Cache-Control', 'no-cache')
   console.log(JSON.stringify(req.headers))
   const token = { qiulang: 'bc0c626de8a069b42e79d2ca312d5498dbfc9018' }
   res.send(token)
 })
 
-router.get('/failme', function (req, res) {
+router.get('/failme', function (req:Request, res:Response) {
   let detailed = { info: 'detailed info about the error', subStstua: 50111 }
   res.status(503).send(detailed)
 })
 
-router.get('/login', function (req, res) {
+router.get('/login', function (req:Request, res:Response) {
   res.send({ ws: 'proceed', user: '1001' })
 })
 
-router.post('/pcclient', function (req, res) {
+router.post('/pcclient', function (req:Request, res:Response) {
   res.send('switchnumber=02566687671&logintype=1&usernumber=7820')
 })
 
-function enableNS(namespaces, res) {
+function enableNS(namespaces:string, res:Response) {
   dbg.enable(namespaces)
   debug(`enable ${namespaces}`)
   res.send(`Enable ${namespaces}\n`)

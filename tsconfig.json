@@ -100,5 +100,5 @@
   },
   "include": ["src/**/*"],
   // "files": ["src/index.ts"],
-  "exclude": ["node_modules", "src/test"]
+  "exclude": ["node_modules", "src/test/js"]
 }
