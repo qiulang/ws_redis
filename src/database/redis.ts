@@ -1,5 +1,6 @@
 require('dotenv-flow').config()
 var Redis = require('ioredis')
+// import Redis from 'ioredis'
 var { info, warn } = require('../logger')
 var debug = require('debug')('app:redis:debug')
 /*
@@ -33,7 +34,7 @@ var redis = new Redis(setting)
 var sub = new Redis(setting)
 var pub = new Redis(setting)
 
-redis.on('error', (err:any) => {
+redis.on('error', (err:Error) => {
   if (err.message.includes('invalid password')) {
     //By default debug will log to stderr.
     warn('Invalid password so redis fails to work, so just exit')
