@@ -48,8 +48,8 @@ router.post('/dpub', async function (req:Request, res:Response) {
 
 router.put('/clog', function (req:Request, res:Response) {
   //only 3 levels: debug,info,warn
-  let log_level:Record<string, string> = { d: 'app:*', i: 'app:info,app:warn', w: 'app:warn' }
-  let tmp:string = req.body.level
+  let log_level = { d: 'app:*', i: 'app:info,app:warn', w: 'app:warn' }
+  let tmp:keyof typeof log_level = req.body.level
   let ns:string = req.body.ns
   let namespaces:string
   //Note that calling enable() completely overrides previously set DEBUG variable
