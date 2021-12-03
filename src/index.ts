@@ -139,7 +139,7 @@ io.on('connection', async function (socket) {
           } else {
             debug(`Assume ${uid} just closes tab, so we need to tell CR`)
           }
-          await Promise.all([notifyDisconnect(sid, uid), redis.del(`websocket:${uid}`)])
+          await notifyDisconnect(sid, uid)
         } else {
           debug(`${uid} indeed client reconnect with ${new_socket}`)
         }
@@ -292,8 +292,15 @@ async function login({ user_id, seid, ccgeid, socket_id }:socketData) {
 }
 
 async function notifyDisconnect(socket_id:string, user_id:string) {
-  let seid = await redis.hget(`websocket:${user_id}`, 'seid')
-  let ccgeid = await redis.hget(`websocket:${user_id}`, 'ccgeid')
+  let tmp = await redis
+    .multi()
+    .hget(`websocket:${user_id}`, 'seid')
+    .hget(`websocket:${user_id}`, 'ccgeid')
+    .del(`websocket:${user_id}`)
+    .exec()
+
+  let seid = tmp[0][1]
+  let ccgeid = tmp[1][1]
   //'{"seid": 134,"ccgeid": 243,"op_code":"check_out","channel_id":"134_243_1000962325"}'
   let msg = {
     seid: seid,

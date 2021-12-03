@@ -13,6 +13,21 @@ const uuidv1 = require('uuid/v1')
 */
 var redis = new Redis()
 
+async function getMore(user_id = '555') {
+  let tmp = await redis
+    .multi()
+    .hget(`websocket:${user_id}`, 'seid')
+    .hget(`websocket:${user_id}`, 'ccgeid')
+    .del(`websocket:${user_id}`)
+    .exec()
+
+  let seid = tmp[0][1]
+  let ccgeid = tmp[1][1]
+  log(`get 555's seid:${seid}, ccgeid:${ccgeid}`)
+}
+
+getMore()
+
 // ioredis supports all Redis commands:
 async function tranc() {
   log('trancsation test')
@@ -46,11 +61,7 @@ async function tranc() {
   }
 
   await redis.set('atomic', 'get-delete')
-  let atomic = await redis
-    .multi()
-    .get('atomic')
-    .del('atomic')
-    .exec()
+  let atomic = await redis.multi().get('atomic').del('atomic').exec()
   log(`${atomic[0][1]} : ${atomic[1][1]}`)
   if (atomic[0][1] == 'get-delete' && atomic[1][1] == 1) {
     log('atomic get-delete')
@@ -69,7 +80,7 @@ async function tranc() {
 tranc()
 
 redis.set('foo', 'bar')
-redis.get('foo', function(err, result) {
+redis.get('foo', function (err, result) {
   if (err) {
     error(err)
   } else {
@@ -81,7 +92,7 @@ redis.del('foo')
 log(uuidv1())
 
 // Or using a promise if the last argument isn't a function
-redis.get('foo').then(function(result) {
+redis.get('foo').then(function (result) {
   log(result)
 })
 
