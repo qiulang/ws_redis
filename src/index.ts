@@ -1,10 +1,12 @@
-import { Server } from "socket.io";
-var express = require('express')
+import { Server } from 'socket.io';
+import express from 'express'
+import cors from 'cors'
+import { createServer } from 'http';
 var app = express()
-var cors = require('cors')
-var http = require('http').Server(app)
+// var http = require('http').Server(app)
+const httpServer = createServer(app);
 var redisAdapter = require('socket.io-redis')
-var io = new Server(http, {
+var io = new Server(httpServer, {
   allowEIO3: true,
 })
 let unserialize = require('locutus/php/var/unserialize')
@@ -325,7 +327,7 @@ async function startServer() {
     portfinder.basePort = port
     port = await portfinder.getPortPromise()
   }
-  http.listen(port, function () {
+  httpServer.listen(port, function () {
     debug('server starts, listening on *:' + port)
   })
   app.use(express.json()) //https://stackoverflow.com/a/47232318/301513
