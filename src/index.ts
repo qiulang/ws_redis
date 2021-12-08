@@ -114,6 +114,7 @@ io.on('connection', async function (socket) {
       .hdel('websocket:socket_user', socket.id)
       .exec()
     let user_id = get_del[0][1] //[err, result]
+    user_id = user_id.split('@')[0]
     if (!user_id) {
       warn(`No ${socket.id} related data, is "ping timeout" the reason? ${reason}`)
       return
@@ -156,6 +157,7 @@ io.on('connection', async function (socket) {
   socket.on('chat-message', async (msg) => {
     debug(`用收到消息模拟CS发给我的用户属性:${msg}`)
     let user_id = await redis.hget('websocket:socket_user', socket.id)
+    user_id = user_id.split('@')[0]
     redis.hset(`websocket:${user_id}`, 'chat-message', msg)
   })
 
@@ -274,17 +276,16 @@ async function dupCheck(user_id:string, socket_id:string, fn:loginCB) {
 }
 
 async function login({ user_id, seid, ccgeid, socket_id }:socketData) {
+  const loginT = new Date().toLocaleString()
   await redis
     .multi()
-    .hset('websocket:socket_user', socket_id, user_id) //socket.io 状态变化取到对用用户
+    .hset('websocket:socket_user', socket_id, `${user_id}@${loginT}`) //socket.io 状态变化取到对用用户
     .hset(
       `websocket:${user_id}`,
       'socketid',
       socket_id, //pub-sub 取到对应的 socket.io
-      'seid',
-      seid,
-      'ccgeid',
-      ccgeid
+      'loginTime',
+      loginT
     )
     .exec()
   delete dup[socket_id]
@@ -294,15 +295,10 @@ async function login({ user_id, seid, ccgeid, socket_id }:socketData) {
 }
 
 async function notifyDisconnect(socket_id:string, user_id:string) {
-  let tmp = await redis
-    .multi()
-    .hget(`websocket:${user_id}`, 'seid')
-    .hget(`websocket:${user_id}`, 'ccgeid')
-    .del(`websocket:${user_id}`)
-    .exec()
-
-  let seid = tmp[0][1]
-  let ccgeid = tmp[1][1]
+  let tmp = user_id.split('_')
+  let seid = tmp[0]
+  let ccgeid = tmp[1]
+  await redis.del(`websocket:${user_id}`)
   //'{"seid": 134,"ccgeid": 243,"op_code":"check_out","channel_id":"134_243_1000962325"}'
   let msg = {
     seid: seid,

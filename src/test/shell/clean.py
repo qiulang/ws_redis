@@ -69,7 +69,7 @@ if __name__ == '__main__':
     mock = args.delete == "no"
     supplyment = args.supplyment != "no"
     rs = redis.Redis(
-        host='r-2ze0b3b5fcea8914pd.redis.rds.aliyuncs.com', password='Sinicnet123456')
+        host='r-2ze2ojuacmdgvwevj3pd.redis.rds.aliyuncs.com', password='uSeisaa1bier')
     if supplyment:
         supply(rs, mock)
     else:
