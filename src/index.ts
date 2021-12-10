@@ -1,7 +1,7 @@
-import { Server } from 'socket.io';
+import { Server } from 'socket.io'
 import express from 'express'
 import cors from 'cors'
-import { createServer } from 'http';
+import { createServer } from 'http'
 var app = express()
 // var http = require('http').Server(app)
 const httpServer = createServer(app);
