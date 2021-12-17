@@ -28,7 +28,7 @@ const setting = {
 
 if (process.env.REDIS_PASS) setting.password = process.env.REDIS_PASS
 
-info(`Connect to redis using ${JSON.stringify(setting)}`)
+debug(`Connect to redis using ${JSON.stringify(setting)}`)
 
 var redis = new Redis(setting)
 var sub = new Redis(setting)

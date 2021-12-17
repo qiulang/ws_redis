@@ -64,8 +64,8 @@ var user_socket:UserSocket = {}
 io.on('connection', async function (socket) {
   //客户端连接成功后会主动发login消息，redis记录 user 到 socketio.id的对应
   socket.on('login', async function ({ user_id, seid, ccgeid, token, client = 'client.bs' }:loginData, fn:loginCB) {
-    debug(
-      `user ${user_id}, seid:${seid}, ccgeid:${ccgeid}, token:${token} ${client} login using socket ${socket.id}`
+    info(
+      `A new login. [user:${user_id}, socket:${socket.id}, token:${token}, ${seid}_${ccgeid}_${client}]`
     )
     if (!user_id || !token) {
       //Thru logs we keep see this and I have no idea why that can happene
@@ -77,7 +77,7 @@ io.on('connection', async function (socket) {
     if (!tcheck) {
       if (typeof fn === 'function') fn({ user_id: 'logoff', ver: 'xxxxxx' })
       //BS 客户端连上来带了 fn ,这个修改本来就是为了防止别人来连我们的 ws，他们应该就不会带fn
-      warn(`${user_id} uses invalid token ${token}, close ws connection `)
+      warn(`Close ws connection for invalid token. [${user_id}:${token}]`)
       socket.disconnect(true)
       // setTimeout(() => socket.disconnect(true), 3000)
       return
@@ -101,9 +101,9 @@ io.on('connection', async function (socket) {
   //用户关闭页面，断网都会触发disconnect消息
   socket.on('disconnect', async function (reason:string) {
     //https://socket.io/docs/server-api/#Event-%E2%80%98disconnect%E2%80%99
-    debug(`socket id ${socket.id} has disconnected with reason ${reason}`)
+    info(`A ws disconnected. [${socket.id}:${reason}]`)
     if (reason.includes(`server namespace disconnect`)) {
-      debug(`We close it, so just return`)
+      debug(`We close the ws, so just return.[${socket.id}]`)
       return
     }
     //客户端断开，重连，比如重刷浏览器原因是 'transport close'
@@ -116,35 +116,34 @@ io.on('connection', async function (socket) {
     let user_id = get_del[0][1] //[err, result]
     user_id = user_id.split('@')[0]
     if (!user_id) {
-      warn(`No ${socket.id} related data, is "ping timeout" the reason? ${reason}`)
+      warn(`No ws related user data, is "ping timeout" the reason? [${socket.id}:${reason}]`)
       return
     }
     const local = user_socket[user_id]
     if (local == socket.id) {
-      info(`SUB unsubscribe ${user_id} and del ${socket.id} record.`)
       //没有新的订阅（包括同一个账号，多个容器处理情况），所以必须取消
       sub.unsubscribe(user_id)
       delete user_socket[user_id]
+      info(`SUB unsubscribe, del local ws record. [${user_id}:${socket.id}]`)
     } else {
       //说明有新的连接，而且是同一个进程处理的，就不能 unsubscribe
-      info(`SUB ${user_id} has new subscription: ${local} vs ${socket.id}`)
+      info(`SUB renew subscription. [${user_id}:${local} vs ${socket.id}]`)
     }
     //RTIME后查是不是用户主动下线， reason 'client namespace disconnect'
     setTimeout(
       async (sid, uid) => {
-        debug(`${RTIME} seconds later, check ${sid} with reason ${reason}`)
+        debug(`${RTIME} seconds later to re-check disconect. [${sid}:${reason}]`)
         let new_socket = await redis.hget(`websocket:${uid}`, 'socketid')
         if (new_socket == sid) {
-          debug(`${sid} remains the same so assume we disconnected`)
-          debug(`Delete ${sid} related data ${uid} after ${RTIME} seconds`)
+          debug(`WS id remains, assume disconnected so del them.[${uid}:${sid}]`)
           if (reason == 'client namespace disconnect') {
-            info(`Assume ${uid} logoff, to fix 16312 we send check_out message`)
+            debug(`Assume that user logs off, to fix 16312 we send check_out. [${uid}:${sid}]`)
           } else {
-            debug(`Assume ${uid} just closes tab, so we need to tell CR`)
+            debug(`Assume that user closes tab, we need to tell CR. [${uid}:${sid}]`)
           }
           await notifyDisconnect(sid, uid)
         } else {
-          debug(`${uid} indeed client reconnect with ${new_socket}`)
+          debug(`The user indeed reconnects. [${uid}:${new_socket}]`)
         }
       },
       1000 * RTIME,
@@ -165,16 +164,16 @@ io.on('connection', async function (socket) {
   socket.on('browser-log', ({ browser, seid, ccgeid, uid, msg }) => {
     //https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent/Firefox
     //All starts with Mozilla/5.0
-    browserLog(`${browser} ---> ${seid}:${ccgeid}:${uid} ---> ${msg}`)
+    browserLog(`${browser} browser log. [${seid}:${ccgeid}:${uid} ---> ${msg}]`)
   })
 })
 
 //订购 redis 消息处理，一般是web服务器发给我们的
 sub.on('message', async function (channel:string, message:string) {
-  debug('SUB channel %s received message %s', channel, message)
+  debug(`SUB channel received message. [${channel}:${message}]`)
   let socketid:string = await redis.hget(`websocket:${channel}`, 'socketid')
   if (!socketid) {
-    warn(`Got ${message} but channel ${channel} does NOT exist.`)
+    warn(`No WS for SUB message. [${channel}:${message}]`)
     return
   }
   //{"op_code":"change_status","ccgeid":243,"seid":134,"uid":1000056188,
@@ -194,33 +193,33 @@ sub.on('message', async function (channel:string, message:string) {
       msgTimeout( //https://github.com/socketio/socket.io/discussions/3846
         //curry function
         (ack) => {
-          info(`SUB emit ${message} to ${socketid} and get ack ${ack}`)
+          info(`SUB emit to ws, get ack. [${message} to ${socketid}, ack:${ack}]`)
         },
         () => {
-          warn(`SUB emit ${message} to ${socketid} NOT get ack in 6 seconds!!`)
+          warn(`SUB emit NOT get ack in 6 seconds!! [${message} to ${socketid}]`)
         },
         6000
       )
     )
   } catch (err) {
-    info(`io.to ${socketid} emit failed:${JSON.stringify(err)}`)
+    warn(`SUB emit failed. [${message} to ${socketid}:${JSON.stringify(err)}]`)
   }
 })
 
 //token检查做身份认证
 async function tokenCheck(user_id:string, token:string, client:string) {
   if (process.env.TOKEN_CHECK === '0') {
-    debug(`Local redis, skip token check: ${user_id}:${token}`)
+    debug(`Local redis, skip token check. [${user_id}:${token}]`)
     return true
   }
   let tmp = user_id.split('_')
   if (tmp.length != 3) {
-    debug('user_id/channel_id should have the format of seid_ccgeid_userid')
+    warn(`user_id should have the format of seid_ccgeid_userid. [${user_id}]`)
     return false
   }
   let uid = tmp[2]
   let tr = await redis.get(`cc-cm:user:tokens:seat:${uid}`)
-  debug(`${token} vs redis value cc-cm:user:tokens:seat:${uid} for ${tr}`)
+  debug(`login token vs redis value cc-cm:user:tokens:seat:${uid}. [${token}:${tr}]`)
   const t = unserialize(tr)
   return t[client] === token //'client.bs' or 'client.wechat'
 }
@@ -245,20 +244,20 @@ async function dupCheck(user_id:string, socket_id:string, fn:loginCB) {
   if (dup[socket_id]) {
     //https://github.com/socketio/socket.io/issues/474
     //有时会收到多个连接请求但也不每次。不清楚是socket.io的问题还是我们代码的问题
-    debug(`We get several connect: ${user_id}--${socket_id}, just return.`)
+    debug(`We get several connect just return. [${user_id}:${socket_id}]`)
     return true
   } else {
     dup[socket_id] = 'exist'
   }
   let old_socket = await redis.hget(`websocket:${user_id}`, 'socketid')
   if (!old_socket) {
-    debug(`First time login`)
+    debug(`First time login. [${user_id}]`)
     // await sub.subscribe(user_id)
     return false
   }
   if (old_socket == socket_id) {
     //比如用户登录页面输了密码到了下一步选通话模式，但点了返回重新输入用户名
-    debug(`Another login with the existing ${socket_id}, just return.`)
+    debug(`Another login with the existing ws just return. [${socket_id}]`)
     delete dup[socket_id]
     return true
   }
@@ -271,7 +270,7 @@ async function dupCheck(user_id:string, socket_id:string, fn:loginCB) {
   io.to(old_socket).emit('logoff', 'another login')
   //不能在这里直接删除'websocket:socket_user'，老的关联关系而没有sub.unsubscribe
   //因为前一个连接可能是别的docker处理，必须在disconect 里一起处理 redis.hdel 和 sub.unsubscribe
-  info(`${user_id} exists with socket id ${old_socket}, tell it to logoff.`)
+  info(`Another login, tell old ws to logoff. [${user_id}:${old_socket}]`)
   return false //更新 socketid
 }
 
@@ -291,7 +290,7 @@ async function login({ user_id, seid, ccgeid, socket_id }:socketData) {
   delete dup[socket_id]
   user_socket[user_id] = socket_id
   await sub.subscribe(user_id)
-  info(`store in hash table user_socket ${user_id} => ${socket_id} AND SUB subscribe`)
+  info(`Login succeed AND SUB subscribe. [${user_id} => ${socket_id}]`)
 }
 
 async function notifyDisconnect(socket_id:string, user_id:string) {
@@ -307,7 +306,7 @@ async function notifyDisconnect(socket_id:string, user_id:string) {
     channel_id: user_id,
   }
   pub.publish('seat_message_channel', JSON.stringify(msg))
-  info(`publish to seat_message_channel ${user_id} check_out`)
+  info(`Publish check_out to seat_message_channel. [${user_id}]`)
 }
 
 async function startServer() {
@@ -324,7 +323,7 @@ async function startServer() {
     port = await portfinder.getPortPromise()
   }
   httpServer.listen(port, function () {
-    debug('server starts, listening on *:' + port)
+    info('server starts, listening on *:' + port)
   })
   app.use(express.json()) //https://stackoverflow.com/a/47232318/301513
   app.use(express.urlencoded({ extended: false }))
