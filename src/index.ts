@@ -29,6 +29,7 @@ interface baseData {
   user_id:string,
   seid:string,
   ccgeid:string,
+  uniqueId:string, //fingerprintjs 处理同一账号在不同机器登录问题
 }
 
 interface loginData extends baseData{
@@ -63,9 +64,9 @@ var user_socket:UserSocket = {}
 
 io.on('connection', async function (socket) {
   //客户端连接成功后会主动发login消息，redis记录 user 到 socketio.id的对应
-  socket.on('login', async function ({ user_id, seid, ccgeid, token, client = 'client.bs' }:loginData, fn:loginCB) {
+  socket.on('login', async function ({ user_id, seid, ccgeid, token, uniqueId, client = 'client.bs' }:loginData, fn:loginCB) {
     info(
-      `A new login. [user:${user_id}, socket:${socket.id}, token:${token}, ${seid}_${ccgeid}_${client}]`
+      `A new login. [user:${user_id}, socket:${socket.id}, token:${token}, fingerprintjs:${uniqueId}, ${seid}_${ccgeid}_${client}]`
     )
     if (!user_id || !token) {
       //Thru logs we keep see this and I have no idea why that can happene
@@ -82,11 +83,11 @@ io.on('connection', async function (socket) {
       // setTimeout(() => socket.disconnect(true), 3000)
       return
     }
-    let exist = await dupCheck(user_id, socket.id, fn)
+    let exist = await dupCheck(user_id, socket.id, uniqueId,fn)
     if (exist) {
       return
     }
-    await login({ user_id, seid, ccgeid, socket_id:socket.id })
+    await login({ user_id, seid, ccgeid, socket_id:socket.id,uniqueId })
     //考虑了半天代码用什么做版本号好，必须是打包代码能自动生成的，不能每次都手动修改
     //一开始考虑commit id，但是commit id 没法比较代码的新旧，暂定 time stamp
     if (typeof fn === 'function') fn({ user_id: 'login', ver: 'xxxxxx' })
@@ -225,7 +226,7 @@ async function tokenCheck(user_id:string, token:string, client:string) {
 }
 
 //连接的时候调用检查
-async function dupCheck(user_id:string, socket_id:string, fn:loginCB) {
+async function dupCheck(user_id:string, socket_id:string, uniqueId:string, fn:loginCB) {
   if (!user_id) {
     //happen in dev env a lot
     debug('no user id so just return, probably no fn in this case')
@@ -250,6 +251,7 @@ async function dupCheck(user_id:string, socket_id:string, fn:loginCB) {
     dup[socket_id] = 'exist'
   }
   let old_socket = await redis.hget(`websocket:${user_id}`, 'socketid')
+  let finger = await redis.hget(`websocket:${user_id}`, 'browserFinger')
   if (!old_socket) {
     debug(`First time login. [${user_id}]`)
     // await sub.subscribe(user_id)
@@ -267,14 +269,27 @@ async function dupCheck(user_id:string, socket_id:string, fn:loginCB) {
   //2021.3 还发现有的 ws 服务器docker容器会被 k8s重启，重启我们不删redis记录了
   //所以也有可能走到这，但是这时候的old_socket不存在，和重刷浏览器一样
   //todo: 目前排查redis无效数据对应socket.io.id 最后都是显示这条
-  io.to(old_socket).emit('logoff', 'another login')
+  if (finger != uniqueId) {
+    //finger 相同，认为同一浏览器重复登录，就不强制迁出
+    io.to(old_socket).emit('logoff', 'another login')
+    let tmp = user_id.split('_')
+    let seid = tmp[0]
+    let ccgeid = tmp[1]
+    let msg = {
+      seid: seid,
+      ccgeid: ccgeid,
+      op_code: 'check_out',
+      channel_id: user_id,
+    }
+    pub.publish('seat_message_channel', JSON.stringify(msg))
+  }
   //不能在这里直接删除'websocket:socket_user'，老的关联关系而没有sub.unsubscribe
   //因为前一个连接可能是别的docker处理，必须在disconect 里一起处理 redis.hdel 和 sub.unsubscribe
   info(`Another login, tell old ws to logoff. [${user_id}:${old_socket}]`)
   return false //更新 socketid
 }
 
-async function login({ user_id, seid, ccgeid, socket_id }:socketData) {
+async function login({ user_id, seid, ccgeid, socket_id,uniqueId }:socketData) {
   const loginT = new Date().toLocaleString()
   await redis
     .multi()
@@ -283,6 +298,8 @@ async function login({ user_id, seid, ccgeid, socket_id }:socketData) {
       `websocket:${user_id}`,
       'socketid',
       socket_id, //pub-sub 取到对应的 socket.io
+      'browserFinger',
+      uniqueId,
       'loginTime',
       loginT
     )
