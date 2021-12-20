@@ -142,7 +142,7 @@ io.on('connection', async function (socket) {
           } else {
             debug(`Assume that user closes tab, we need to tell CR. [${uid}:${sid}]`)
           }
-          await notifyDisconnect(sid, uid)
+          await notifyDisconnect(uid)
         } else {
           debug(`The user indeed reconnects. [${uid}:${new_socket}]`)
         }
@@ -250,8 +250,13 @@ async function dupCheck(user_id:string, socket_id:string, uniqueId:string, fn:lo
   } else {
     dup[socket_id] = 'exist'
   }
-  let old_socket = await redis.hget(`websocket:${user_id}`, 'socketid')
-  let finger = await redis.hget(`websocket:${user_id}`, 'browserFinger')
+  let tmp = await redis
+    .multi()
+    .hget(`websocket:${user_id}`, 'socketid')
+    .hget(`websocket:${user_id}`, 'browserFinger')
+    .exec()
+  let old_socket = tmp[0][1]
+  let finger = tmp[1][1]
   if (!old_socket) {
     debug(`First time login. [${user_id}]`)
     // await sub.subscribe(user_id)
@@ -272,16 +277,7 @@ async function dupCheck(user_id:string, socket_id:string, uniqueId:string, fn:lo
   if (finger != uniqueId) {
     //finger 相同，认为同一浏览器重复登录，就不强制迁出
     io.to(old_socket).emit('logoff', 'another login')
-    let tmp = user_id.split('_')
-    let seid = tmp[0]
-    let ccgeid = tmp[1]
-    let msg = {
-      seid: seid,
-      ccgeid: ccgeid,
-      op_code: 'check_out',
-      channel_id: user_id,
-    }
-    pub.publish('seat_message_channel', JSON.stringify(msg))
+    checkout(user_id)
   }
   //不能在这里直接删除'websocket:socket_user'，老的关联关系而没有sub.unsubscribe
   //因为前一个连接可能是别的docker处理，必须在disconect 里一起处理 redis.hdel 和 sub.unsubscribe
@@ -310,11 +306,10 @@ async function login({ user_id, seid, ccgeid, socket_id,uniqueId }:socketData) {
   info(`Login succeed AND SUB subscribe. [${user_id} => ${socket_id}]`)
 }
 
-async function notifyDisconnect(socket_id:string, user_id:string) {
+function checkout(user_id:string) {
   let tmp = user_id.split('_')
   let seid = tmp[0]
   let ccgeid = tmp[1]
-  await redis.del(`websocket:${user_id}`)
   //'{"seid": 134,"ccgeid": 243,"op_code":"check_out","channel_id":"134_243_1000962325"}'
   let msg = {
     seid: seid,
@@ -323,7 +318,13 @@ async function notifyDisconnect(socket_id:string, user_id:string) {
     channel_id: user_id,
   }
   pub.publish('seat_message_channel', JSON.stringify(msg))
-  info(`Publish check_out to seat_message_channel. [${user_id}]`)
+  info(`Publish check_out to seat_message_channel. [${user_id}]`)  
+}
+
+async function notifyDisconnect(user_id:string) {
+  checkout(user_id)
+  await redis.del(`websocket:${user_id}`)
+  debug(`remove websocket:${user_id} from redis`)
 }
 
 async function startServer() {
