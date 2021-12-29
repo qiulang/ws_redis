@@ -64,7 +64,7 @@ var user_socket:UserSocket = {}
 
 io.on('connection', async function (socket) {
   //客户端连接成功后会主动发login消息，redis记录 user 到 socketio.id的对应
-  socket.on('login', async function ({ user_id, seid, ccgeid, token, uniqueId, client = 'client.bs' }:loginData, fn:loginCB) {
+  socket.on('login', async function ({ user_id, seid, ccgeid, token, uniqueId ='none', client = 'client.bs' }:loginData, fn:loginCB) {
     info(
       `A new login. [user:${user_id}, socket:${socket.id}, token:${token}, fingerprintjs:${uniqueId}, ${seid}_${ccgeid}_${client}]`
     )
@@ -268,17 +268,20 @@ async function dupCheck(user_id:string, socket_id:string, uniqueId:string, fn:lo
     delete dup[socket_id]
     return true
   }
+  //新老登录都有浏览器指纹，可以做异地登录的判断
+  if (finger != 'none' &&
+      uniqueId != 'none' &&
+      finger != uniqueId) {
+    //finger 相同，认为同一浏览器重复登录，就不强制迁出
+    checkout(user_id)
+  }
   //now we assume it is another login
   //客户端收到后会close这个socket.io，所以我们还会再收到一条它的disconnect消息
   //加入延迟删除`websocket:${user_id}` 也会走到这，但是因为旧的连接已经没了我想调用emit也没啥
   //2021.3 还发现有的 ws 服务器docker容器会被 k8s重启，重启我们不删redis记录了
   //所以也有可能走到这，但是这时候的old_socket不存在，和重刷浏览器一样
   //todo: 目前排查redis无效数据对应socket.io.id 最后都是显示这条
-  if (finger != uniqueId) {
-    //finger 相同，认为同一浏览器重复登录，就不强制迁出
-    io.to(old_socket).emit('logoff', 'another login')
-    checkout(user_id)
-  }
+  io.to(old_socket).emit('logoff', 'another login')
   //不能在这里直接删除'websocket:socket_user'，老的关联关系而没有sub.unsubscribe
   //因为前一个连接可能是别的docker处理，必须在disconect 里一起处理 redis.hdel 和 sub.unsubscribe
   info(`Another login, tell old ws to logoff. [${user_id}:${old_socket}]`)
