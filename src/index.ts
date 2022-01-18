@@ -133,7 +133,7 @@ io.on('connection', async function (socket) {
     //RTIME后查是不是用户主动下线， reason 'client namespace disconnect'
     setTimeout(
       async (sid, uid) => {
-        debug(`${RTIME} seconds later to re-check disconect. [${sid}:${reason}]`)
+        debug(`${RTIME} seconds later to re-check disconect. [${uid}:${sid}:${reason}]`)
         let new_socket = await redis.hget(`websocket:${uid}`, 'socketid')
         if (new_socket == sid) {
           debug(`WS id remains, assume disconnected so del them.[${uid}:${sid}]`)
