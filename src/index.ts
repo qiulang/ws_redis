@@ -68,6 +68,21 @@ io.on('connection', async function (socket) {
     info(
       `A new login. [user:${user_id}, socket:${socket.id}, token:${token}, fingerprintjs:${uniqueId}, ${seid}_${ccgeid}_${client}]`
     )
+
+    function forceLogoff(notify:string) {
+      if (typeof fn === 'function') fn({ user_id: notify, ver: 'xxxxxx' })
+      //BS 客户端连上来带了 fn ,这个修改本来就是为了防止别人来连我们的 ws，他们应该就不会带fn
+      warn(`Close ws connection for invalid token. [${user_id}:${token}]`)
+      socket.disconnect(true)
+      // setTimeout(() => socket.disconnect(true), 3000)
+    }
+    if (arguments.length>2) {
+      //这是v4版本连我们v5服务器，现网第一次升级到v5时候，必然有大量这样情况，就不打日志了
+      //v4 版本不传token值，但是从修改 13734 后，我们要求不传token不让连，所以我们要强制用户下线，并做提示
+      forceLogoff('upgrade') //BS 客户端要相应修改
+      return
+    }
+
     if (!user_id || !token) {
       //Thru logs we keep see this and I have no idea why that can happene
       //user undefined, seid:undefined, ccgeid:undefined  login using socket
@@ -76,11 +91,7 @@ io.on('connection', async function (socket) {
     }
     let tcheck = await tokenCheck(user_id, token, client)
     if (!tcheck) {
-      if (typeof fn === 'function') fn({ user_id: 'logoff', ver: 'xxxxxx' })
-      //BS 客户端连上来带了 fn ,这个修改本来就是为了防止别人来连我们的 ws，他们应该就不会带fn
-      warn(`Close ws connection for invalid token. [${user_id}:${token}]`)
-      socket.disconnect(true)
-      // setTimeout(() => socket.disconnect(true), 3000)
+      forceLogoff('logoff') //bug 13734
       return
     }
     let exist = await dupCheck(user_id, socket.id, uniqueId,fn)
