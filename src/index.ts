@@ -32,7 +32,7 @@ interface baseData {
   uniqueId:string, //fingerprintjs 处理同一账号在不同机器登录问题
 }
 
-interface loginData extends baseData{
+interface loginData extends baseData{ //v5 needs token not v4
   token:string,
   client?:string
 }
@@ -47,7 +47,7 @@ type loginCBData = {
 }
 
 type loginCB = (arg: loginCBData) => void;
-interface UserSocket {
+interface UserSocket { //key value pair
   [key: string]: string;
 }
 
@@ -89,6 +89,8 @@ io.on('connection', async function (socket) {
       socket.disconnect(true)
       return
     }
+    //https://stackoverflow.com/questions/5765398/whats-the-best-way-to-convert-a-number-to-a-string-in-javascript
+    user_id = `${user_id}` //测试代码发 number 而不是字符串
     let tcheck = await tokenCheck(user_id, token, client)
     if (!tcheck) {
       forceLogoff('logoff') //bug 13734
@@ -98,7 +100,7 @@ io.on('connection', async function (socket) {
     if (exist) {
       return
     }
-    await login({ user_id, seid, ccgeid, socket_id:socket.id,uniqueId })
+    await loginResult({ user_id, seid, ccgeid, socket_id:socket.id,uniqueId })
     //考虑了半天代码用什么做版本号好，必须是打包代码能自动生成的，不能每次都手动修改
     //一开始考虑commit id，但是commit id 没法比较代码的新旧，暂定 time stamp
     if (typeof fn === 'function') fn({ user_id: 'login', ver: 'xxxxxx' })
@@ -219,7 +221,7 @@ sub.on('message', async function (channel:string, message:string) {
 })
 
 //token检查做身份认证
-async function tokenCheck(user_id:string, token:string, client:string) {
+async function tokenCheck(user_id:string, token:string, client:string):Promise<boolean> {
   if (process.env.TOKEN_CHECK === '0') {
     debug(`Local redis, skip token check. [${user_id}:${token}]`)
     return true
@@ -237,7 +239,7 @@ async function tokenCheck(user_id:string, token:string, client:string) {
 }
 
 //连接的时候调用检查
-async function dupCheck(user_id:string, socket_id:string, uniqueId:string, fn:loginCB) {
+async function dupCheck(user_id:string, socket_id:string, uniqueId:string, fn:loginCB):Promise<boolean> {
   if (!user_id) {
     //happen in dev env a lot
     debug('no user id so just return, probably no fn in this case')
@@ -299,7 +301,7 @@ async function dupCheck(user_id:string, socket_id:string, uniqueId:string, fn:lo
   return false //更新 socketid
 }
 
-async function login({ user_id, seid, ccgeid, socket_id,uniqueId }:socketData) {
+async function loginResult({ user_id, seid, ccgeid, socket_id,uniqueId }:socketData):Promise<void> {
   const loginT = new Date().toLocaleString()
   await redis
     .multi()
@@ -320,7 +322,7 @@ async function login({ user_id, seid, ccgeid, socket_id,uniqueId }:socketData) {
   info(`Login succeed AND SUB subscribe. [${user_id} => ${socket_id}]`)
 }
 
-function checkout(user_id:string) {
+function checkout(user_id:string):void {
   let tmp = user_id.split('_')
   let seid = tmp[0]
   let ccgeid = tmp[1]
@@ -335,7 +337,7 @@ function checkout(user_id:string) {
   info(`Publish check_out to seat_message_channel. [${user_id}]`)  
 }
 
-async function notifyDisconnect(user_id:string) {
+async function notifyDisconnect(user_id:string):Promise<void> {
   checkout(user_id)
   await redis.del(`websocket:${user_id}`)
   debug(`remove websocket:${user_id} from redis`)
