@@ -79,6 +79,7 @@ io.on('connection', async function (socket) {
     if (arguments.length>2) {
       //这是v4版本连我们v5服务器，现网第一次升级到v5时候，必然有大量这样情况，就不打日志了
       //v4 版本不传token值，但是从修改 13734 后，我们要求不传token不让连，所以我们要强制用户下线，并做提示
+      fn = arguments[arguments.length-1]
       forceLogoff('upgrade') //BS 客户端要相应修改
       return
     }
