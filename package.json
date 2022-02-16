@@ -19,7 +19,8 @@
     "preprod": "src/shell/redis_check.sh",
     "prod": "pm2 start ecosystem.config.js --env production",
     "pm2log": "pm2 set pm2-logrotate:workerInterval 150",
-    "pm2.5": "pm2 start ecosystem.config.js",
+    "prepm2.5": "redis-server &",
+    "pm2.5": "pm2-runtime ecosystem.config.js",
     "tss": "tsc && DEBUG=app:* node build/index.js"
   },
   "author": "qiulang",
