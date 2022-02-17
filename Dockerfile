@@ -3,12 +3,14 @@ RUN apk add --no-cache --repository https://mirrors.aliyun.com/alpine/v3.14/main
 ENV TZ=Asia/Shanghai
 WORKDIR /node
 COPY package*.json ./
-COPY yarn.lock ./
+# COPY yarn.lock ./
+COPY .npmrc ./
 ENV NODE_ENV production
 # RUN npm install --only=prod
-RUN npm config set registry https://registry.npm.taobao.org
-# RUN npm install
-RUN yarn
+# RUN npm config set registry https://registry.npm.taobao.org
+# RUN npm install -g npm@latest
+RUN npm install
+# RUN yarn
 RUN npm config set unsafe-perm true
 RUN npm install pm2 typescript -g
 COPY . .
