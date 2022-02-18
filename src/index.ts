@@ -129,7 +129,7 @@ io.on('connection', async function (socket) {
       .hdel('websocket:socket_user', socket.id)
       .exec()
     let user_id = get_del[0][1] //[err, result]
-    user_id = user_id.split('@')[0]
+    user_id = user_id?.split('@')[0]
     if (!user_id) {
       warn(`No ws related user data, is "ping timeout" the reason? [${socket.id}:${reason}]`)
       return

@@ -6,7 +6,7 @@ COPY package.json ./
 # COPY yarn.lock ./
 COPY .npmrc ./
 ENV NODE_ENV production
-RUN npm install --only=prod
+RUN npm install --only=prod --verbose
 # RUN npm config set registry https://registry.npm.taobao.org
 # RUN npm install -g npm@latest
 RUN npm install
