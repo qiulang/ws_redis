@@ -5,15 +5,15 @@ WORKDIR /node
 COPY package.json ./
 # COPY yarn.lock ./
 COPY .npmrc ./
-ENV NODE_ENV production
+# ENV NODE_ENV production
+RUN npm config set registry https://registry.npm.taobao.org
+#RUN npm install -g npm@latest
 RUN npm install --only=prod --verbose
-# RUN npm config set registry https://registry.npm.taobao.org
-# RUN npm install -g npm@latest
-RUN npm install
 # RUN yarn
 RUN npm config set unsafe-perm true
-RUN npm install pm2 typescript -g
+RUN npm install typescript -g
 COPY . .
 RUN npm run build
+# RUN npm run tss
 EXPOSE 80
 CMD ["npm", "run", "pm2.5"]

@@ -21,11 +21,14 @@
     "pm2log": "pm2 set pm2-logrotate:workerInterval 150",
     "prepm2.5": "redis-server &",
     "pm2.5": "pm2-runtime ecosystem.config.js",
-    "tss": "tsc && DEBUG=app:* node build/index.js"
+    "pretss": "redis-server &",
+    "tss": "tsc && pm2 start ecosystem.config.js --env development"
   },
   "author": "qiulang",
   "license": "ISC",
   "dependencies": {
+    "@types/express": "^4.17.13",
+    "@types/ioredis": "^4.28.1",
     "cors": "^2.8.5",
     "debug": "^4.1.1",
     "dotenv-flow": "^3.1.0",
@@ -33,11 +36,9 @@
     "ioredis": "^4.27.5",
     "locutus": "^2.0.14",
     "pm2": "^5.1.1",
+    "portfinder": "^1.0.28",
     "socket.io": "^4.1.2",
-    "socket.io-redis": "^6.1.1",
-    "@types/express": "^4.17.13",
-    "@types/ioredis": "^4.28.1",
-    "portfinder": "^1.0.25"
+    "socket.io-redis": "^6.1.1"
   },
   "devDependencies": {
     "axios": "^0.19.2",
