@@ -10,11 +10,22 @@ console.log(namespaces)
 //   console.log(x)
 // }
 
-const { setTimeout } = require('timers/promises')
+// const { setTimeout } = require('timers/promises')  nodejs 16
 
 async function testTimer() {
   const delayedValue = await setTimeout(2000, 'some value')
   console.log(delayedValue)
 }
 
-testTimer()
+// testTimer()
+function jst() {
+  try {
+    let message = 'can you get'
+    let pushData = JSON.parse(message)
+  } catch (e) {
+    console.log(`${JSON.stringify(e)}`)
+    console.log(`${e}`)
+  }
+}
+
+jst()

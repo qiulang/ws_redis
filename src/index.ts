@@ -219,7 +219,7 @@ sub.on('message', async function (channel:string, message:string) {
       )
     )
   } catch (err) {
-    warn(`SUB emit failed. [${message} to ${socketid}:${JSON.stringify(err)}]`)
+    warn(`SUB emit failed. [${message} to ${socketid}:${err}]`)
   }
 })
 
@@ -412,3 +412,10 @@ function stopServerAfter(stop:number) {
     clearInterval(timer)
   }, stop * 1000 + 500)  
 }
+
+//https://pm2.io/docs/runtime/best-practices/graceful-shutdown/
+//We don't clear redis records so no much point to intercept the SIGINT signal currently
+// process.on('SIGINT', function() {
+//   debug("Caught interrupt signal");
+//   process.exit(0)
+// });
