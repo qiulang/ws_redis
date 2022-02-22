@@ -23,6 +23,7 @@ module.exports = {
         DEBUG: 'app:*',
         DEBUG_HIDE_DATE: true,
         DEBUG_COLORS: false,
+        // args: 'command line arv', 实际的命令行参数
       },
     },
   ],

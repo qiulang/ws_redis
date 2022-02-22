@@ -14,6 +14,6 @@ RUN npm config set unsafe-perm true
 RUN npm install typescript -g
 COPY . .
 RUN npm run build
-# RUN npm run tss
+RUN npm run tss
 EXPOSE 80
 CMD ["npm", "run", "pm2.5"]
