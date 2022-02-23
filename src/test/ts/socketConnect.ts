@@ -35,6 +35,16 @@ function start() {
   }, 2000) //本机测试连接 2秒足够
 }
 
+
+// No need to catch redis connection error, just ws connection error
+// redis.on('error', (err:Error) => {
+//   log('Failed to connect local redis')
+// })
+
+// pub.on('error', (err:Error) => {
+//   log('Failed to connect local redis')
+// })
+
 socket.on('connect', function () {
   wsBit = true
   socket.emit('login', { user_id, seid, ccgeid, token, client }, async (reply:loginRep) => {
@@ -44,6 +54,9 @@ socket.on('connect', function () {
       await loginCheck(reply, socket.id)
     }
     if (status == 'logoff' || status == 'upgrade') {
+      log(`Currently this means we failed token check`)
+      log(`WS server has closed the connection so let's consider test passed`)
+      bye(0)
     }
   })
 })
@@ -65,7 +78,7 @@ socket.on('connect_error', (err:Error) => {
 
 async function loginCheck(reply:loginRep, socket_id:string) {
   let sVer = reply.ver
-  log(`ws server return version ${sVer} for ${user_id}`)
+  log(`ws server return version ${sVer} for ${user_id}:${socket_id}`)
   log('We do not need to check redis record actually, just pubsub test is enough')
   let tmp = await redis
     .multi()

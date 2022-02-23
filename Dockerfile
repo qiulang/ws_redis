@@ -8,7 +8,7 @@ COPY .npmrc ./
 # ENV NODE_ENV production
 RUN npm config set registry https://registry.npm.taobao.org
 #RUN npm install -g npm@latest
-RUN npm install --only=prod --verbose
+RUN npm install --only=prod
 # RUN yarn
 RUN npm config set unsafe-perm true
 RUN npm install typescript -g

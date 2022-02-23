@@ -392,7 +392,7 @@ function argvCheck() {
   if (params.length ==1) {
     //currently we only support ONE param
     const input:string = params[0]
-    if (input == 'dockerTest') {
+    if (input == 'CI') {
       setTimeout(() => stopServerAfter(45),1000) // or it will mess with cli-progress
     }
   } 
@@ -402,7 +402,7 @@ function stopServerAfter(stop:number) {
   const cliProgress = require('cli-progress')
   var bar = new cliProgress.SingleBar()
   debug('-------------------- note ---------------------')
-  debug('Stop server in 45 seconds for docker build verify')
+  debug(`Stop server in ${stop} seconds for docker build verify & github action`)
   bar.start(stop, 0)
   let timer = setInterval(() => {
     bar.increment(1)

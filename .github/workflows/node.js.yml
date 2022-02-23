@@ -1,0 +1,58 @@
+# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
+name: ws-redis-pubsub CI
+
+on:
+  push:
+    branches: [ v5t ]
+  pull_request:
+    branches: [ v5t ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [14.x, 16.x]
+        redis-version: [4, 5, 6]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+
+    steps:
+    - name: Git checkout
+      uses: actions/checkout@v2
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    # - name: Start Redis
+    #   uses: supercharge/redis-github-action@1.4.0
+    #   with:
+    #     redis-version: ${{ matrix.redis-version }}
+
+    # - name: Install redis cli # so we can test the server
+    #   run: sudo apt-get install -y redis-tools
+  
+    - run: npm ci
+    - run: npm run build
+
+    - name: Start Redis using actions-setup-redis@v1
+      uses: shogo82148/actions-setup-redis@v1
+      with:
+        redis-version: ${{ matrix.redis-version }}
+
+    - name: "Using pm2 to start Socket.io Server in background"
+      run: npm run prod
+      env:
+        TOKEN_CHECK: 0
+
+    - name: "Start Socket.io Client to test ws connect & redis pubsub"
+      run: npm run test
+
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag ws-pubsub:$(date +'%m-%d-%H-%M-%S')
