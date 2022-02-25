@@ -7,12 +7,21 @@
     "url": "ssh://git@git.emicloud.com:22221/webcc/ws_redis.git"
   },
   "main": "index.js",
+  "//": [
+    "1. different scripts for different use cases:",
+    "2. prod use pm2 is our deployment case and github action also uses it",
+    "3. tss is for docker image build step to verify the server can start, so it needs to exit",
+    "4. pm2.5 is our docker entrypoint using pm2-runtime even though we don't really use this image",
+    "5. debug is supposed for vscode debug but we havn't used for a while",
+    "6. start uses nodemon for daily development",
+    "7. test is the client code to verify the server works"
+  ],
   "scripts": {
     "build": "tsc",
     "pub": "DEBUG=app:* node src/test/js/pubsub.js",
     "pubsub": "DEBUG=app:* node --nolazy --inspect-brk=9229 src/index.js",
     "basic": "DEBUG=app:* node src/test/js/json_test.js",
-    "prestart": "src/shell/redis_check.sh",
+    "prestart": "redis-server &",
     "start": "DEBUG=app:* nodemon --ignore --nolazy src/index.ts",
     "predebug": "src/shell/redis_check.sh",
     "debug": "DEBUG=app:* node --nolazy build/index.js",
