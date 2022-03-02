@@ -11,3 +11,14 @@ try {
 } catch (e) {
   console.log('again')
 }
+
+let client
+
+function testC(c) {
+  console.log(`inside ${client}`)
+  client = c
+}
+
+testC("input")
+
+console.log(`outside ${client}`)

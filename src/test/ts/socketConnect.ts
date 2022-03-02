@@ -1,12 +1,17 @@
 const io = require('socket.io-client')
+// var socket: typeof io !!! wrong, see the 2022.3.2 document
+// var socket = io(server, { transports: ['websocket'], autoConnect: false, /*forceNew: true*/ })
 const server = 'http://localhost:3000'
-var socket = io(server, { transports: ['websocket'], autoConnect: false })
 var log = require('debug')('client:test')
 var Redis = require('ioredis')
-var redis = new Redis()
-var pub = new Redis()
+const [user_id, seid, ccgeid, token] = ['1_2_1000', '1', '2', 'xxxxx']
+let client:string
+var redis:typeof Redis
+var pub:typeof Redis
 
-const [user_id, seid, ccgeid, token, client] = ['1_2_1000', '1', '2', 'xxxxx', 'nodejs']
+//https://stackoverflow.com/questions/45802988/typescript-use-correct-version-of-settimeout-node-vs-window
+let wsTimeout:NodeJS.Timeout, psTimeout:NodeJS.Timeout
+
 const pubsubMsg = JSON.stringify({ msg: 'Can you hear me' }) //Need to be json string
 let pubsubBit = false
 let wsBit = false
@@ -24,10 +29,13 @@ interface socketRedis {
 
 type wsCB = (arg:string) => void
 
-function start() {
-  log(`Start to connect to ws server:${server} ...`)
-  socket.open()
-  setTimeout(() => {
+let sockets:{ [key: string]: typeof io } = {}
+
+function start(c:string,r: typeof Redis, p: typeof Redis) {
+  [client,redis,pub,pubsubBit,wsBit] = [c,r,p,false,false]
+  setupWS(c)
+  log(`Start to connect to ws server:${server} ... using client:${client}`)
+  wsTimeout = setTimeout(() => {
     if (!wsBit) {
       log('Failed to connect local ws server')
       bye(1)
@@ -35,46 +43,45 @@ function start() {
   }, 2000) //本机测试连接 2秒足够
 }
 
+function setupWS(c:string) { //b/c client is updated in logoff event
+  let socket = io(server, { transports: ['websocket']})
+  sockets[client] = socket
+  socket.on('connect', function () {
+    wsBit = true
+    socket.emit('login', { user_id, seid, ccgeid, token, client }, async (reply:loginRep) => {
+      log(`${JSON.stringify(reply)}:${socket.id}`)
+      let status = reply.user_id
+      if (status == 'login') {
+        await loginCheck(reply, socket.id)
+      }
+      if (status == 'logoff' || status == 'upgrade') {
+        log(`Currently this means we failed token check`)
+        log(`WS server has closed the connection so let's consider test passed`)
+        bye(0)
+      }
+    })
+  })
 
-// No need to catch redis connection error, just ws connection error
-// redis.on('error', (err:Error) => {
-//   log('Failed to connect local redis')
-// })
-
-// pub.on('error', (err:Error) => {
-//   log('Failed to connect local redis')
-// })
-
-socket.on('connect', function () {
-  wsBit = true
-  socket.emit('login', { user_id, seid, ccgeid, token, client }, async (reply:loginRep) => {
-    log(reply)
-    let status = reply.user_id
-    if (status == 'login') {
-      await loginCheck(reply, socket.id)
-    }
-    if (status == 'logoff' || status == 'upgrade') {
-      log(`Currently this means we failed token check`)
-      log(`WS server has closed the connection so let's consider test passed`)
-      bye(0)
+  socket.on('cr_msg', (msg:string, fn:wsCB) => {
+    if (msg == pubsubMsg) {
+      log(`WS got the message we just pub on redis for ${socket.id}`)
+      fn('Got you!')
+      pubsubBit = true
+    } else {
+      log(`WS got the message come from nowhere: ${msg}`)
+      fn('Where did you get this message')
     }
   })
-})
 
-socket.on('cr_msg', (msg:string, fn:wsCB) => {
-  if (msg == pubsubMsg) {
-    log('WS got the message we just pub on redis.')
-    fn('Got you!')
-    pubsubBit = true
-  } else {
-    log(`WS got the message come from nowhere: ${msg}`)
-    fn('Where did you get this message')
-  }
-})
+  socket.on('connect_error', (err:Error) => {
+    log(`${socket.id}:connect_error due to ${err.message}`)
+  })
 
-socket.on('connect_error', (err:Error) => {
-  log(`connect_error due to ${err.message}`)
-})
+  socket.on('logoff', (msg:string) => {
+    log(`${socket.id}:${c}: should be kicked off for: ${msg}`)
+    socket.close()
+  })  
+}
 
 async function loginCheck(reply:loginRep, socket_id:string) {
   let sVer = reply.ver
@@ -110,7 +117,7 @@ async function loginCheck(reply:loginRep, socket_id:string) {
 function pubsubTest(wait:number) {
   log(`Now publish a message to redis channel: [${user_id} : ${pubsubMsg}]`)
   pub.publish(user_id, pubsubMsg)
-  setTimeout(() => {
+  psTimeout = setTimeout(() => {
     if (!pubsubBit) {
       log(`WS failed to receive the message in ${wait} second.`)
       bye(1)
@@ -121,13 +128,23 @@ function pubsubTest(wait:number) {
 }
 
 function bye(exitCode:0|1) {
-  log(`Close redis and socket.io event loop so the process can exit with ${exitCode}`)
+  log(`Close socket.io event loop so the process can exit with ${exitCode}`)
   process.exitCode = exitCode
   let msg = exitCode == 0 ? 'Test succeeded' : 'Test failed'
-  log(msg)
-  socket.disconnect()
-  redis.disconnect()
-  pub.disconnect()
+  log(`${msg} for ${client}`)
+  if (exitCode ==1) {
+    process.exit()
+  }
+  let socket = sockets[client]
+  if (client == 'client.bs') {
+    log(`Does not close client.bs ws to try dup-login case`)
+  } else {
+    socket?.disconnect()
+  }
+  log(`----------------------------`)
+  clearTimeout(wsTimeout)
+  clearTimeout(psTimeout)
+  pub.publish(`test-result`, client)
 }
 
-start()
+export {start as socketStart,log}
