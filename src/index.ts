@@ -27,20 +27,23 @@ argvCheck() //call startServer()
 
 // https://stackoverflow.com/questions/37233735/interfaces-vs-types-in-typescript
 
+type Client =  'client.bs' | 'client.wechat'
+
 interface baseData {
   user_id:string,
-  seid:string,
-  ccgeid:string,
+  seid?:string,
+  ccgeid?:string,
   uniqueId:string, //fingerprintjs 处理同一账号在不同机器登录问题
 }
 
 interface loginData extends baseData{ //v5 needs token not v4
   token:string,
-  client?:string
+  client?:Client
 }
 
 interface socketData extends baseData{
   socket_id:string,
+  client:Client
 }
 
 type loginCBData = {
@@ -99,11 +102,11 @@ io.on('connection', async function (socket) {
       forceLogoff('logoff') //bug 13734
       return
     }
-    let exist = await dupCheck(user_id, socket.id, uniqueId,fn)
+    let exist = await dupCheck({ user_id, client, socket_id:socket.id,uniqueId },fn)
     if (exist) {
       return
     }
-    await loginResult({ user_id, seid, ccgeid, socket_id:socket.id,uniqueId })
+    await loginResult({ user_id, client, socket_id:socket.id,uniqueId })
     //考虑了半天代码用什么做版本号好，必须是打包代码能自动生成的，不能每次都手动修改
     //一开始考虑commit id，但是commit id 没法比较代码的新旧，暂定 time stamp
     if (typeof fn === 'function') fn({ user_id: 'login', ver: 'xxxxxx' })
@@ -242,21 +245,8 @@ async function tokenCheck(user_id:string, token:string, client:string):Promise<b
 }
 
 //连接的时候调用检查
-async function dupCheck(user_id:string, socket_id:string, uniqueId:string, fn:loginCB):Promise<boolean> {
-  if (!user_id) {
-    //happen in dev env a lot
-    debug('no user id so just return, probably no fn in this case')
-    //fn(`wrong user_id:${user_id}`)
-    return true //to let the caller just return
-  }
+async function dupCheck({ user_id, client, socket_id,uniqueId }:socketData, fn:loginCB):Promise<boolean> {
   //试验感觉这里存内存就好，没必要存reids
-  //https://github.com/luin/ioredis#pipelining
-  //Each response follows the format `[err, result]`.
-  // let exist = await redis
-  //   .multi()
-  //   .hexists('websocket:dupCheck', socket_id)
-  //   .hset('websocket:dupCheck', socket_id, 'exists')
-  //   .exec()
   // if (exist[0][1] > 0) {
   if (dup[socket_id]) {
     //https://github.com/socketio/socket.io/issues/474
@@ -266,13 +256,22 @@ async function dupCheck(user_id:string, socket_id:string, uniqueId:string, fn:lo
   } else {
     dup[socket_id] = 'exist'
   }
+  //https://github.com/luin/ioredis#pipelining
+  //Each response follows the format `[err, result]`.
+  // let exist = await redis
+  //   .multi()
+  //   .hexists('websocket:dupCheck', socket_id)
+  //   .hset('websocket:dupCheck', socket_id, 'exists')
+  //   .exec()
   let tmp = await redis
     .multi()
     .hget(`websocket:${user_id}`, 'socketid')
     .hget(`websocket:${user_id}`, 'browserFinger')
+    .hget(`websocket:${user_id}`, 'client')
     .exec()
   let old_socket = tmp[0][1]
   let finger = tmp[1][1]
+  let old_client = tmp[2][1]
   if (!old_socket) {
     debug(`First time login. [${user_id}]`)
     // await sub.subscribe(user_id)
@@ -284,6 +283,9 @@ async function dupCheck(user_id:string, socket_id:string, uniqueId:string, fn:lo
     delete dup[socket_id]
     return true
   }
+
+  // 2 different socket.io ids, now we assume it is another login
+
   //新老登录都有浏览器指纹，可以做异地登录的判断
   if (finger != 'none' &&
       uniqueId != 'none' &&
@@ -291,20 +293,26 @@ async function dupCheck(user_id:string, socket_id:string, uniqueId:string, fn:lo
     //finger 相同，认为同一浏览器重复登录，就不强制迁出
     checkout(user_id)
   }
-  //now we assume it is another login
-  //客户端收到后会close这个socket.io，所以我们还会再收到一条它的disconnect消息
+  //请求来源不同，可以做异地登陆判断
+  if (old_client != client) {
+    checkout(user_id)
+  }
   //加入延迟删除`websocket:${user_id}` 也会走到这，但是因为旧的连接已经没了我想调用emit也没啥
   //2021.3 还发现有的 ws 服务器docker容器会被 k8s重启，重启我们不删redis记录了
   //所以也有可能走到这，但是这时候的old_socket不存在，和重刷浏览器一样
   //todo: 目前排查redis无效数据对应socket.io.id 最后都是显示这条
-  io.to(old_socket).emit('logoff', 'another login')
+
+  // let old = io.sockets.sockets.get(old_socket)
+  // old?.emit('logoff', 'another login')
+  io.to(old_socket).emit('logoff', 'another login') //no ack here
+  //客户端收到后会close这个socket.io，所以我们还会再收到一条它的disconnect消息
   //不能在这里直接删除'websocket:socket_user'，老的关联关系而没有sub.unsubscribe
   //因为前一个连接可能是别的docker处理，必须在disconect 里一起处理 redis.hdel 和 sub.unsubscribe
-  info(`Another login, tell old ws to logoff. [${user_id}:${old_socket}]`)
+  debug(`Another login, tell old ws to logoff. [${user_id}:${old_socket}]`)
   return false //更新 socketid
 }
 
-async function loginResult({ user_id, seid, ccgeid, socket_id,uniqueId }:socketData):Promise<void> {
+async function loginResult({ user_id, client, socket_id,uniqueId }:socketData):Promise<void> {
   const loginT = new Date().toLocaleString()
   await redis
     .multi()
@@ -316,7 +324,9 @@ async function loginResult({ user_id, seid, ccgeid, socket_id,uniqueId }:socketD
       'browserFinger',
       uniqueId,
       'loginTime',
-      loginT
+      loginT,
+      'client',
+      client
     )
     .exec()
   delete dup[socket_id]

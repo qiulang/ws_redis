@@ -34,7 +34,7 @@
     "tss": "tsc && DEBUG=app:* node build/index.js CI",
     "posttss": "redis-cli shutdown",
     "pretest": "src/shell/redis_check.sh",
-    "test": "DEBUG=client:* ts-node src/test/ts/socketConnect.ts"
+    "test": "DEBUG=client:* ts-node src/test/ts/socketTest.ts"
   },
   "author": "qiulang",
   "license": "ISC",
