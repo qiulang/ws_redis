@@ -13,7 +13,7 @@
     "3. tss is for docker image build step to verify the server can start, so it needs to exit",
     "4. pm2.5 is our docker entrypoint using pm2-runtime even though we don't really use this image",
     "5. debug is supposed for vscode debug but we havn't used for a while",
-    "6. start uses nodemon for daily development",
+    "6. start uses nodemon for daily development, with ctrl+c to exit nodemon & redis together",
     "7. test is the client code to verify the server works"
   ],
   "scripts": {
