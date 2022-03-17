@@ -1,7 +1,8 @@
 const socketClient = require('socket.io-client')
 const cliProgress = require('cli-progress')
 const chalk = require('chalk')
-var log = require('testable-utils').log
+// var log = require('testable-utils').log
+const log = require('pino')()
 
 var bar = new cliProgress.SingleBar()
 
@@ -16,39 +17,40 @@ function progress(total) {
   }, total * 1000 + 500)
 }
 
-function websocketTest(server, { uid, seid, ccgeid }, { showProgress, wait }) {
+function websocketTest(server, { user_id, seid, ccgeid,token, uniqueId }, { showProgress, wait }) {
   var socket = socketClient(server, { forceNew: true, transports: ['websocket'] })
 
   function connectHandler(wait = 10, showProgress = false) {
-    log.info(
-      `${chalk.yellow(socket.id)} aka ${chalk.yellow(uid)} connected, send login request next`
+    console.log(
+      `${chalk.yellow(socket.id)} aka ${chalk.yellow(user_id)} connected, send login request next`
     )
-    socket.emit('login', uid, seid, ccgeid, function (data) {
-      if (data != uid) {
+    socket.emit('login', { user_id, seid, ccgeid,token, uniqueId }, function (data) {
+      console.log(data)
+      if (data.user_id != 'login') {
         log.fatal('websocket server went wrong, login reply is incorrect')
         socket.close()
         return
       }
       // log.info(`Tell server ${socket.id} aka ${uid} says hi`)
-      socket.emit('chat-message', `Hi from ${uid}`)
+      socket.emit('chat-message', `Hi from ${user_id}`)
       log.info(`${socket.id} waits for ${wait} seconds to send another message`)
       if (showProgress) progress(wait)
       setTimeout(function () {
         if (socket.connected) {
-          socket.emit('user-reconnect', 'load test')
-          log.info(`${socket.id} waits for another ${wait * 20} seconds to goodbye`)
-          if (showProgress) progress(wait * 20)
+          socket.emit('chat-message', 'load test')
+          log.info(`${socket.id} waits for another ${wait * 5} seconds to goodbye`)
+          if (showProgress) progress(wait * 5)
           setTimeout(function () {
             bar.stop()
             if (socket.connected) {
               log.info(`${socket.id} is about to close`)
               socket.close()
             } else {
-              log.info(`${uid} is not connected, just return`)
+              log.info(`${user_id} is not connected, just return`)
             }
-          }, wait * 20000 + 1000)
+          }, wait * 5000 + 1000)
         } else {
-          log.info(`${uid} is not connected, just return`)
+          log.info(`${user_id} is not connected, just return`)
         }
       }, wait * 1000 + 1000)
     })
@@ -59,7 +61,7 @@ function websocketTest(server, { uid, seid, ccgeid }, { showProgress, wait }) {
   })
 
   socket.on('cr_msg', function (data) {
-    log.info(`Got CR message ${JSON.stringify(data)}`)
+    console.log(`Got CR message ${JSON.stringify(data)}`)
   })
 
   socket.on('logoff', (data) => {
@@ -68,7 +70,7 @@ function websocketTest(server, { uid, seid, ccgeid }, { showProgress, wait }) {
   })
 
   socket.on('disconnect', function () {
-    log.debug(`disconnected ${chalk.yellow(uid)}`)
+    log.debug(`disconnected ${chalk.yellow(user_id)}`)
   })
 }
 

@@ -67,6 +67,8 @@ var dup:SocketRecord = {}
 //从收集到的日志看这种情况是存在的，而且目前看不会有内存泄漏情况
 var user_socket:UserSocket = {}
 
+//https://socket.io/docs/v4/server-application-structure/
+//connect event is fired by the Socket instance upon connection and reconnection.
 io.on('connection', async function (socket) {
   //客户端连接成功后会主动发login消息，redis记录 user 到 socketio.id的对应
   socket.on('login', async function ({ user_id, seid, ccgeid, token, uniqueId ='none', client = 'client.bs' }:loginData, fn:loginCB) {
@@ -111,12 +113,7 @@ io.on('connection', async function (socket) {
     //一开始考虑commit id，但是commit id 没法比较代码的新旧，暂定 time stamp
     if (typeof fn === 'function') fn({ user_id: 'login', ver: 'xxxxxx' })
   })
-  //Server do NOT have reconnect event
-  //https://socket.io/docs/emit-cheatsheet/
-  socket.on('user-reconnect', async function (reason, fn) {
-    debug(`Client emit a reconnect event with reason:${reason}, ${socket.id}`)
-    if (fn && typeof fn === 'function') fn(`${socket.id}`)
-  })
+  
 
   //用户关闭页面，断网都会触发disconnect消息
   socket.on('disconnect', async function (reason:string) {
@@ -306,7 +303,7 @@ async function dupCheck({ user_id, client, socket_id,uniqueId }:socketData, fn:l
   // old?.emit('logoff', 'another login')
   io.to(old_socket).emit('logoff', 'another login') //no ack here
   //客户端收到后会close这个socket.io，所以我们还会再收到一条它的disconnect消息
-  //不能在这里直接删除'websocket:socket_user'，老的关联关系而没有sub.unsubscribe
+  //不能在这里直接删除'websocket:socket_user'老的关联关系而没有sub.unsubscribe
   //因为前一个连接可能是别的docker处理，必须在disconect 里一起处理 redis.hdel 和 sub.unsubscribe
   debug(`Another login, tell old ws to logoff. [${user_id}:${old_socket}]`)
   return false //更新 socketid

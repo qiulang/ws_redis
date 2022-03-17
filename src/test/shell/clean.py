@@ -84,8 +84,12 @@ if __name__ == '__main__':
     args = parser.parse_args()
     mock = args.delete == "no"
     supplyment = args.supplyment != "no"
+    # rshost = 'r-2ze2ojuacmdgvwevj3pd.redis.rds.aliyuncs.com'
+    # rspass = 'uSeisaa1bier'
+    rshost = 'r-2ze0b3b5fcea8914pd.redis.rds.aliyuncs.com'
+    rspass = 'Sinicnet123456'
     rs = redis.Redis(
-        host='r-2ze2ojuacmdgvwevj3pd.redis.rds.aliyuncs.com', password='uSeisaa1bier')
+        host=rshost, password=rspass)
     if supplyment:
         supply(rs, mock)
     else:

@@ -7,7 +7,7 @@
 const crypto = require('crypto')
 // const socketClient = require('socket.io-client')
 const axios = require('axios')
-var log = require('testable-utils').log
+// var log = require('testable-utils').log
 // const cliProgress = require('cli-progress')
 var randomstring = require('randomstring')
 //使用tee时候颜色自动去掉，所以可以放心使用chalk
@@ -25,9 +25,9 @@ const userid = '1000988323' //7820
 const seid = '134'
 const ccgeid = '243'
 const numberBase = 1000
-// const switchNumber = '02566687671'
-const switchNumber = '243'
-const password = '12345678'
+const switchNumber = '02566687671'
+// const switchNumber = '243'
+const password = 'welcome123'
 const is_ccgeid = 1
 
 let buff = Buffer.from(password)
@@ -73,7 +73,7 @@ const sleep = (milliseconds) => {
 
 const axiosReq = axios.create({
   baseURL: 'https://emicall-cmb.emicloud.com/',
-  headers: { source: 'client.pc.common' },
+  headers: { source: 'client.bs' },
 })
 
 function sha256(secret) {
@@ -139,7 +139,7 @@ async function runWebsocketLoop() {
 
 async function getToken(number) {
   let authType = 'signature'
-  let source = 'client.pc.common'
+  let source = 'client.bs'
   let loginType = 1
   let nonce = randomstring.generate(32)
   let timestamp = timestampINS()
@@ -147,7 +147,7 @@ async function getToken(number) {
   const seat = `${number}@${switchNumber}`
 
   let str =
-    `auth-type=${authType}&is_ccgeid=${is_ccgeid}&login_type=${loginType}` +
+    `auth-type=${authType}&login_type=${loginType}` +
     `&nonce=${nonce}&seat=${seat}&source=${source}` +
     `&timestamp=${timestamp}&signatureKey=${password}`
 
@@ -166,8 +166,8 @@ async function getToken(number) {
   }
   console.log(chalk.cyan(`user :${number} is about to login`))
   const result = await request({
-    url: '/user/token',
-    body: { login_type: loginType, is_ccgeid },
+    url: '/user/bsToken',
+    body: { login_type: loginType },
     headers,
   })
   if (result.code != 200) {
@@ -176,8 +176,8 @@ async function getToken(number) {
   }
   token = result.data.token
   console.log(chalk.cyan(`Got token:${token}`))
-  // seatLogin(number)
-  // getSetting()
+  seatLogin(number)
+  getSetting()
 }
 
 async function getSetting() {
@@ -189,40 +189,45 @@ async function getSetting() {
     body,
     method: 'get',
   })
-  console.log(chalk.cyan(`Got token:${JSON.stringify(result)}`))
+  console.log(chalk.cyan(`Got setting:${JSON.stringify(result)}`))
 }
 
 async function seatLogin(number) {
-  const result = await request({
-    url: '/BSClient/seatLogin',
-    body: {
-      switch_number: switchNumber,
-      work_number: number,
-      password: base64data,
-    },
-  })
-  if (result == false) {
-    console.log(chalk.red('Failed to seatLogin'))
-    return
-  }
-  let uid = result['data']['id']
-  console.log(
-    chalk.cyan(
-      `${chalk.yellow(number)}'s uid is ${chalk.yellow(uid)} has login, websocket test next`
-    )
-  )
-  await seatCheckin(number)
-  websocketTest(server, { uid, seid, ccgeid }, { showProgress: showP, wait })
+  // const result = await request({
+  //   url: '/BSClient/seatLogin',
+  //   body: {
+  //     switch_number: switchNumber,
+  //     work_number: number,
+  //     password: base64data,
+  //   },
+  // })
+  // if (result == false) {
+  //   console.log(chalk.red('Failed to seatLogin'))
+  //   return
+  // }
+  // let uid = result['data']['id']
+  // uid = `${seid}_${ccgeid}_${uid}`
+  // console.log(
+  //   chalk.cyan(
+  //     `${chalk.yellow(number)}'s uid is ${chalk.yellow(uid)} has login, websocket test next`
+  //   )
+  // )
+  let uid = "134_243_1000988323"
+  websocketTest(server, { user_id:uid, seid, ccgeid, token, uniqueId:'nodejs' }, { showProgress: showP, wait })
+  setTimeout(()=>{
+    console.log(`seatCheckin in 2 seconds to get CR message from ws`)
+    seatCheckin(number)
+  },2000)
 }
 
 async function seatCheckin(number) {
   data = {
     call_group_id: '1000003218',
     call_group_name: 'bs测试技能组',
-    callintype: 2,
-    device_number: '',
+    callintype: 4,
+    device_number: '13910134045',
     preStatusId: 2,
-    number,
+    number:"267820",
     seid,
     ccgeid,
   }
@@ -234,9 +239,10 @@ async function seatCheckin(number) {
     console.log(chalk.red('Failed to seatCheckin'))
     return
   }
+  console.log(result)
   console.log(chalk.cyan(`${number} seatCheckin succeed!!`))
 }
 
 // runWebsocketLoop()
 // runLoop()
-getToken(7821)
+getToken(7820)
