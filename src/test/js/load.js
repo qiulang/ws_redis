@@ -21,7 +21,8 @@ const server1 = 'https://docker1.emicloud.com/'
 const server2 = 'http://localhost:3000'
 let token = 'unknow'
 
-const userid = '1000988323' //7820
+let userid = '1000988323' //7820
+// let userid = '1000988324' //7821
 const seid = '134'
 const ccgeid = '243'
 const numberBase = 1000
@@ -177,7 +178,7 @@ async function getToken(number) {
   token = result.data.token
   console.log(chalk.cyan(`Got token:${token}`))
   seatLogin(number)
-  getSetting()
+  // getSetting()
 }
 
 async function getSetting() {
@@ -193,41 +194,47 @@ async function getSetting() {
 }
 
 async function seatLogin(number) {
-  // const result = await request({
-  //   url: '/BSClient/seatLogin',
-  //   body: {
-  //     switch_number: switchNumber,
-  //     work_number: number,
-  //     password: base64data,
-  //   },
-  // })
-  // if (result == false) {
-  //   console.log(chalk.red('Failed to seatLogin'))
-  //   return
-  // }
-  // let uid = result['data']['id']
-  // uid = `${seid}_${ccgeid}_${uid}`
-  // console.log(
-  //   chalk.cyan(
-  //     `${chalk.yellow(number)}'s uid is ${chalk.yellow(uid)} has login, websocket test next`
-  //   )
-  // )
-  let uid = "134_243_1000988323"
-  websocketTest(server, { user_id:uid, seid, ccgeid, token, uniqueId:'nodejs' }, { showProgress: showP, wait })
+  const result = await request({
+    url: '/BSClient/seatLogin',
+    body: {
+      switch_number: switchNumber,
+      work_number: number,
+      password: base64data,
+    },
+  })
+  if (result == false) {
+    console.log(chalk.red('Failed to seatLogin'))
+    return
+  }
+  userid = result['data']['id']
+  let uid = `${seid}_${ccgeid}_${userid}`
+  console.log(
+    chalk.cyan(
+      `${chalk.yellow(number)}'s uid is ${chalk.yellow(uid)} has login, websocket test next`
+    )
+  )
+  // uid = `${seid}_${ccgeid}_${userid}`
+  let socket = websocketTest(server, { user_id:uid, seid, ccgeid, token, uniqueId:'nodejs' }, { showProgress: showP, wait })
   setTimeout(()=>{
     console.log(`seatCheckin in 2 seconds to get CR message from ws`)
     seatCheckin(number)
   },2000)
+  setTimeout(()=>{
+    console.log(`20 seconds later checkout`)
+    seatCheckout(number)
+    socket.close()
+  },20000)
 }
 
 async function seatCheckin(number) {
+  let tmp = `26${number}`
   data = {
     call_group_id: '1000003218',
     call_group_name: 'bs测试技能组',
     callintype: 4,
     device_number: '13910134045',
     preStatusId: 2,
-    number:"267820",
+    number:tmp,
     seid,
     ccgeid,
   }
@@ -241,6 +248,20 @@ async function seatCheckin(number) {
   }
   console.log(result)
   console.log(chalk.cyan(`${number} seatCheckin succeed!!`))
+}
+
+async function seatCheckout(number) {
+  data = {
+    seid,
+    ccgeid,
+    uid:userid
+  }
+  const result = await request({
+    url: '/BSClient/seatCheckout',
+    body: data,
+  })
+  console.log(`seatCheckout result`)
+  console.log(result)
 }
 
 // runWebsocketLoop()

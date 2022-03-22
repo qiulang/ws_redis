@@ -30,29 +30,31 @@ function websocketTest(server, { user_id, seid, ccgeid,token, uniqueId }, { show
         log.fatal('websocket server went wrong, login reply is incorrect')
         socket.close()
         return
+      } else {
+        console.log('Wait for CR seat status update message')
       }
       // log.info(`Tell server ${socket.id} aka ${uid} says hi`)
-      socket.emit('chat-message', `Hi from ${user_id}`)
-      log.info(`${socket.id} waits for ${wait} seconds to send another message`)
-      if (showProgress) progress(wait)
-      setTimeout(function () {
-        if (socket.connected) {
-          socket.emit('chat-message', 'load test')
-          log.info(`${socket.id} waits for another ${wait * 5} seconds to goodbye`)
-          if (showProgress) progress(wait * 5)
-          setTimeout(function () {
-            bar.stop()
-            if (socket.connected) {
-              log.info(`${socket.id} is about to close`)
-              socket.close()
-            } else {
-              log.info(`${user_id} is not connected, just return`)
-            }
-          }, wait * 5000 + 1000)
-        } else {
-          log.info(`${user_id} is not connected, just return`)
-        }
-      }, wait * 1000 + 1000)
+      // socket.emit('chat-message', `Hi from ${user_id}`)
+      // log.info(`${socket.id} waits for ${wait} seconds to send another message`)
+      // if (showProgress) progress(wait)
+      // setTimeout(function () {
+      //   if (socket.connected) {
+      //     socket.emit('chat-message', 'load test')
+      //     log.info(`${socket.id} waits for another ${wait * 5} seconds to goodbye`)
+      //     if (showProgress) progress(wait * 5)
+      //     setTimeout(function () {
+      //       bar.stop()
+      //       if (socket.connected) {
+      //         log.info(`${socket.id} is about to close`)
+      //         socket.close()
+      //       } else {
+      //         log.info(`${user_id} is not connected, just return`)
+      //       }
+      //     }, wait * 5000 + 1000)
+      //   } else {
+      //     log.info(`${user_id} is not connected, just return`)
+      //   }
+      // }, wait * 1000 + 1000)
     })
   }
 
@@ -72,6 +74,7 @@ function websocketTest(server, { user_id, seid, ccgeid,token, uniqueId }, { show
   socket.on('disconnect', function () {
     log.debug(`disconnected ${chalk.yellow(user_id)}`)
   })
+  return socket
 }
 
 module.exports = websocketTest
