@@ -4,12 +4,12 @@ const crypto = require('crypto')
 const axios = require('axios')
 var randomstring = require('randomstring')
 const debug = require('debug')
-const log = debug("wechat")
+const log = debug("wechat:web")
 const _ = require('lodash')
+let websocket = require('./socket')
 
 
 const server = 'https://docker1.emicloud.com/'
-const server2 = 'http://localhost:3000'
 let token = 'unknow'
 
 const userid = '1000988323' //7820
@@ -59,7 +59,6 @@ async function request({ url, body, headers = {}, method = 'post' }) {
       log(`Failed to ${url}`)
       return false
     } else {
-      // console.log(chalk.cyan(`${method} ${url} succeed.`))
       return result.data
     }
   } catch (err) {
@@ -107,23 +106,13 @@ async function getToken(number) {
   }
   token = result.data.token
   log(`Got token:${token}`)
-  // seatLogin(number)
+  seatLogin(number)
 }
 
-async function getSetting() {
-  let url = `enterprise/setting/${seid}/${ccgeid}`
-  let body = { key: 'extension_start,extension_end' }
-  console.log(chalk.cyan(`call ${url}`))
-  let result = await request({
-    url,
-    body,
-    method: 'get',
-  })
-  log(`Got setting:${JSON.stringify(result)}`)
-}
 
 async function seatLogin(number) {
   const result = await request({
+    // url: 'wechat/BSClient/seatLogin',
     url: '/BSClient/seatLogin',
     body: {
       switch_number: switchNumber,
@@ -135,16 +124,17 @@ async function seatLogin(number) {
     log('Failed to seatLogin')
     return
   }
+  log(result)
   let uid = result['data']['id']
   uid = `${seid}_${ccgeid}_${uid}`
   log(
-      `${number}'s uid is ${uid} has login, websocket test next`
+      `${number}'s uid is ${uid} has seatLogin, websocket next`
   )
-  // websocketTest(server, { user_id:uid, seid, ccgeid, token, uniqueId:'nodejs' }, { showProgress: showP, wait })
-  // setTimeout(()=>{
-  //   console.log(`seatCheckin in 2 seconds to get CR message from ws`)
-  //   seatCheckin(number)
-  // },2000)
+  websocket(server, { user_id:uid, seid, ccgeid, token, uniqueId:'nodejs' })
+  setTimeout(()=>{
+    console.log(`seatCheckin in 2 seconds to get CR message from ws`)
+    seatCheckin(number)
+  },2000)
 }
 
 async function seatCheckin(number) {
@@ -154,12 +144,12 @@ async function seatCheckin(number) {
     callintype: 4,
     device_number: '13910134045',
     preStatusId: 2,
-    number:"267820",
+    number,
     seid,
     ccgeid,
   }
   const result = await request({
-    url: '/BSClient/seatCheckin',
+    url: 'wechat/seat/Checkin',
     body: data,
   })
   if (result == false) {
@@ -170,6 +160,4 @@ async function seatCheckin(number) {
   log(`${number} seatCheckin succeed!!`)
 }
 
-// runWebsocketLoop()
-// runLoop()
 getToken(7820)

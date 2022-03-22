@@ -238,6 +238,7 @@ async function seatCheckin(number) {
     seid,
     ccgeid,
   }
+  console.log(`${JSON.stringify(data)}`)
   const result = await request({
     url: '/BSClient/seatCheckin',
     body: data,
