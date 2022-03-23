@@ -3,14 +3,15 @@ const debug = require('debug')
 const log = debug("wechat:websocket")
 
 function websocket(server, { user_id, seid, ccgeid,token, uniqueId }) {
+  //我们使用的vpn可能会导致连不上ws服务器
   let socket = socketClient(server, { transports: ['websocket'] })
 
   socket.on('connect', function () {
     log(`${socket.id} aka ${user_id} connected, send login request next`)
-    socket.emit('login', { user_id, seid, ccgeid,token, uniqueId }, function (data) {
+    socket.emit('login', { user_id, seid, ccgeid,token, uniqueId,client:"client.wechat" }, function (data) {
       log(data)
       if (data.user_id != 'login') {
-        log.fatal('websocket server went wrong, login reply is incorrect')
+        log('websocket server went wrong, login reply is incorrect')
         socket.close()
         return
       } else {
@@ -29,7 +30,7 @@ function websocket(server, { user_id, seid, ccgeid,token, uniqueId }) {
   })
 
   socket.on('disconnect', function () {
-    log(`disconnected ${chalk.yellow(user_id)}`)
+    log(`disconnected ${user_id}`)
   })
   return socket
 }

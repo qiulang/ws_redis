@@ -7,17 +7,23 @@ const debug = require('debug')
 const log = debug("wechat:web")
 const _ = require('lodash')
 let websocket = require('./socket')
+const readline = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+})
 
 
 const server = 'https://docker1.emicloud.com/'
-let token = 'unknow'
+let token = 'unknown'
 
 const userid = '1000988323' //7820
+let uid = "unknown"
 const seid = '134'
 const ccgeid = '243'
 const switchNumber = '02566687671'
 const password = 'welcome123'
 const is_ccgeid = 1
+let socket
 
 let buff = Buffer.from(password)
 let base64data = buff.toString('base64')
@@ -62,7 +68,8 @@ async function request({ url, body, headers = {}, method = 'post' }) {
       return result.data
     }
   } catch (err) {
-    log(`Failed to ${url} using ${JSON.stringify(body)}`)
+    log(err)
+    log(`---- Failed to ${url} using ${JSON.stringify(body)}`)
     return false
   }
 }
@@ -112,8 +119,7 @@ async function getToken(number) {
 
 async function seatLogin(number) {
   const result = await request({
-    // url: 'wechat/BSClient/seatLogin',
-    url: '/BSClient/seatLogin',
+    url: 'wechat/BSClient/seatLogin',
     body: {
       switch_number: switchNumber,
       work_number: number,
@@ -124,20 +130,69 @@ async function seatLogin(number) {
     log('Failed to seatLogin')
     return
   }
-  log(result)
-  let uid = result['data']['id']
-  uid = `${seid}_${ccgeid}_${uid}`
-  log(
-      `${number}'s uid is ${uid} has seatLogin, websocket next`
-  )
-  websocket(server, { user_id:uid, seid, ccgeid, token, uniqueId:'nodejs' })
-  setTimeout(()=>{
-    console.log(`seatCheckin in 2 seconds to get CR message from ws`)
-    seatCheckin(number)
-  },2000)
+  uid = result['data']['id']
+  let user_id = `${seid}_${ccgeid}_${uid}`
+  log(`${number}'s uid is ${uid} has seatLogin`)
+  readline.question(`First time to use wechat with 13910134045? `, async (bind='n') => {
+    // readline.close() 都用完才能close
+    //不然 seatCheckin 会回复 {"code":140000022,"info":"回拨话机号码未绑定"}
+    if (bind =='y') {
+      await bindPhone(number,user_id)
+    } else {
+      readline.close()
+      await seatCheckin(number,user_id)
+    }
+  })
 }
 
-async function seatCheckin(number) {
+async function bindPhone(number,user_id) {
+  let result = await request({
+    url: 'wechat/seat/sendSms',
+    body: {
+      mobile:13910134045
+    },
+  })
+  log(`send sms result:${JSON.stringify(result)}`)
+  readline.question(`What's your sms code? `,async (code) => {
+    result = await request({
+      url: 'wechat/seat/bindPhone',
+      body: {
+        mobile:13910134045,
+        code
+      },
+    })
+    log(`bindPhone result: ${JSON.stringify(result)}`)
+    readline.close()
+    await seatCheckin(number,user_id)
+  })
+}
+
+async function seatCheckout() {
+  data = {
+    seid,
+    ccgeid,
+    uid
+  }
+  const result = await request({
+    url: 'wechat/BSClient/seatCheckout',
+    body: data,
+  })
+  log(`seatCheckout ${JSON.stringify(data)}: result`)
+  log(result)
+  socket.close()
+}
+
+function setWS(user_id) {
+  log(`Connect to websocket server first before call seat/checkIn`)
+  socket = websocket(server, { user_id, seid, ccgeid, token, uniqueId:'nodejs' })
+  setTimeout(()=>{
+    log(`seatCheckout in 40 seconds`)
+    seatCheckout()
+  },40000)
+}
+
+async function seatCheckin(number,user_id) {
+  setWS(user_id)
   data = {
     call_group_id: '1000003218',
     call_group_name: 'bs测试技能组',
@@ -149,14 +204,14 @@ async function seatCheckin(number) {
     ccgeid,
   }
   const result = await request({
-    url: 'wechat/seat/Checkin',
+    url: 'wechat/seat/checkIn',
     body: data,
   })
+  log(`wechat/seat/checkIn : ${JSON.stringify(result)}`)
   if (result == false) {
     log('Failed to seatCheckin')
     return
   }
-  log(result)
   log(`${number} seatCheckin succeed!!`)
 }
 
