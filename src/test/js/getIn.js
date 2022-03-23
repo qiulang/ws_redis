@@ -3,8 +3,14 @@ const readline = require('readline').createInterface({
     output: process.stdout
   })
   
-  readline.question(`What's your sms code?`, sms => {
-    console.log(`Hi ${sms}!`)
+  readline.question(`What's your name?`, name => {
+    console.log(`Hi ${name}!`)
     readline.close()
+    setTimeout(()=> {
+      readline.question(`How are you?`, how => {
+        console.log(`Good to know you are ${how}!`)
+        // readline.close()
+      })
+    },4000)
   })
   

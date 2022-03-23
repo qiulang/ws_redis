@@ -46,7 +46,7 @@ function timestampINS() {
 }
 
 async function request({ url, body, headers = {}, method = 'post' }) {
-  if (_.isEmpty(headers)) {
+  if (_.isEmpty(headers) || token !='unknown') {
     headers = { token }
   }
   let param = {
@@ -114,6 +114,7 @@ async function getToken(number) {
   token = result.data.token
   log(`Got token:${token}`)
   seatLogin(number)
+  // seatInfo()
 }
 
 
@@ -213,6 +214,68 @@ async function seatCheckin(number,user_id) {
     return
   }
   log(`${number} seatCheckin succeed!!`)
+  await seatInfo()
+}
+
+async function seatInfo() {
+  let result = await request({
+    url: 'wechat/seat/seatInfo',
+    method:'get'
+  })
+  log(`seatInfo result:${JSON.stringify(result)}`)  
+  result = await request({
+    url: 'wechat/seat/state',
+    method:'get'
+  })
+  if (result.code == 200) {
+    // let states = result.data?.map(i=> ({'name':i.name,'order':i.order}))
+    log(`seat/state 坐席可选状态:`)
+    let states = result.data?.map(i=> {
+      let state = {'name':i.name,'order':i.order}
+      log(`${JSON.stringify(state)}`)
+      return state
+    })
+    log(`一共 :${states.length} 状态`)
+  }
+  result = await request({
+    url: 'wechat/customer-result/scheme',
+    method:'get'
+  })
+  if (result.code == 200) {
+    log(`customer-result/scheme 话后处理选项:`)
+    let tmp = result.data?.result_option_settings
+    let schemes = tmp?.map(i=>{
+      let name = {name:i.name}
+      if (i.children.length > 0) {
+        name.subschemes = i.children.map(i=>i.name)
+      }
+      log(JSON.stringify(name))
+      return name
+    })
+  }
+  //checkin了 才能看到，不然是空
+  result = await request({
+    url: `wechat/preview_task/seat/${seid}/${ccgeid}/${uid}`,
+    method:'get'
+  })
+  if (result.code == 200) {
+    log(`wechat/preview_task/seat result 目前任务:`)
+    let tasks = result.data?.data?.map( i=> {
+      let task = {
+      "任务名称":i.task_name,
+      "任务状态":i.status,
+      "客户总数":i.total_customers,
+      "已呼叫客户数":i.customer_called,
+      "任务未分配客户数":i.task_not_locked,
+      "技能组未分配客户数":i.group_not_locked,
+      "不再呼叫客户数":i.ustomer_aborted,
+      "进度":i.process,
+      "是否允许坐席操作":i.seat_not_call
+      }
+      log(JSON.stringify(task))
+      return task
+    })
+  }
 }
 
 getToken(7820)
