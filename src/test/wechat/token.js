@@ -24,6 +24,7 @@ const switchNumber = '02566687671'
 const password = 'welcome123'
 const is_ccgeid = 1
 let socket
+let tasks
 
 let buff = Buffer.from(password)
 let base64data = buff.toString('base64')
@@ -54,6 +55,7 @@ async function request({ url, body, headers = {}, method = 'post' }) {
     method: method,
     headers: headers,
   }
+  //method 不对，服务器返回 405
   if (method == 'post') {
     param.data = body
   } else {
@@ -114,7 +116,6 @@ async function getToken(number) {
   token = result.data.token
   log(`Got token:${token}`)
   seatLogin(number)
-  // seatInfo()
 }
 
 
@@ -134,13 +135,17 @@ async function seatLogin(number) {
   uid = result['data']['id']
   let user_id = `${seid}_${ccgeid}_${uid}`
   log(`${number}'s uid is ${uid} has seatLogin`)
+
+  //测试不调用 seatLogin 有什么问题
+  // uid = "1000988323"
+  // let user_id = "134_243_1000988323"
+
   readline.question(`First time to use wechat with 13910134045? `, async (bind='n') => {
     // readline.close() 都用完才能close
     //不然 seatCheckin 会回复 {"code":140000022,"info":"回拨话机号码未绑定"}
     if (bind =='y') {
       await bindPhone(number,user_id)
     } else {
-      readline.close()
       await seatCheckin(number,user_id)
     }
   })
@@ -163,7 +168,6 @@ async function bindPhone(number,user_id) {
       },
     })
     log(`bindPhone result: ${JSON.stringify(result)}`)
-    readline.close()
     await seatCheckin(number,user_id)
   })
 }
@@ -181,15 +185,16 @@ async function seatCheckout() {
   log(`seatCheckout ${JSON.stringify(data)}: result`)
   log(result)
   socket.close()
+  readline.close()
 }
 
 function setWS(user_id) {
   log(`Connect to websocket server first before call seat/checkIn`)
   socket = websocket(server, { user_id, seid, ccgeid, token, uniqueId:'nodejs' })
   setTimeout(()=>{
-    log(`seatCheckout in 40 seconds`)
+    log(`seatCheckout in 60 seconds`)
     seatCheckout()
-  },40000)
+  },60000)
 }
 
 async function seatCheckin(number,user_id) {
@@ -252,6 +257,7 @@ async function seatInfo() {
       log(JSON.stringify(name))
       return name
     })
+    log(`一共 :${schemes.length} 话后处理选项`)
   }
   //checkin了 才能看到，不然是空
   result = await request({
@@ -260,8 +266,9 @@ async function seatInfo() {
   })
   if (result.code == 200) {
     log(`wechat/preview_task/seat result 目前任务:`)
-    let tasks = result.data?.data?.map( i=> {
+    tasks = result.data?.data?.map( i=> {
       let task = {
+      "任务id":i.id,
       "任务名称":i.task_name,
       "任务状态":i.status,
       "客户总数":i.total_customers,
@@ -275,7 +282,57 @@ async function seatInfo() {
       log(JSON.stringify(task))
       return task
     })
+    log(`一共 :${tasks.length} 任务`)
   }
+  await lockOneCustomer()
+}
+
+async function lockOneCustomer() {
+  readline.question(`which task you want to lock? `, async (t) => {
+    log('如果这个任务未分配客户数是0，那锁定任务就会失败，报 {"code":161000130,"info":"本坐席已经没有获取当前任务客户的权限"}"')
+    if (!tasks.some(i=> i["任务id"] == t)) {
+      log('输入taskid不正确')
+      return
+    }
+    log(`锁定这个弹屏任务的客户`)
+    result = await request({
+      url: `wechat/preview_task/lockCustomer/${seid}/${ccgeid}/${t}/${uid}`,
+    }) 
+    log(JSON.stringify(result))
+    if (result.code != 200) {
+      log(`锁定这个弹屏任务的客户失败`)
+      return
+    }
+    //{"id":1779043,"task_id":971,"batch_id":1145,"cid":1713617,"auto_call_tel":"15645641235","cm_name":"test_1","service_gid":1000003218,"enc_number":"p9ZNF/d7wC5OhBK7JI6dkg=="}}
+    let taskInfo = {
+      "任务ptcid":result.data.id,
+      "客户id":result.data.cid,
+      "客户姓名":result.data.cm_name,
+      "自动分配的客户的号码":result.data.auto_call_tel,
+      "该号码的加密值":result.data.enc_number,
+      "任务所在组 service_gid, 有什么用":result.data.service_gid,
+      "任务 batch_id,有什么用":result.data.batch_id
+    }
+    log(taskInfo)
+    let body = {
+      cid:taskInfo["客户id"],
+      encNumber:taskInfo["该号码的加密值"]
+    }
+    log(`获取弹屏任务的相关信息，主要是客户信息,而且 encNumber 必传，不然不返回客户信息, ${JSON.stringify(body)}`)
+    result = await request({
+      url: `wechat/preview_task/bombScreenTask/${seid}/${ccgeid}/${t}/${taskInfo["任务ptcid"]}`,
+      body,
+      method:'get'
+    })
+    // log(JSON.stringify(result)) 
+    //返回参数太复杂，要整理
+    let customer = result.data?.customer
+    let definedField = result.data?.customer?.definedField
+    let cm_result = result.data?.cm_result
+    let tel_info = result.data?.tel_info
+    let ep_setting = result.data?.ep_setting
+    log(JSON.stringify(definedField)) 
+  }) 
 }
 
 getToken(7820)
