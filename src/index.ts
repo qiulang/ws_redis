@@ -21,9 +21,7 @@ const portfinder = require('portfinder')
 let RTIME:number = +(process.env.RTIME || 45)
 
 //入口函数
-// startServer()
-//命令行启动参数检测
-argvCheck() //call startServer()
+startServer()
 
 // https://stackoverflow.com/questions/37233735/interfaces-vs-types-in-typescript
 
@@ -391,33 +389,6 @@ function msgTimeout(onSuccess:(this: void,...args:any[]) => void, onTimeout:(thi
     clearTimeout(timer)
     onSuccess(args)
   }
-}
-
-function argvCheck() {
-  startServer()//always start no matter what
-  const [node, script, ...params] = process.argv;
-  if (params.length ==1) {
-    //currently we only support ONE param
-    const input:string = params[0]
-    if (input == 'CI') {
-      setTimeout(() => stopServerAfter(45),1000) // or it will mess with cli-progress
-    }
-  } 
-}
-
-function stopServerAfter(stop:number) {
-  const cliProgress = require('cli-progress')
-  var bar = new cliProgress.SingleBar()
-  debug('-------------------- note ---------------------')
-  debug(`Stop server in ${stop} seconds for docker build verify & github action`)
-  bar.start(stop, 0)
-  let timer = setInterval(() => {
-    bar.increment(1)
-  }, 1000)
-  setTimeout(() => {
-    process.exit(0)
-    clearInterval(timer)
-  }, stop * 1000 + 500)  
 }
 
 //https://pm2.io/docs/runtime/best-practices/graceful-shutdown/
