@@ -57,6 +57,7 @@
     "cli-progress": "^3.10.0",
     "lodash": "^4.17.20",
     "nodemon": "^2.0.6",
+    "object-scan": "^18.0.0",
     "pino": "^7.9.1",
     "ramda": "^0.27.1",
     "randomstring": "^1.1.5",

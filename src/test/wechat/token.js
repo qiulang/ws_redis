@@ -18,8 +18,8 @@ let token = 'unknown'
 
 const userid = '1000988323' //7820
 let uid = "unknown"
-const seid = '134'
-const ccgeid = '243'
+let seid = 'unknown'
+let ccgeid = 'unknown'
 const switchNumber = '02566687671'
 const password = 'welcome123'
 const is_ccgeid = 1
@@ -104,7 +104,7 @@ async function getToken(number) {
     source,
   }
   log(`user :${number} is about to login`)
-  const result = await request({
+  let result = await request({
     url: 'wechat/user/wechatToken',
     body: { login_type: loginType },
     headers,
@@ -113,8 +113,12 @@ async function getToken(number) {
     log(`Got token failed`)
     return
   }
-  token = result.data.token
-  log(`Got token:${token}`)
+  //https://flaviocopes.com/javascript-destructure-object-to-existing-variable/
+  uid = result.data.id;
+  ({seid,ccgeid,token} = result.data)
+  log(`Got token:${token},可以建立ws连接了`)
+  let user_id = `${seid}_${ccgeid}_${uid}`
+  setWS(user_id)
   seatLogin(number)
 }
 
@@ -132,9 +136,7 @@ async function seatLogin(number) {
     log('Failed to seatLogin')
     return
   }
-  uid = result['data']['id']
-  let user_id = `${seid}_${ccgeid}_${uid}`
-  log(`${number}'s uid is ${uid} has seatLogin`)
+  log(`${number}'s uid is ${uid} has seatLogin,主要作用是让服务器记录登录日志,打开ws通信通道`)
 
   //测试不调用 seatLogin 有什么问题
   // uid = "1000988323"
@@ -144,14 +146,14 @@ async function seatLogin(number) {
     // readline.close() 都用完才能close
     //不然 seatCheckin 会回复 {"code":140000022,"info":"回拨话机号码未绑定"}
     if (bind =='y') {
-      await bindPhone(number,user_id)
+      await bindPhone(number)
     } else {
-      await seatCheckin(number,user_id)
+      await seatCheckin(number)
     }
   })
 }
 
-async function bindPhone(number,user_id) {
+async function bindPhone(number) {
   let result = await request({
     url: 'wechat/seat/sendSms',
     body: {
@@ -168,7 +170,12 @@ async function bindPhone(number,user_id) {
       },
     })
     log(`bindPhone result: ${JSON.stringify(result)}`)
-    await seatCheckin(number,user_id)
+    if (result.code == 200) {
+      log(`绑定的手机号成功，可以迁入了`)
+      await seatCheckin(number)
+    } else {
+      log(`绑定的手机号不成功，为什么？？`)
+    }
   })
 }
 
@@ -189,45 +196,54 @@ async function seatCheckout() {
 }
 
 function setWS(user_id) {
-  log(`Connect to websocket server first before call seat/checkIn`)
+  log(`Connect to websocket server first before call seat/checkIn ${token}:${user_id}`)
   socket = websocket(server, { user_id, seid, ccgeid, token, uniqueId:'nodejs' })
   setTimeout(()=>{
     log(`seatCheckout in 60 seconds`)
     seatCheckout()
-  },60000)
+  },120000)
 }
 
 async function seatCheckin(number,user_id) {
-  setWS(user_id)
+  log(`seatchin 之前要先知道所在技能组:`)
+  let result = await request({
+    url: 'wechat/seat/seatInfo',
+    method:'get'
+  })
+  groups = result.data?.call_group_id
+  gname = result.data?.call_group_name
+  let info = {
+    "姓名":result.data?.displayname,
+    "分机号":result.data?.number,
+    "当前状态":result.data?.state,
+    "所在组id":groups,
+    "所在组名":gname
+  } 
+  log(JSON.stringify(info))
   data = {
-    call_group_id: '1000003218',
-    call_group_name: 'bs测试技能组',
+    call_group_id: groups[0],
+    // call_group_name: 'bs测试技能组',
     callintype: 4,
-    device_number: '13910134045',
+    device_number: result.data?.device_number,
     preStatusId: 2,
     number,
     seid,
     ccgeid,
   }
-  const result = await request({
+  result = await request({
     url: 'wechat/seat/checkIn',
     body: data,
   })
-  log(`wechat/seat/checkIn : ${JSON.stringify(result)}`)
+  log(`wechat/seat/checkIn 技能组 ${groups[0]}: ${JSON.stringify(result)}`)
   if (result == false) {
     log('Failed to seatCheckin')
     return
   }
   log(`${number} seatCheckin succeed!!`)
-  await seatInfo()
+  await seatInformation()
 }
 
-async function seatInfo() {
-  let result = await request({
-    url: 'wechat/seat/seatInfo',
-    method:'get'
-  })
-  log(`seatInfo result:${JSON.stringify(result)}`)  
+async function seatInformation() {
   result = await request({
     url: 'wechat/seat/state',
     method:'get'
@@ -325,14 +341,60 @@ async function lockOneCustomer() {
       method:'get'
     })
     // log(JSON.stringify(result)) 
-    //返回参数太复杂，要整理
     let customer = result.data?.customer
+    let batch_id = result.data.batch_id
+    let customer_tels = result.data?.customer?.customer_tels
+    let tel = customer_tels[0]
     let definedField = result.data?.customer?.definedField
     let cm_result = result.data?.cm_result
     let tel_info = result.data?.tel_info
     let ep_setting = result.data?.ep_setting
-    log(JSON.stringify(definedField)) 
-  }) 
+    log(`返回参数太复杂，要整理,我们需要的和接下去需要拨号呼叫相关的参数`)
+    let callData = {
+      boomScreenType: `task_${t}_${taskInfo["任务ptcid"]}`,
+      ccgeid,
+      cm_phone_type: 0, //个人电话呼叫传0  家庭传1 单位传2  自定义号码传3
+      enc_number: tel['enc_number'],
+      is_ignore_verify:1,
+      numberId: tel['id'],
+      patchId: batch_id,
+      ptc_id: taskInfo["任务ptcid"],
+      seid,
+      taskId: t,
+      type: 3,
+      uid,
+    }
+    log(`发起弹屏呼叫${JSON.stringify(callData)}`)
+    call(callData)
+    log(`--------- 同时获取任务${t} 呼叫历史`)
+    result = await request({
+      url: `wechat/preview_task/customersForSeat/${seid}/${ccgeid}/${t}`,
+      method:'get'
+    }) 
+    if (result.code == 200) {
+      let history = result.data?.data?.map(i=>({
+        "客户姓名":i.cm_name,
+        "客户号码":i.auto_call_tel,
+        "呼叫状态":i.status,
+        "呼叫次数":i.call_times,
+        "接通次数":i.answer_times,
+        "话后处理结果":i.parent_cm_result_name + i.cm_result_name,
+        "话后处理说明":i.cm_description
+      }))
+      log(history)
+    }
+  })
+}
+
+async function call(callData) {
+  result = await request({
+    url: `wechat/BSClient/callOut`,
+    body:callData
+  })
+  log(`实际呼叫用户,呼叫结果:${JSON.stringify(result)}`)
+  if (result.code == 200) {
+    log(`呼叫中间状态，CR通过 ws 消息发给我们`)
+  }
 }
 
 getToken(7820)
