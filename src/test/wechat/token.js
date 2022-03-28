@@ -141,7 +141,7 @@ async function seatLogin(number) {
   //测试不调用 seatLogin 有什么问题
   // uid = "1000988323"
   // let user_id = "134_243_1000988323"
-
+  /* readline 模拟小程序判断 */
   readline.question(`First time to use wechat with 13910134045? `, async (bind='n') => {
     // readline.close() 都用完才能close
     //不然 seatCheckin 会回复 {"code":140000022,"info":"回拨话机号码未绑定"}
@@ -204,7 +204,7 @@ function setWS(user_id) {
   },120000)
 }
 
-async function seatCheckin(number,user_id) {
+async function seatCheckin(number) {
   log(`seatchin 之前要先知道所在技能组:`)
   let result = await request({
     url: 'wechat/seat/seatInfo',
@@ -310,11 +310,10 @@ async function lockOneCustomer() {
       log('输入taskid不正确')
       return
     }
-    log(`锁定这个弹屏任务的客户`)
     result = await request({
       url: `wechat/preview_task/lockCustomer/${seid}/${ccgeid}/${t}/${uid}`,
     }) 
-    log(JSON.stringify(result))
+    log(`锁定这个弹屏任务的客户:${JSON.stringify(result)}`)
     if (result.code != 200) {
       log(`锁定这个弹屏任务的客户失败`)
       return
@@ -340,7 +339,7 @@ async function lockOneCustomer() {
       body,
       method:'get'
     })
-    // log(JSON.stringify(result)) 
+    log(`获取弹屏信息结果: ${result.code}`) 
     let customer = result.data?.customer
     let batch_id = result.data.batch_id
     let customer_tels = result.data?.customer?.customer_tels
