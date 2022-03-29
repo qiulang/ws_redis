@@ -14,15 +14,17 @@ const readline = require('readline').createInterface({
 
 
 const server = 'https://docker1.emicloud.com/'
-let token = 'unknown'
-
 const userid = '1000988323' //7820
-let uid = "unknown"
-let seid = 'unknown'
-let ccgeid = 'unknown'
 const switchNumber = '02566687671'
 const password = 'welcome123'
 const is_ccgeid = 1
+
+let token = 'unknown'
+let uid = "unknown"
+let seid = 'unknown'
+let ccgeid = 'unknown'
+let mobile = 'unknown'
+let groupid = 'unknown'
 let socket
 let tasks
 
@@ -92,7 +94,7 @@ async function getToken(number) {
 
   let signature = sha256(str).toString().toUpperCase()
 
-  log(`signature :${signature} is about to login`)
+  log(`signature :${signature} is about to get token`)
 
   const headers = {
     'auth-type': 'signature',
@@ -103,7 +105,7 @@ async function getToken(number) {
     domain,
     source,
   }
-  log(`user :${number} is about to login`)
+  log(`user :${number} is about to start`)
   let result = await request({
     url: 'wechat/user/wechatToken',
     body: { login_type: loginType },
@@ -119,11 +121,37 @@ async function getToken(number) {
   log(`Got token:${token},可以建立ws连接了`)
   let user_id = `${seid}_${ccgeid}_${uid}`
   setWS(user_id)
-  seatLogin(number)
+  getSeatInfo(number)
 }
 
+async function getSeatInfo(number) {
+  log(`获取坐席相关信息，比如工号和分机号，还有是否已经绑定手机，然后再seatLogin`)
+  let result = await request({
+    url: 'wechat/seat/seatInfo',
+    method:'get'
+  })
+  groupid = result.data?.call_group_id
+  mobile = result.data?.device_number
+  let info = {
+    "姓名":result.data?.displayname,
+    "分机号":result.data?.number,
+    "当前状态":result.data?.state,
+    "所在组id":groupid,
+    "所在组名":result.data?.call_group_name,
+    "已绑定号码":result.data?.device_number,
+    "工号":result.data?.work_number,
+    "分机号":result.data?.number
+  }
+  log(JSON.stringify(info))
+  if (number != result.data?.work_number) {
+    log(`wechat/seat/seatInfo 获取的工号有误，只能退出 ${number} vs ${result.data?.work_number}`)
+    return
+  }
+  await seatLogin(number)
+}
 
 async function seatLogin(number) {
+  log(`使用工号登录 ${number}`)
   const result = await request({
     url: 'wechat/BSClient/seatLogin',
     body: {
@@ -142,7 +170,7 @@ async function seatLogin(number) {
   // uid = "1000988323"
   // let user_id = "134_243_1000988323"
   /* readline 模拟小程序判断 */
-  readline.question(`First time to use wechat with 13910134045? `, async (bind='n') => {
+  readline.question(`First time to use wechat with ${mobile}? `, async (bind='n') => {
     // readline.close() 都用完才能close
     //不然 seatCheckin 会回复 {"code":140000022,"info":"回拨话机号码未绑定"}
     if (bind =='y') {
@@ -157,7 +185,7 @@ async function bindPhone(number) {
   let result = await request({
     url: 'wechat/seat/sendSms',
     body: {
-      mobile:13910134045
+      mobile
     },
   })
   log(`send sms result:${JSON.stringify(result)}`)
@@ -165,7 +193,7 @@ async function bindPhone(number) {
     result = await request({
       url: 'wechat/seat/bindPhone',
       body: {
-        mobile:13910134045,
+        mobile,
         code
       },
     })
@@ -218,7 +246,7 @@ async function seatCheckin(number) {
     "当前状态":result.data?.state,
     "所在组id":groups,
     "所在组名":gname
-  } 
+  }
   log(JSON.stringify(info))
   data = {
     call_group_id: groups[0],
@@ -326,7 +354,7 @@ async function lockOneCustomer() {
       "自动分配的客户的号码":result.data.auto_call_tel,
       "该号码的加密值":result.data.enc_number,
       "任务所在组 service_gid, 有什么用":result.data.service_gid,
-      "任务 batch_id,有什么用":result.data.batch_id
+      "任务 batch_id":result.data.batch_id
     }
     log(taskInfo)
     let body = {
@@ -340,28 +368,34 @@ async function lockOneCustomer() {
       method:'get'
     })
     log(`获取弹屏信息结果: ${result.code}`) 
+    // log(result)
     let customer = result.data?.customer
     let batch_id = result.data.batch_id
-    let customer_tels = result.data?.customer?.customer_tels
-    let tel = customer_tels[0]
+    let customer_tels = result.data?.customer?.customer_tels?.[0] //customer如果是空就变成空数组，不然是object
+    let numberId = customer_tels?.id
     let definedField = result.data?.customer?.definedField
     let cm_result = result.data?.cm_result
     let tel_info = result.data?.tel_info
     let ep_setting = result.data?.ep_setting
     log(`返回参数太复杂，要整理,我们需要的和接下去需要拨号呼叫相关的参数`)
     let callData = {
-      boomScreenType: `task_${t}_${taskInfo["任务ptcid"]}`,
       ccgeid,
       cm_phone_type: 0, //个人电话呼叫传0  家庭传1 单位传2  自定义号码传3
-      enc_number: tel['enc_number'],
       is_ignore_verify:1,
-      numberId: tel['id'],
       patchId: batch_id,
       ptc_id: taskInfo["任务ptcid"],
       seid,
       taskId: t,
-      type: 3,
-      uid,
+      uid,    
+    }
+    if (numberId) {
+      callData['boomScreenType'] = `task_${t}_${taskInfo["任务ptcid"]}`
+      callData['numberId'] = numberId
+      callData.type = 3
+    } else {
+      callData['boomScreenType'] = `task_runing_${taskInfo["任务ptcid"]}`
+      callData['encNumber'] = taskInfo["该号码的加密值"]
+      callData.type = 5
     }
     log(`发起弹屏呼叫${JSON.stringify(callData)}`)
     call(callData)
