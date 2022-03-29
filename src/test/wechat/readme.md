@@ -31,3 +31,9 @@
    7 -- 通话状态 -->22
 ```
 
+```mermaid
+sequenceDiagram
+    autonumber
+    wechat ->> web server: 总机号&工号(分机号)请求token
+```
+
