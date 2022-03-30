@@ -131,8 +131,9 @@ async function getToken(name) {
   ({seid,ccgeid,token} = result.data)
   log(`Got token:${token},可以建立ws连接了`)
   let user_id = `${seid}_${ccgeid}_${uid}`
-  setWS(user_id)
-  seatLogin()
+  // setWS(user_id)
+  // seatLogin()
+  getCallRecord()
 }
 
 async function getSeatInfo() {
@@ -439,6 +440,44 @@ async function call(callData) {
   if (result.code == 200) {
     log(`呼叫中间状态，CR通过 ws 消息发给我们`)
   }
+}
+
+async function getCallRecord() {
+  result = await request({
+    url: `wechat/call_record/getCallRecordForBSSeat`,
+    method:'get',
+    body: {
+      time_period:'2d',
+      seid,
+      ccgeid,
+      uid
+    }
+  })
+  if (result.code !=200) {
+    log(`获取通话记录失败`)
+    return
+  }
+  callRecord = result.data.map(i=>({
+    '通话类型': i.call_type,
+    '总机号码': i.switch_number,
+    '呼叫时间': i.initiate_time,
+    '客户姓名':i.customer_name,
+    '客户号码':i.outline_number,
+    '客户号码加密值':i.encrypted_outline_number,
+    '号码归属地':i.attribution,
+    '通话技能组':i.service_group_name,
+    '通话时长':i.valid_duration,
+    'ivr时长':i.ivr_duration,
+    '排队时长':i.total_enqueue_time,
+    '客户振铃时长':i.customer_ring_duration,
+    '坐席振铃时长':i.seat_ring_duration,
+    '话后处理结果':i.cm_result,
+    '话后处理说明':i.customer_result?.[0]?.['description'],
+    '结束原因':i.stop_reason,
+    '满意度':i.evaluate_value
+  }))
+  log(callRecord)
+  readline.close()
 }
 
 getToken('ql')
