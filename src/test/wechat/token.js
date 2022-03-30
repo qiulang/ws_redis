@@ -151,6 +151,7 @@ async function getSeatInfo() {
     "工号":result.data?.work_number,
     "分机号":result.data?.number
   }
+  log(result)
   if (number != result.data?.work_number) {
     log(`wechat/seat/seatInfo 获取的工号有误， ${number} vs ${result.data?.work_number}`)
   }
@@ -252,7 +253,7 @@ function setWS(user_id) {
 
 async function seatCheckin() {
   data = {
-    call_group_id: groupid,
+    // call_group_id: groupid,
     // call_group_name: 'bs测试技能组',
     callintype: 4,
     device_number: mobile,
@@ -265,7 +266,7 @@ async function seatCheckin() {
     url: 'wechat/seat/checkIn',
     body: data,
   })
-  log(`wechat/seat/checkIn 技能组 ${groupid}: ${JSON.stringify(result)}`)
+  log(`wechat/seat/checkIn 所有技能组: ${JSON.stringify(result)}`)
   if (result == false) {
     log('Failed to seatCheckin')
     return
@@ -358,7 +359,7 @@ async function lockOneCustomer() {
       "客户姓名":result.data.cm_name,
       "自动分配的客户的号码":result.data.auto_call_tel,
       "该号码的加密值":result.data.enc_number,
-      "任务所在组 service_gid, 有什么用":result.data.service_gid,
+      "任务所在组 service_gid, 不再呼叫时候用":result.data.service_gid,
       "任务 batch_id":result.data.batch_id
     }
     log(taskInfo)

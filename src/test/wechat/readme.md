@@ -1,7 +1,9 @@
-### 模拟微信小程序脚本说明
+## 模拟微信小程序脚本说明
+
+### 流程图
 
 ```  mermaid
- flowchart TD
+ graph TD
    1[通过总机号和分机号获取微信登录token] -- /wechat/user/wechatToken -->1.1
    1.1[获取token还有seid,ccgied,uid] -- /wechat/BSClient/seatLogin -->2
    1.1 -- socket.io --> 21[通过token和uid建立websocket连接]
@@ -10,16 +12,16 @@
    b -- wechat/seat/sendSms --> b1[接收验证码,验证码有效期内可重复使用验证码]
    b1 -- wechat/seat/bindPhone --> c[验证码+手机号绑定手机到小程序]
    a -->|否|d[目前绑定手机号没有有效期]
-   c -->3[checkIn前还需要获取坐席所在技能组]
+   c -->3[checkIn坐席所有技能组]
    d -->3
-   3 -- wechat/seat/seatInfo --> 3.1[获取技能组信息]
-   3.1 -- wechat/seat/checkIn --> 4[checkIn成功显示在线状态,注以下两个调用不是必须在checkIn才可以]
+   3 -- wechat/seat/checkIn --> 4[checkIn成功显示在线状态,注以几个调用不是必须在checkIn才可以]
    21 -- checkIn成功后 --> 22[接收CR发来的坐席状态推送]
    4-->|checkIn成功后|22
    4 -- wechat/preview_task/seat/seid/ccgeid/uid --> 4.1
    4.1[获取坐席任务列表,必须在checkIn才可以调用,不然返回空列表] -->5[返回任务列表数据处理]
    4 -- wechat/seat/state --> 4.2[获取坐席可选状态,get请求有token就可以]
    4 -- wechat/customer-result/scheme --> 4.3[获取话后处理可选项,get请求有token就可以]
+   4 -- wechat/seat/state --> 4.4[获取坐席信息,用处?]
    5 -- wechat/preview_task/lockCustomer -->5.1[锁定任务未分配客户数>0的任务]
    5.1 --> 5.2[处理锁定任务返回数据,获取ptcid,cid,enc_number]
    5.1 -- 锁定成功后 --> 22
@@ -31,9 +33,60 @@
    7 -- 通话状态 -->22
 ```
 
+
+### 时序交互图
+
+
 ```mermaid
 sequenceDiagram
-    autonumber
-    wechat ->> web server: 总机号&工号(分机号)请求token
+    participant w as wechat
+    participant s as web server
+    participant ws as websocket server
+    w->>w:输入总机号+工号(或分机号)请求token
+    w->>s: /wechat/user/wechatToken
+    s->>w: 返回 seid,ccgeid,uid,token
+    w->>ws: 建立websocket连接，使用token & uid发 login 消息
+    ws->>w: 检查 token & uid 对应关系，返回login成功消息
+    w->>w:使用总机号+工号(或分机号)登录
+    w->>s: wechat/BSClient/seatLogin
+    s->>w:返回坐席所在技能组(微信端未必有用),服务器记录ws通知通道
+    w->>w:是否是首次使用
+    opt 首次使用
+    	w->>s: wechat/seat/sendSms 请求手机验证码
+      w->>s: wechat/seat/bindPhone 绑定手机
+      w->>w: 绑定成功后可以签入
+    end
+    w->>s:wechat/seat/checkIn
+    s->>w:签入所有技能组，实际签入结果需要等CR通知
+    ws->>w:CR通知实际签入结果
+    opt 迁入成功后可发以下请求
+     w->>w:也可以在seatLogin成功就发,没有绑定手机号没关系
+     w->>s: wechat/seat/state 坐席可选状态
+     w->>s: wechat/customer-result/scheme 话后处理选项
+     w->>s: wechat/seat/seatInfo 坐席信息，不确认有什么作用？
+    end
+    w->>w:获取坐席外呼任务
+    w->>s:wechat/preview_task/seat/${seid}/${ccgeid}/${uid}
+    s->>w:返回外呼任务数据，客户端需要处理
+    w->>w:选取任务未分配客户数>0的任务，进行锁定
+    w->>s:wechat/preview_task/lockCustomer/${seid}/${ccgeid}/${task_id}/${uid}
+    s->>w:锁定信息结果返回，客户端需要处理，ptcid,cid,enc_number
+    w->>w:使用ptcid,cid,enc_number 获取弹屏任务相关信息
+    w->>s:wechat/preview_task/bombScreenTask/${seid}/${ccgeid}/${task_id}/${ptcid}
+    s->>w:返回弹屏数据，数据类型复杂，BS页面用这些数据展示弹屏页面
+    w->>w:对弹屏任务处理
+    alt 发起呼叫
+      w->>w:根据弹屏返回数据中customer是否有值来设置numberId
+      w->>w:根据numberId设置发起呼叫参数
+      w->>s:wechat/BSClient/callOut
+      ws->>w:呼叫状态更新
+    else 稍后呼叫
+      w->>w:设置参数 {call_later:ptcid}
+      w->>s:wechat/preview_task/lockCustomer/${seid}/${ccgeid}/${task_id}/${uid}
+    else 不再呼叫
+      w->>w:设置参数 cid, gid 为 lockCustomer返回的service_gid
+      w->>s:wechat/preview_task/abortCustomer/${seid}/${taskid}/${ptc_id}
+    end
+    
 ```
 
