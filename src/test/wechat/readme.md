@@ -1,5 +1,7 @@
 ## 模拟微信小程序脚本说明
 
+可实际执行脚本 `DEBUG="wechat:*" node token.js` 验证以下过程
+
 ### 流程图
 
 ```  mermaid
@@ -18,15 +20,16 @@
    21 -- checkIn成功后 --> 22[接收CR发来的坐席状态推送]
    4-->|checkIn成功后|22
    4 -- wechat/preview_task/seat/seid/ccgeid/uid --> 4.1
-   4.1[获取坐席任务列表,必须在checkIn才可以调用,不然返回空列表] -->5[返回任务列表数据处理]
+   4.1[获取坐席任务列表,不checkin其实也能获取,但没法接着锁定某个任务] -->5[返回任务列表数据处理]
    4 -- wechat/seat/state --> 4.2[获取坐席可选状态,get请求有token就可以]
    4 -- wechat/customer-result/scheme --> 4.3[获取话后处理可选项,get请求有token就可以]
-   4 -- wechat/seat/state --> 4.4[获取坐席信息,用处?]
+   4 -- wechat/seat/seatInfo --> 4.4[获取坐席信息,用处?]
    5 -- wechat/preview_task/lockCustomer -->5.1[锁定任务未分配客户数>0的任务]
    5.1 --> 5.2[处理锁定任务返回数据,获取ptcid,cid,enc_number]
    5.1 -- 锁定成功后 --> 22
    5.2 -- wechat/preview_task/bombScreenTask/seid/ccgeid/taskid/ptcid -->6
    6[获取弹屏任务,注cid和enc_number都是必填参数,不然返回数据的cusomter字段为空] --> 6.1
+   6 -- wechat/preview_task/customersForSeat/seid/ccgeid/taskid -->6.2[该任务呼叫历史]
    6.1[弹屏任务返回数据整理,获取batch_id,numberID,即 customer.customer_tels.id] 
    6.1 -- wechat/BSClient/callout -->7
    7[弹屏呼叫] --> 8[话后处理]
@@ -75,6 +78,10 @@ sequenceDiagram
     w->>s:wechat/preview_task/bombScreenTask/${seid}/${ccgeid}/${task_id}/${ptcid}
     s->>w:返回弹屏数据，数据类型复杂，BS页面用这些数据展示弹屏页面
     w->>w:对弹屏任务处理
+    opt 获取呼叫历史
+     w->>s: wechat/preview_task/customersForSeat/${seid}/${ccgeid}/${task_id}
+     w->>w:任务呼叫历史需要展示？
+    end
     alt 发起呼叫
       w->>w:根据弹屏返回数据中customer是否有值来设置numberId
       w->>w:根据numberId设置发起呼叫参数
@@ -87,6 +94,5 @@ sequenceDiagram
       w->>w:设置参数 cid, gid 为 lockCustomer返回的service_gid
       w->>s:wechat/preview_task/abortCustomer/${seid}/${taskid}/${ptc_id}
     end
-    
 ```
 
