@@ -8,8 +8,8 @@ on:
     branches: [ v5t ]
   pull_request:
     branches: [ v5t ]
-env:
-  TIME_TAG: $(date +'%Y-%m-%d-%H-%M-%S')
+# env:
+  # TIME_TAG: $(date +'%Y-%m-%d-%H-%M-%S')
 
 jobs:
   build:
@@ -57,13 +57,13 @@ jobs:
       run: npm run test
 
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag ws-pubsub:${{ env.TIME_TAG }}
+      run: docker build . --file Dockerfile --tag ws-pubsub:latest
 
     - name: "Stop redis server so I can start my own inside docker"
       run: redis-cli shutdown
 
     - name: "Start my docker"
-      run: docker run -p docker run -p 6379:6379 -p 3000:3000 ws-pubsub:${{ env.TIME_TAG }}
+      run: docker run -d -p 6379:6379 -p 3000:3000 ws-pubsub:latest
 
     - name: "Test against my docker container"
       run: npm run test    
