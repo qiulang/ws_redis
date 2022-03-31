@@ -131,9 +131,8 @@ async function getToken(name) {
   ({seid,ccgeid,token} = result.data)
   log(`Got token:${token},可以建立ws连接了`)
   let user_id = `${seid}_${ccgeid}_${uid}`
-  // setWS(user_id)
-  // seatLogin()
-  getCallRecord()
+  setWS(user_id)
+  seatLogin()
 }
 
 async function getSeatInfo() {
@@ -272,9 +271,21 @@ async function seatCheckin() {
     log('Failed to seatCheckin')
     return
   }
-  log(`${number} seatCheckin succeed!!`)
+  log(`${number} seatCheckin succeed!! CR会有登录消息通过ws通知`)
   await getSeatInfo()
   await seatInformation()
+}
+
+async function makeCall() {
+  readline.question('Do you want to make a call from your assigned tasks(t) or from your  call history(h), t/h?', async (where) =>{
+    if (where == 'h') {
+      log('OK make a call from call history')
+      await getCallRecord()
+    } else {
+      log('OK make a call from assigned tasks')
+      await getTasks()
+    }
+  })
 }
 
 async function seatInformation() {
@@ -309,8 +320,11 @@ async function seatInformation() {
     })
     log(`一共 :${schemes.length} 话后处理选项`)
   }
-  //checkin了 才能看到，不然是空
-  result = await request({
+  await makeCall()
+}
+
+async function getTasks() {
+  let result = await request({
     url: `wechat/preview_task/seat/${seid}/${ccgeid}/${uid}`,
     method:'get'
   })

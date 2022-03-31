@@ -58,3 +58,12 @@ jobs:
 
     - name: Build the Docker image
       run: docker build . --file Dockerfile --tag ws-pubsub:${{ env.TIME_TAG }}
+
+    - name: "Stop redis server so I can start my own inside docker"
+      run: redis-cli shutdown
+
+    - name: "Start my docker"
+      run: docker run -p docker run -p 6379:6379 -p 3000:3000 ws-pubsub:${{ env.TIME_TAG }}
+
+    - name: "Test against my docker container"
+      run: npm run test    
