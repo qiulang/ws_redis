@@ -374,7 +374,7 @@ async function lockOneCustomer() {
       "客户姓名":result.data.cm_name,
       "自动分配的客户的号码":result.data.auto_call_tel,
       "该号码的加密值":result.data.enc_number,
-      "任务所在组 service_gid, 不再呼叫时候用":result.data.service_gid,
+      "任务所在组":result.data.service_gid, //不再呼叫时候用
       "任务 batch_id":result.data.batch_id
     }
     log(taskInfo)
@@ -407,15 +407,16 @@ async function lockOneCustomer() {
       ptc_id: taskInfo["任务ptcid"],
       seid,
       taskId: t,
-      uid,    
+      uid,
+      gid:taskInfo["任务所在组"]
     }
     if (numberId) {
       callData['boomScreenType'] = `task_${t}_${taskInfo["任务ptcid"]}`
       callData['numberId'] = numberId
       callData.type = 3
     } else {
-      // callData['boomScreenType'] = `task_runing_${taskInfo["任务ptcid"]}`
-      callData['boomScreenType'] = `task_${t}_${taskInfo["任务ptcid"]}`
+      callData['boomScreenType'] = `task_runing_${taskInfo["任务ptcid"]}`
+      // callData['boomScreenType'] = `task_${t}_${taskInfo["任务ptcid"]}`
       callData['encNumber'] = taskInfo["该号码的加密值"]
       callData.type = 5
     }
@@ -446,14 +447,32 @@ async function lockOneCustomer() {
 }
 
 async function call(callData) {
-  result = await request({
-    url: `wechat/BSClient/callOut`,
-    body:callData
+  readline.question(`确认呼叫 y 还是放弃呼叫 n, y/n?`, async (answer) => {
+    if (answer == 'y') {
+      result = await request({
+        url: `wechat/BSClient/callOut`,
+        body:callData
+      })
+      log(`实际呼叫用户,呼叫结果:${JSON.stringify(result)}`)
+      if (result.code == 200) {
+        log(`呼叫中间状态，CR通过 ws 消息发给我们`)
+      }
+    } else {
+      url =  `wechat/preview_task/abortCustomer/${seid}/${callData.taskId}/${callData.ptc_id}`
+      body = {
+        gid:callData.gid,
+        remark:"ql test"
+      }
+      log(`放弃呼叫 ${url}`)
+      log(body)
+      result = await request({
+        url,
+        body
+      })
+      log(result)
+    }
   })
-  log(`实际呼叫用户,呼叫结果:${JSON.stringify(result)}`)
-  if (result.code == 200) {
-    log(`呼叫中间状态，CR通过 ws 消息发给我们`)
-  }
+
 }
 
 async function getCallRecord() {
