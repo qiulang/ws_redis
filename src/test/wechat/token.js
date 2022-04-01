@@ -469,7 +469,11 @@ async function call(callData) {
         url,
         body
       })
-      log(result)
+      if (result.code == 200) {
+        log(`放弃该客户，用户可决定是否接着锁定任务中的下一个客户`)
+      } else if (esult.code == 150000025) {
+        log(`'任务客户已被回收，BS端处理是自动锁定任务中的下一个客户`)
+      }
     }
   })
 

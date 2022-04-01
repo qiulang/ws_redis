@@ -2,7 +2,9 @@
 
 可实际执行脚本 `DEBUG="wechat:*" node token.js` 验证以下过程
 
-### 流程图
+### 主流程图
+
+#### 呼叫任务流程
 
 ```  mermaid
  graph TD
@@ -36,8 +38,9 @@
    7 -- 通话状态 -->22
 ```
 
+### 主时序交互图
 
-### 时序交互图
+#### 呼叫任务流程
 
 
 ```mermaid
@@ -72,16 +75,19 @@ sequenceDiagram
     w->>s:wechat/preview_task/seat/${seid}/${ccgeid}/${uid}
     s->>w:返回外呼任务数据，客户端需要处理
     w->>w:选取任务未分配客户数>0的任务，进行锁定
-    w->>s:wechat/preview_task/lockCustomer/${seid}/${ccgeid}/${task_id}/${uid}
-    s->>w:锁定信息结果返回，客户端需要处理，ptcid,cid,enc_number
-    w->>w:使用ptcid,cid,enc_number 获取弹屏任务相关信息
-    w->>s:wechat/preview_task/bombScreenTask/${seid}/${ccgeid}/${task_id}/${ptcid}
-    s->>w:返回弹屏数据，数据类型复杂，BS页面用这些数据展示弹屏页面
-    w->>w:对弹屏任务处理
     opt 获取呼叫历史
      w->>s: wechat/preview_task/customersForSeat/${seid}/${ccgeid}/${task_id}
      w->>w:任务呼叫历史需要展示？
     end
+    loop 任务中有多个客户,逐一处理
+    w->>s:wechat/preview_task/lockCustomer/${seid}/${ccgeid}/${task_id}/${uid}
+    s->>w:服务器端顺序锁定第一个未锁定客户，返回锁定结果，客户端需要处理，ptcid,cid,enc_number
+    w->>w:使用ptcid,cid,enc_number 获取弹屏任务相关信息
+    w->>s:wechat/preview_task/bombScreenTask/${seid}/${ccgeid}/${task_id}/${ptcid}
+    s->>w:返回弹屏数据，数据类型复杂，BS页面用这些数据展示弹屏页面
+    w->>w:lockCustomer 返回锁定客户简单信息，bombScreenTask 返回客户详细信息，两个接口要一起调用。
+    w->>w:锁定客户后，决定是否发起呼叫
+    w->>s:BS端有发起
     alt 发起呼叫
       w->>w:根据弹屏返回数据中customer是否有值来设置numberId
       w->>w:根据numberId设置发起呼叫参数
@@ -90,9 +96,22 @@ sequenceDiagram
     else 稍后呼叫
       w->>w:设置参数 {call_later:ptcid}
       w->>s:wechat/preview_task/lockCustomer/${seid}/${ccgeid}/${task_id}/${uid}
+      w->>w:可以回到锁定客户状态，接着锁定本任务中下一个客户
     else 不再呼叫
       w->>w:设置参数 cid, gid 为 lockCustomer返回的service_gid
       w->>s:wechat/preview_task/abortCustomer/${seid}/${taskid}/${ptc_id}
+      alt 放弃成功
+      s->>w:code:200
+      w->>w: BS端，由坐席决定是否锁定下一个客户，即调用 lockCustomer
+      else 客户已被别人回收
+      s->>w:{ code: 150000025, info: '任务客户已被回收' }
+      w->>w: BS端会自动锁定下一个客户, 即调用 lockCustomer
+      end
+    end
     end
 ```
+
+
+
+
 
