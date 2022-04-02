@@ -279,8 +279,24 @@ async function seatCheckin() {
 async function makeCall() {
   readline.question('Do you want to make a call from your assigned tasks(t) or from your  call history(h), t/h?', async (where) =>{
     if (where == 'h') {
-      log('OK make a call from call history')
-      await getCallRecord()
+      readline.question('直接拨号就输入被叫号码，如果从通话记录选号请输入 y: ',async(number) => {
+        if (number == 'y') {
+          log('OK make a call from call history')
+          await getCallRecord()
+        } else if (!isNaN(number)) {
+          log(`Call this number directly ${number}`)
+          let callData = {
+            ccgeid,
+            cm_phone_type: 0, //个人电话呼叫传0  家庭传1 单位传2  自定义号码传3
+            seid,
+            uid,
+            type:1,
+            callee:number
+          }
+          log(`使用以下参数拨打 ${JSON.stringify(callData)}`)
+          call(callData)
+        }
+      })
     } else {
       log('OK make a call from assigned tasks')
       await getTasks()
@@ -447,7 +463,7 @@ async function lockOneCustomer() {
 }
 
 async function call(callData) {
-  readline.question(`确认呼叫 y 还是放弃呼叫 n, y/n?`, async (answer) => {
+  readline.question(`确认呼叫 y 还是放弃客户 n，还是放弃呼叫 nn, y/n/nn?`, async (answer) => {
     if (answer == 'y') {
       result = await request({
         url: `wechat/BSClient/callOut`,
@@ -457,6 +473,8 @@ async function call(callData) {
       if (result.code == 200) {
         log(`呼叫中间状态，CR通过 ws 消息发给我们`)
       }
+    } else if (answer == 'nn') {
+      return
     } else {
       url =  `wechat/preview_task/abortCustomer/${seid}/${callData.taskId}/${callData.ptc_id}`
       body = {
@@ -471,7 +489,7 @@ async function call(callData) {
       })
       if (result.code == 200) {
         log(`放弃该客户，用户可决定是否接着锁定任务中的下一个客户`)
-      } else if (esult.code == 150000025) {
+      } else if (result.code == 150000025) {
         log(`'任务客户已被回收，BS端处理是自动锁定任务中的下一个客户`)
       }
     }
@@ -494,6 +512,7 @@ async function getCallRecord() {
     log(`获取通话记录失败`)
     return
   }
+  // log(result)
   callRecord = result.data.map(i=>({
     '通话类型': i.call_type,
     '总机号码': i.switch_number,
@@ -511,10 +530,34 @@ async function getCallRecord() {
     '话后处理结果':i.cm_result,
     '话后处理说明':i.customer_result?.[0]?.['description'],
     '结束原因':i.stop_reason,
-    '满意度':i.evaluate_value
+    '满意度':i.evaluate_value,
+    '通话id':i.cc_number,
+    "记录id":i.id
   }))
   log(callRecord)
-  readline.close()
+  readline.question('输入需要重呼的id ',(callid) => {
+    let item = callRecord.find(i=>i["记录id"] == callid)
+    if (!item) {
+      log('输入callid不正确')
+      return
+    }
+    let callData = {
+      ccgeid,
+      cm_phone_type: 0, //个人电话呼叫传0  家庭传1 单位传2  自定义号码传3
+      seid,
+      uid,
+      type:2,
+      cc_number:item['通话id'],
+      call_type: 1,
+      encNumber:item['客户号码加密值'],
+      initiator_pcall_id: "0",
+      initiator_task_id: 0,
+      is_ignore_verify: 1,
+      ptc_id: 0
+    }
+    log(`使用以下参数拨打 ${JSON.stringify(callData)}`)
+    call(callData)
+  })
 }
 
 getToken('ql')

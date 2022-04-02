@@ -86,6 +86,11 @@ sequenceDiagram
     w->>s:wechat/preview_task/bombScreenTask/${seid}/${ccgeid}/${task_id}/${ptcid}
     s->>w:返回弹屏数据，数据类型复杂，BS页面用这些数据展示弹屏页面
     w->>w:lockCustomer 返回锁定客户简单信息，bombScreenTask 返回客户详细信息，两个接口要一起调用。
+    opt 如何获取话后处理结果数据 ？
+    w->>w:1. bombScreenTask返回的cm_result目前BS没用，而是cm_result有值时候是object,没值是空数组也很不严谨
+    w->>s:2. wechat/BSClient/getCustomerHistoryCall 获取对该客户的呼叫历史
+    s->>w:取返回结果中 cm_customer_result 数组项的字段，没用cm_result和cm_result_desc值
+    end
     w->>w:锁定客户后，决定是否发起呼叫
     w->>s:BS端有发起
     alt 发起呼叫
@@ -113,5 +118,39 @@ sequenceDiagram
 
 
 
+#### 通过通话记录再次拨打
 
+问题：
+
+1. 如果是外呼任务，当 callData.type = 5 , `boomScreenType` 传以下两个值好像都可以，为什么？
+
+   ```javascript
+   callData['boomScreenType'] = `task_runing_${ptcid"]}`
+   callData['boomScreenType'] = `task_${taskid}_${ptcid"}`
+   ```
+
+   
+
+2. 如果不是外呼任务，该传什么值
+
+   ```
+   传以下参数拨打成功,但是 type,call_type,cm_phone_type 到底什么区别
+      {
+         ccgeid,
+         cm_phone_type: 0, //个人电话呼叫传0  家庭传1 单位传2  自定义号码传3
+         seid,
+         uid,
+         type:2,
+         cc_number:item['通话id'],
+         call_type: 1, 
+         encNumber:item['客户号码加密值'],
+         initiator_pcall_id: "0",
+         initiator_task_id: 0,
+         is_ignore_verify: 1,
+         ptc_id: 0
+       }
+    BS客户端还传了 boomScreenType， cid 目前没传也能呼叫成功，这两个字段用在什么地方？
+   ```
+
+   
 
