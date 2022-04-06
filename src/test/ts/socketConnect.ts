@@ -44,7 +44,9 @@ function start(c:string,r: typeof Redis, p: typeof Redis) {
 }
 
 function setupWS(c:string) { //b/c client is updated in logoff event
-  let socket = io(server, { transports: ['websocket']})
+  let socket = io(server, { transports: ['websocket'],
+    auth:{token,uid:user_id,client}
+  })
   sockets[client] = socket
   socket.on('connect', function () {
     wsBit = true
@@ -74,7 +76,12 @@ function setupWS(c:string) { //b/c client is updated in logoff event
   })
 
   socket.on('connect_error', (err:Error) => {
-    log(`${socket.id}:connect_error due to ${err.message}`)
+    log(`${socket.id}:connect_error due to ${err}`)
+    if (err.message = "Invalid token") {
+      log(`this is invalid token on purpose`)
+      wsBit = true
+      bye(0)
+    }
   })
 
   socket.on('logoff', (msg:string) => {

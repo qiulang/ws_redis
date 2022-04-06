@@ -32,7 +32,7 @@
     "pm2.5": "pm2-runtime ecosystem.config.js",
     "pretest": "src/shell/redis_check.sh",
     "test": "DEBUG=client:* ts-node src/test/ts/socketTest.ts",
-    "testwc":"DEBUG=wechat:* node src/test/wechat/token.js"
+    "testwc": "DEBUG=wechat:* node src/test/wechat/token.js"
   },
   "author": "qiulang",
   "license": "ISC",
@@ -48,7 +48,7 @@
     "pm2": "^5.1.1",
     "portfinder": "^1.0.28",
     "socket.io": "^4.1.2",
-    "socket.io-client": "^2.4.0",
+    "socket.io-client": "^4.4.1",
     "socket.io-redis": "^6.1.1",
     "uuid": "^3.3.3"
   },

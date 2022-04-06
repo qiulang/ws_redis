@@ -65,9 +65,30 @@ var dup:SocketRecord = {}
 //从收集到的日志看这种情况是存在的，而且目前看不会有内存泄漏情况
 var user_socket:UserSocket = {}
 
+//https://socket.io/docs/v4/middlewares/#sending-credentials
+io.use(async (socket, next) => {
+  if (Object.keys(socket.handshake.auth).length === 0) {
+    debug('auth is added in socket.io-client 3+')
+    next();
+    return
+  }
+  const {token,uid,client} = socket.handshake.auth
+  debug(`what is your auth? [${token}:${uid}:${client}:${socket.id}]`)
+  let tcheck = await tokenCheck(uid,token,client)
+  if (!tcheck) {
+    const err = new Error("Invalid token");
+    next(err);
+  } else {
+    next();
+  }
+})
+
 //https://socket.io/docs/v4/server-application-structure/
 //connect event is fired by the Socket instance upon connection and reconnection.
 io.on('connection', async function (socket) {
+  // socket.use(([event, ...args], next) => {
+  //   next();
+  // });
   //客户端连接成功后会主动发login消息，redis记录 user 到 socketio.id的对应
   socket.on('login', async function ({ user_id, seid, ccgeid, token, uniqueId ='none', client = 'client.bs' }:loginData, fn:loginCB) {
     info(
@@ -224,8 +245,13 @@ sub.on('message', async function (channel:string, message:string) {
 //token检查做身份认证
 async function tokenCheck(user_id:string, token:string, client:string):Promise<boolean> {
   if (process.env.TOKEN_CHECK === '0') {
-    debug(`Local redis, skip token check. [${user_id}:${token}]`)
-    return true
+    if (client == 'client.bs' || client == 'client.wechat') {
+      debug(`Local redis, skip token check. [${user_id}:${token}:${client}]`)
+      return true
+    } else {
+      debug(`This should be our test case, so fail token check on purpose:${client}`)
+      return false
+    }
   }
   let tmp = user_id.split('_')
   if (tmp.length != 3) {
