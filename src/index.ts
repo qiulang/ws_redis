@@ -57,6 +57,11 @@ interface UserSocket { //key value pair
 interface SocketRecord {
   [key: string]: 'exist' | undefined
 }
+interface Auth {
+  token:string,
+  uid:string,
+  client:string
+}
 
 //不在redis，一旦socket.id的信息记录到redis就清楚在dup的记录
 //不是100%确认一定必要，而且要避免内存泄漏情况
@@ -67,19 +72,29 @@ var user_socket:UserSocket = {}
 
 //https://socket.io/docs/v4/middlewares/#sending-credentials
 io.use(async (socket, next) => {
-  if (Object.keys(socket.handshake.auth).length === 0) {
-    debug('auth is added in socket.io-client 3+')
-    next();
-    return
+  async function authCheck({token,uid,client}:Auth) {
+    let tcheck = await tokenCheck(uid,token,client)
+    if (!tcheck) {
+        next(new Error("Invalid token"));
+    } else {
+      next();
+    }
   }
-  const {token,uid,client} = socket.handshake.auth
-  debug(`what is your auth? [${token}:${uid}:${client}:${socket.id}]`)
-  let tcheck = await tokenCheck(uid,token,client)
-  if (!tcheck) {
-    const err = new Error("Invalid token");
-    next(err);
+  if (Object.keys(socket.handshake.auth).length === 0) {
+    const token = socket.handshake.query['token'] as string
+    if (!token) {
+      // debug('auth is added in socket.io-client 3+, but the client does not use it')
+      next();
+    } else {
+      // debug(`We add query property to socket.io-client 2.x`)
+      const uid = socket.handshake.query['uid'] as string
+      const client = socket.handshake.query['client'] as string
+      authCheck({token,uid,client})
+    }
   } else {
-    next();
+    // debug(`The client uses 4.x auth option`)
+    const {token,uid,client} = socket.handshake.auth
+    authCheck({token,uid,client})
   }
 })
 

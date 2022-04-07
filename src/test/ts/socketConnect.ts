@@ -1,5 +1,6 @@
+const { Manager,Socket } = require('socket.io-client')
 const io = require('socket.io-client')
-// var socket: typeof io !!! wrong, see the 2022.3.2 document
+// var socket: typeof io !!! wrong, io is the default export function that return Socket
 // var socket = io(server, { transports: ['websocket'], autoConnect: false, /*forceNew: true*/ })
 const server = 'http://localhost:3000'
 var log = require('debug')('client:test')
@@ -29,7 +30,7 @@ interface socketRedis {
 
 type wsCB = (arg:string) => void
 
-let sockets:{ [key: string]: typeof io } = {}
+let sockets:{ [key: string]: typeof Socket } = {}
 
 function start(c:string,r: typeof Redis, p: typeof Redis) {
   [client,redis,pub,pubsubBit,wsBit] = [c,r,p,false,false]
@@ -45,8 +46,15 @@ function start(c:string,r: typeof Redis, p: typeof Redis) {
 
 function setupWS(c:string) { //b/c client is updated in logoff event
   let socket = io(server, { transports: ['websocket'],
-    auth:{token,uid:user_id,client}
+    // auth:{token,uid:user_id,client}
+    query:{token,uid:user_id,client}
   })
+  // https://github.com/socketio/socket.io/discussions/4336
+  // let manager = new Manager(server,{ transports: ['websocket'],query:{token,uid:user_id,client} })
+  // let socket = manager.socket("/")
+  // let manager = new Manager(server,{ transports: ['websocket'] })
+  // let socket = manager.socket("/",{query:{token,uid:user_id,client}})
+
   sockets[client] = socket
   socket.on('connect', function () {
     wsBit = true
@@ -77,8 +85,8 @@ function setupWS(c:string) { //b/c client is updated in logoff event
 
   socket.on('connect_error', (err:Error) => {
     log(`${socket.id}:connect_error due to ${err}`)
-    if (err.message = "Invalid token") {
-      log(`this is invalid token on purpose`)
+    if (err.message == "Invalid token") {
+      log(`This is invalid token on purpose for 4.x`)
       wsBit = true
       bye(0)
     }
@@ -87,6 +95,21 @@ function setupWS(c:string) { //b/c client is updated in logoff event
   socket.on('logoff', (msg:string) => {
     log(`${socket.id}:${c}: should be kicked off for: ${msg}`)
     socket.close()
+  })
+
+  // socket.on('disconnect', (reason:string) => {
+  //   if (reason.endsWith("server disconnect")) {
+  //     log(`Assume this is the invalid token case so the server close the connection` )
+  //     wsBit = true
+  //     bye(0)      
+  //   }
+  // })
+  socket.on('error', (err:string) => {
+    if (err == "Invalid token") {
+      log(`This is invalid token on purpose for 2.x`)
+      wsBit = true
+      bye(0)
+    }
   })  
 }
 
