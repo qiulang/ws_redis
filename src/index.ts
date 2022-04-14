@@ -325,13 +325,12 @@ async function dupCheck({ user_id, client, socket_id,uniqueId }:socketData, fn:l
   //新老登录都有浏览器指纹，可以做异地登录的判断
   if (finger != 'none' &&
       uniqueId != 'none' &&
-      finger != uniqueId) {
-    //finger 相同，认为同一浏览器重复登录，就不强制迁出
-    checkout(user_id)
+      finger != uniqueId) { //finger 相同，认为同一浏览器重复登录，就不强制迁出
+    checkout(user_id,old_client)
   }
   //请求来源不同，可以做异地登陆判断
   if (old_client != client) {
-    checkout(user_id)
+    checkout(user_id,old_client)
   }
   //加入延迟删除`websocket:${user_id}` 也会走到这，但是因为旧的连接已经没了我想调用emit也没啥
   //2021.3 还发现有的 ws 服务器docker容器会被 k8s重启，重启我们不删redis记录了
@@ -371,19 +370,25 @@ async function loginResult({ user_id, client, socket_id,uniqueId }:socketData):P
   info(`Login succeed AND SUB subscribe. [${user_id} => ${socket_id}]`)
 }
 
-function checkout(user_id:string):void {
+async function checkout(user_id:string,client?:string):Promise<void> {
   let tmp = user_id.split('_')
   let seid = tmp[0]
   let ccgeid = tmp[1]
   //'{"seid": 134,"ccgeid": 243,"op_code":"check_out","channel_id":"134_243_1000962325"}'
-  let msg = {
+  let msg:any = {
     seid: seid,
     ccgeid: ccgeid,
     op_code: 'check_out',
     channel_id: user_id,
   }
+  if (client === undefined) {
+    client = await redis.hget(`websocket:${user_id}`, 'client')
+  }
+  if (client != undefined) {
+    msg.client = client
+  }
   pub.publish('seat_message_channel', JSON.stringify(msg))
-  info(`Publish check_out to seat_message_channel. [${user_id}]`)  
+  info(`Publish check_out to seat_message_channel. [${JSON.stringify(msg)}]`)  
 }
 
 async function notifyDisconnect(user_id:string):Promise<void> {
