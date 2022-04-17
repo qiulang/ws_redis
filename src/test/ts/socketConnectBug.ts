@@ -1,7 +1,7 @@
-const io = require('socket.io-client')
+const {Socket,io} = require('socket.io-client')
 const server = 'http://localhost:3000'
 const [user_id, token] = ['1_2_1000', 'xxxxx']
-let socket:typeof io
+let socket:typeof Socket
 let client:string,wsBit = false
 let wsTimeout:NodeJS.Timeout
 
