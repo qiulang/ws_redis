@@ -12,7 +12,7 @@
    1.1[获取token还有seid,ccgied,uid] -- /wechat/BSClient/seatLogin -->2
    1.1 -- socket.io --> 21[通过token和uid建立websocket连接]
    2[通过总机号和分机号/工号登录 -- 服务器记录登录日志并打开接收CR消息的开关] -->a
-   a{微信端判断是否首次登录} -->|是|b[需要获取手机验证码]
+   a{根据seatLogin返回的mobile字段是否有值,判断是否首次登录} -->|是|b[需要获取手机验证码]
    b -- wechat/seat/sendSms --> b1[接收验证码,验证码有效期内可重复使用验证码]
    b1 -- wechat/seat/bindPhone --> c[验证码+手机号绑定手机到小程序]
    a -->|否|d[目前绑定手机号没有有效期]
@@ -25,7 +25,6 @@
    4.1[获取坐席任务列表,不checkin其实也能获取,但没法接着锁定某个任务] -->5[返回任务列表数据处理]
    4 -- wechat/seat/state --> 4.2[获取坐席可选状态,get请求有token就可以]
    4 -- wechat/customer-result/scheme --> 4.3[获取话后处理可选项,get请求有token就可以]
-   4 -- wechat/seat/seatInfo --> 4.4[获取坐席信息,用处?]
    5 -- wechat/preview_task/lockCustomer -->5.1[锁定任务未分配客户数>0的任务]
    5.1 --> 5.2[处理锁定任务返回数据,获取ptcid,cid,enc_number]
    5.1 -- 锁定成功后 --> 22
@@ -56,7 +55,7 @@ sequenceDiagram
     w->>w:使用总机号+工号(或分机号)登录
     w->>s: wechat/BSClient/seatLogin
     s->>w:返回坐席所在技能组(微信端未必有用),服务器记录ws通知通道
-    w->>w:是否是首次使用
+    w->>w:是否是首次使用(根据seatLogin返回的mobile字段是否有值判断)
     opt 首次使用
     	w->>s: wechat/seat/sendSms 请求手机验证码
       w->>s: wechat/seat/bindPhone 绑定手机
@@ -69,7 +68,6 @@ sequenceDiagram
      w->>w:也可以在seatLogin成功就发,没有绑定手机号没关系
      w->>s: wechat/seat/state 坐席可选状态
      w->>s: wechat/customer-result/scheme 话后处理选项
-     w->>s: wechat/seat/seatInfo 坐席信息，不确认有什么作用？
     end
     w->>w:获取坐席外呼任务
     w->>s:wechat/preview_task/seat/${seid}/${ccgeid}/${uid}
