@@ -52,7 +52,7 @@ sequenceDiagram
     s->>w: 返回 seid,ccgeid,uid,token
     w->>ws: 建立websocket连接，使用token & uid发 login 消息
     ws->>w: 检查 token & uid 对应关系，返回login成功消息
-    w->>w:使用总机号+工号(或分机号)登录
+    w->>w:使用总机号+工号或分机号登录（seatLogin),这一步建立ws通道之前或之后发起
     w->>s: wechat/BSClient/seatLogin
     s->>w:返回坐席所在技能组(微信端未必有用),服务器记录ws通知通道
     w->>w:是否是首次使用(根据seatLogin返回的mobile字段是否有值判断)
@@ -61,10 +61,11 @@ sequenceDiagram
       w->>s: wechat/seat/bindPhone 绑定手机
       w->>w: 绑定成功后可以签入
     end
+    w->>w:签入(checkin)操作必须在建立ws连接后，因为checkin后坐席状态通过ws通知
     w->>s:wechat/seat/checkIn
     s->>w:签入所有技能组，实际签入结果需要等CR通知
-    ws->>w:CR通知实际签入结果
-    opt 迁入成功后可发以下请求
+    ws->>w:CR通过ws通知实际签入结果
+    opt 签入成功后可发以下请求
      w->>w:也可以在seatLogin成功就发,没有绑定手机号没关系
      w->>s: wechat/seat/state 坐席可选状态
      w->>s: wechat/customer-result/scheme 话后处理选项
