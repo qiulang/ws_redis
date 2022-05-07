@@ -6,6 +6,8 @@ var randomstring = require('randomstring')
 const debug = require('debug')
 const log = debug("wechat:web")
 const _ = require('lodash')
+const yargs = require('yargs')
+
 let websocket = require('./socket')
 const readline = require('readline').createInterface({
   input: process.stdin,
@@ -85,7 +87,7 @@ async function request({ url, body, headers = {}, method = 'post' }) {
   }
 }
 
-async function getToken(name) {
+async function getToken(name,only) {
   let account = accounts[name] ?? accounts.ql
   number = account[0]
   password = account[1]
@@ -129,8 +131,12 @@ async function getToken(name) {
   //https://flaviocopes.com/javascript-destructure-object-to-existing-variable/
   uid = result.data.id;
   ({seid,ccgeid,token} = result.data)
-  log(`Got token:${token},可以建立ws连接了`)
   let user_id = `${seid}_${ccgeid}_${uid}`
+  log(`Got token:${token},可以建立ws连接了 ${user_id}`)
+  if (only) {
+    readline.close()
+    return
+  }
   setWS(user_id)
   seatLogin()
 }
@@ -560,4 +566,17 @@ async function getCallRecord() {
   })
 }
 
-getToken('ql')
+function main() {
+  let argv = yargs.option('o', {
+              default: false,
+              describe: 'get token only',
+              type: 'boolean',
+            }).argv
+  // 等同于
+  // let argv = yargs.boolean(['o'])
+  //           .describe('get token only')
+  //           .argv
+  getToken('ql',argv.o)
+}
+
+main()
