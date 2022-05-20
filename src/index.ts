@@ -247,7 +247,7 @@ sub.on('message', async function (channel:string, message:string) {
           info(`SUB emit to ws, get ack. [${message} to ${socketid}, ack:${ack}]`)
         },
         () => {
-          warn(`SUB emit NOT get ack in 6 seconds!! [${message} to ${socketid}]`)
+          warn(`SUB emit NOT get ack in 6 seconds!! [${message} to ${socketid}, connected?:${socket?.connected}]`)
         },
         6000
       )

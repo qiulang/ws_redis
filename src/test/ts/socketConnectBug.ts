@@ -50,3 +50,4 @@ function main() {
 }
 
 main()
+//https://stackoverflow.com/questions/71852823/global-variables-in-asynchronous-code-socket-io-show-an-error-in-an-unexpected
