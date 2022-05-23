@@ -31,7 +31,7 @@
     "prepm2.5": "redis-server /etc/redis.conf &",
     "pm2.5": "pm2-runtime ecosystem.config.js",
     "pretest": "src/shell/redis_check.sh",
-    "test": "DEBUG=client:* ts-node src/test/ts/socketTest.ts",
+    "test": "DEBUG=test:* ts-node src/test/ts/socketTest.ts",
     "testwc": "DEBUG=wechat:* node src/test/wechat/token.js"
   },
   "author": "qiulang",

@@ -3,7 +3,7 @@ const io = require('socket.io-client')
 // var socket: typeof io !!! wrong, io is the default export function that return Socket
 // var socket = io(server, { transports: ['websocket'], autoConnect: false, /*forceNew: true*/ })
 const server = 'http://localhost:3000'
-var log = require('debug')('client:test')
+var log = require('debug')('test:WS')
 var Redis = require('ioredis')
 const [user_id, seid, ccgeid, token] = ['1_2_1000', '1', '2', 'xxxxx']
 let client:string
@@ -12,10 +12,12 @@ var pub:typeof Redis
 
 //https://stackoverflow.com/questions/45802988/typescript-use-correct-version-of-settimeout-node-vs-window
 let wsTimeout:NodeJS.Timeout, psTimeout:NodeJS.Timeout
-
-const pubsubMsg = JSON.stringify({ msg: 'Can you hear me' }) //Need to be json string
+let pubsubMsg:any = {msg: 'Can you hear me'}
 let pubsubBit = false
 let wsBit = false
+let logoffBit = false
+//https://www.typescriptlang.org/docs/handbook/enums.html#enums-at-compile-time
+type ctype = 'client.bs' | 'client.wechat'
 
 interface loginRep {
   user_id:'login' | 'logoff' | 'upgrade',
@@ -26,6 +28,7 @@ interface socketRedis {
   'socketid':string
   'browserFinger':string
   'loginTime':string
+  'client':ctype
 }
 
 type wsCB = (arg:string) => void
@@ -44,7 +47,7 @@ function start(c:string,r: typeof Redis, p: typeof Redis) {
   }, 2000) //本机测试连接 2秒足够
 }
 
-function setupWS(c:string) { //b/c client is updated in logoff event
+function setupWS(c:string) { //b/c client is updated in logoff event in the 3rd test
   let socket = io(server, { transports: ['websocket'],
     // auth:{token,uid:user_id,client}
     query:{token,uid:user_id,client}
@@ -73,13 +76,19 @@ function setupWS(c:string) { //b/c client is updated in logoff event
   })
 
   socket.on('cr_msg', (msg:string, fn:wsCB) => {
-    if (msg == pubsubMsg) {
-      log(`WS got the message we just pub on redis for ${socket.id}`)
-      fn('Got you!')
-      pubsubBit = true
-    } else {
-      log(`WS got the message come from nowhere: ${msg}`)
-      fn('Where did you get this message')
+    try {
+      let tmp = JSON.parse(msg)
+      if (tmp.msg == pubsubMsg.msg && tmp.client == client) {
+        log(`WS got the message we just pub on redis for ${socket.id}`)
+        fn('Got you!')
+        pubsubBit = true
+      }
+    } finally {
+      if (!pubsubBit) {
+        //json parse error or the parse result incorrect
+        log(`WS got the message come from nowhere: ${msg}`)
+        fn('Where did you get this message')
+      }
     }
   })
 
@@ -95,15 +104,9 @@ function setupWS(c:string) { //b/c client is updated in logoff event
   socket.on('logoff', (msg:string) => {
     log(`${socket.id}:${c}: should be kicked off for: ${msg}`)
     socket.close()
+    logoffBit = true
   })
 
-  // socket.on('disconnect', (reason:string) => {
-  //   if (reason.endsWith("server disconnect")) {
-  //     log(`Assume this is the invalid token case so the server close the connection` )
-  //     wsBit = true
-  //     bye(0)      
-  //   }
-  // })
   socket.on('error', (err:string) => {
     if (err == "Invalid token") {
       log(`This is invalid token on purpose for 2.x`)
@@ -134,19 +137,22 @@ async function loginCheck(reply:loginRep, socket_id:string) {
   if (
     time != socket_record['loginTime'] ||
     user != user_id ||
-    socket_record['socketid'] != socket_id
+    socket_record['socketid'] != socket_id ||
+    socket_record.client != client
   ) {
     log('Redis record was wrong')
     bye(1)
     return
   }
   log('user record & socket record are correct; test pub sub next')
-  pubsubTest(0.5)
+  pubsubTest(0.5,socket_record.client)
 }
 
-function pubsubTest(wait:number) {
-  log(`Now publish a message to redis channel: [${user_id} : ${pubsubMsg}]`)
-  pub.publish(user_id, pubsubMsg)
+function pubsubTest(wait:number,cc:ctype) {
+  pubsubMsg.client = cc //it is actually client
+  let tmp = JSON.stringify(pubsubMsg)
+  pub.publish(user_id, tmp) //Need to be json string
+  log(`Now publish a message to redis channel: [${user_id} : ${tmp}]`)
   psTimeout = setTimeout(() => {
     if (!pubsubBit) {
       log(`WS failed to receive the message in ${wait} second.`)
@@ -158,7 +164,6 @@ function pubsubTest(wait:number) {
 }
 
 function bye(exitCode:0|1) {
-  log(`Close socket.io event loop so the process can exit with ${exitCode}`)
   process.exitCode = exitCode
   let msg = exitCode == 0 ? 'Test succeeded' : 'Test failed'
   log(`${msg} for ${client}`)
@@ -170,11 +175,12 @@ function bye(exitCode:0|1) {
     log(`Does not close client.bs ws to try dup-login case`)
   } else {
     socket?.disconnect()
+    log(`Close ${client} ws connect`)
   }
-  log(`----------------------------`)
   clearTimeout(wsTimeout)
   clearTimeout(psTimeout)
-  pub.publish(`test-result`, client)
+  pub.publish(`test-result`, `${client}@logoff:${logoffBit}`)
+  log(`Test with ${client} finished and exit with ${exitCode}, pub test result`)
 }
 
-export {start as socketStart,log}
+export {start as socketStart}
