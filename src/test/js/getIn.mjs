@@ -19,3 +19,44 @@
   let s = objectScan(['data.**.id'], { joined: true })(nested);
   console.log(s)
   console.log(nested.data.data[4].tel_info.id)
+
+  const user = {
+    id: 42,
+    displayName: 'jdoe',
+    fullName: {
+      firstName: 'John',
+      lastName: 'Doe'
+    }
+  };
+
+  function whois({displayName, fullName: {firstName: name}}) {
+    return `${displayName} is ${name}`;
+  }
+  
+  console.log(whois(user));
+
+  const people = [
+    {
+      name: 'Mike Smith',
+      family: {
+        mother: 'Jane Smith',
+        father: 'Harry Smith',
+        sister: 'Samantha Smith'
+      },
+      age: 35
+    },
+    {
+      name: 'Tom Jones',
+      family: {
+        mother: 'Norah Jones',
+        father: 'Richard Jones',
+        brother: 'Howard Jones'
+      },
+      age: 25
+    }
+  ];
+  
+  for (const {name: n, family: {father: f}} of people) {
+    console.log('Name: ' + n + ', Father: ' + f);
+  }
+  
