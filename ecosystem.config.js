@@ -1,5 +1,5 @@
 module.exports = {
-  //#TODO https://doc.pm2.io/en/runtime/reference/ecosystem-file/
+  // https://doc.pm2.io/en/runtime/reference/ecosystem-file/
   apps: [
     {
       name: 'ws_redis',

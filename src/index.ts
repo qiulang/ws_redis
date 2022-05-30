@@ -2,6 +2,8 @@ import { Server } from 'socket.io'
 import express from 'express'
 import cors from 'cors'
 import { createServer } from 'http'
+const axios = require('axios').default;
+
 var app = express()
 // var http = require('http').Server(app)
 const httpServer = createServer(app);
@@ -138,6 +140,13 @@ io.on('connection', async function (socket) {
       forceLogoff('logoff') //bug 13734
       return
     }
+    if (client == 'client.wechat') { //判断此时是否变为移动坐席
+      let m = await mobileSettingCheck(token,user_id)
+      if (m) {
+        forceLogoff('logoff')
+        return        
+      }
+    }
     let exist = await dupCheck({ user_id, client, socket_id:socket.id,uniqueId },fn)
     if (exist) {
       return
@@ -257,6 +266,35 @@ sub.on('message', async function (channel:string, message:string) {
   }
 })
 
+async function mobileSettingCheck(token:string,uid:string) {
+  debug(`query ${process.env.REST_SERVER}/wechat/seat/seatInfo`)
+  if (!process.env.REST_SERVER || process.env.TOKEN_CHECK === '0') {
+    return false
+  }
+  const axiosReq = axios.create({
+    baseURL: process.env.REST_SERVER,
+    headers: { source: 'client.wechat',token },
+  })
+  let result = await axiosReq({
+    url: 'wechat/seat/seatInfo',
+    method:'get'
+  })
+  result = result.data
+  debug(result.data)
+  if (result.code != 200) {
+    return false
+  }
+  let mobile_seat = result.data?.data?.is_mobile_seat
+  if (!mobile_seat || mobile_seat == 'N') {
+    debug(`${uid} 目前不是移动坐席`)
+    return false
+  } else {
+    debug(`${uid} 目前为移动坐席`)
+    return true
+  }
+}
+
+
 //token检查做身份认证
 async function tokenCheck(user_id:string, token:string, client:string):Promise<boolean> {
   if (process.env.TOKEN_CHECK === '0') {
@@ -275,7 +313,7 @@ async function tokenCheck(user_id:string, token:string, client:string):Promise<b
   }
   let uid = tmp[2]
   let tr = await redis.get(`cc-cm:user:tokens:seat:${uid}`)
-  debug(`login token vs redis value cc-cm:user:tokens:seat:${uid}. [${token}:${tr}]`)
+  debug(`login token vs redis value cc-cm:user:tokens:seat:${uid} for ${client}. [${token}:${tr}]`)
   const t = unserialize(tr)
   return t[client] === token //'client.bs' or 'client.wechat'
 }

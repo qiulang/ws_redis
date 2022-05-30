@@ -14,7 +14,7 @@
     "4. pm2.5 is our docker entrypoint using pm2-runtime even though we don't really use this image",
     "5. debug is supposed for vscode debug but we havn't used for a while",
     "6. start uses nodemon for daily development, with ctrl+c to exit nodemon & redis together",
-    "7. test is the client code to verify the server works"
+    "7. test is the client code to verify the server works, github action also uses it"
   ],
   "scripts": {
     "build": "tsc",
@@ -39,28 +39,28 @@
   "dependencies": {
     "@types/express": "^4.17.13",
     "@types/ioredis": "^4.28.1",
+    "axios": "^0.27.2",
     "cors": "^2.8.5",
     "debug": "^4.1.1",
     "dotenv-flow": "^3.1.0",
     "express": "^4.17.1",
     "ioredis": "^4.27.5",
     "locutus": "^2.0.14",
-    "pm2": "^5.1.1",
+    "pm2": "^5.2.0",
     "portfinder": "^1.0.28",
     "socket.io": "^4.1.2",
     "socket.io-client": "^2.4.0",
     "socket.io-redis": "^6.1.1",
-    "uuid": "^3.3.3"
+    "uuid": "^3.4.0"
   },
   "devDependencies": {
-    "axios": "^0.19.2",
     "chalk": "^3.0.0",
     "cli-progress": "^3.10.0",
     "lodash": "^4.17.20",
-    "nodemon": "^2.0.6",
+    "nodemon": "^2.0.16",
     "object-scan": "^18.0.0",
     "pino": "^7.9.1",
-    "ramda": "^0.27.1",
+    "ramda": "^0.27.2",
     "randomstring": "^1.1.5",
     "ts-node": "^10.4.0",
     "typescript": "^4.5.2",

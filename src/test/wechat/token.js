@@ -153,7 +153,7 @@ async function getSeatInfo() {
     "当前状态":result.data?.state,
     "所在组id":result.data?.call_group_id,
     "所在组名":result.data?.call_group_name,
-    "已绑定号码":result.data?.device_number,
+    "已绑定号码":result.data?.mobile,
     "工号":result.data?.work_number,
     "分机号":result.data?.number
   }
@@ -161,11 +161,11 @@ async function getSeatInfo() {
   if (number != result.data?.work_number) {
     log(`wechat/seat/seatInfo 获取的工号有误， ${number} vs ${result.data?.work_number}`)
   }
-  else if (mobile != result.data?.device_number) {
-    log(`wechat/seat/seatInfo 绑定手机号有误， ${mobile} vs ${result.data?.device_number}`)
+  else if (mobile != result.data?.mobile) {
+    log(`wechat/seat/seatInfo 绑定手机号有误， ${mobile} vs ${result.data?.mobile}`)
   }
   else if (groupid != result.data?.call_group_id) {
-    log(`wechat/seat/seatInfo 签入技能组有误， ${groupid} vs ${result.data?.call_group_id}`)
+    log(`wechat/seat/seatInfo 签入技能组由服务器自动设置， ${groupid} vs ${result.data?.call_group_id}`)
   } else {
     log(`wechat/seat/seatInfo 获取信息与我们登录所选信息一致`)
   }
@@ -259,6 +259,7 @@ function setWS(user_id) {
 
 async function seatCheckin() {
   data = {
+    // 小程序签入，没读技能组传参，就是按db存储的技能组处理的，db没存的，就给一个默认技能组，传参现在没用
     // call_group_id: groupid,
     // call_group_name: 'bs测试技能组',
     callintype: 4,
@@ -279,7 +280,7 @@ async function seatCheckin() {
   }
   log(`${number} seatCheckin succeed!! CR会有登录消息通过ws通知`)
   await getSeatInfo()
-  await seatInformation()
+  // await seatInformation()
 }
 
 async function makeCall() {
