@@ -280,11 +280,11 @@ async function mobileSettingCheck(token:string,uid:string) {
     method:'get'
   })
   result = result.data
-  debug(result.data)
-  if (result.code != 200) {
+  debug(result?.data)
+  if (result?.code != 200) {
     return false
   }
-  let mobile_seat = result.data?.data?.is_mobile_seat
+  let mobile_seat = result?.data?.is_mobile_seat
   if (!mobile_seat || mobile_seat == 'N') {
     debug(`${uid} 目前不是移动坐席`)
     return false
