@@ -15,12 +15,12 @@ let wsTimeout:NodeJS.Timeout, psTimeout:NodeJS.Timeout
 let pubsubMsg:any = {msg: 'Can you hear me'}
 let pubsubBit = false
 let wsBit = false
-let logoffBit = false
+let logoffBit = 0
 //https://www.typescriptlang.org/docs/handbook/enums.html#enums-at-compile-time
 type ctype = 'client.bs' | 'client.wechat'
 
 interface loginRep {
-  user_id:'login' | 'logoff' | 'upgrade',
+  user_id:'login' | 'logoff' | 'upgrade' | 'mobile',
   ver:string
 }
 
@@ -75,9 +75,9 @@ function setupWS(c:string) { //b/c client is updated in logoff event in the 3rd 
       if (status == 'login') {
         await loginCheck(reply, socket.id)
       }
-      if (status == 'logoff' || status == 'upgrade') {
-        log(`Currently this means we failed token check`)
-        log(`WS server has closed the connection so let's consider test passed`)
+      if (status == 'logoff' || status == 'mobile') {
+        log(`WS server login response:${status} let's consider test passed`)
+        logoffBit = 2
         bye(0)
       }
     })
@@ -112,7 +112,7 @@ function setupWS(c:string) { //b/c client is updated in logoff event in the 3rd 
   socket.on('logoff', (msg:string) => {
     log(`${socket.id}:${c}: should be kicked off for: ${msg}`)
     socket.close()
-    logoffBit = true
+    logoffBit = 1
   })
 
   socket.on('error', (err:string) => {

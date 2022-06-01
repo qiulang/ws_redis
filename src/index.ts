@@ -115,7 +115,7 @@ io.on('connection', async function (socket) {
     function forceLogoff(notify:string) {
       if (typeof fn === 'function') fn({ user_id: notify, ver: 'xxxxxx' })
       //BS 客户端连上来带了 fn ,这个修改本来就是为了防止别人来连我们的 ws，他们应该就不会带fn
-      warn(`Close ws connection for invalid token. [${user_id}:${token}]`)
+      warn(`Close ws connection to reject client re-login. [${user_id}:${token}:${notify}]`)
       socket.disconnect(true)
       // setTimeout(() => socket.disconnect(true), 3000)
     }
@@ -140,11 +140,11 @@ io.on('connection', async function (socket) {
       forceLogoff('logoff') //bug 13734
       return
     }
+    let loginRes = 'login'
     if (client == 'client.wechat') { //判断此时是否变为移动坐席
       let m = await mobileSettingCheck(token,user_id)
-      if (m) {
-        forceLogoff('logoff')
-        return        
+      if (m) {    
+        loginRes = 'mobile'
       }
     }
     let exist = await dupCheck({ user_id, client, socket_id:socket.id,uniqueId },fn)
@@ -154,7 +154,7 @@ io.on('connection', async function (socket) {
     await loginResult({ user_id, client, socket_id:socket.id,uniqueId })
     //考虑了半天代码用什么做版本号好，必须是打包代码能自动生成的，不能每次都手动修改
     //一开始考虑commit id，但是commit id 没法比较代码的新旧，暂定 time stamp
-    if (typeof fn === 'function') fn({ user_id: 'login', ver: 'xxxxxx' })
+    if (typeof fn === 'function') fn({ user_id: loginRes, ver: 'xxxxxx' })
   })
   
 
