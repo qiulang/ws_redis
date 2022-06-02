@@ -21,9 +21,9 @@ const [client,client2,client3] = ['nodejs','client.bs','client.wechat']
 async function start() {
   log(`sub to test-result channel and start the test`)
   await sub.subscribe(`test-result`)
-  // socketStart(client,redis,pub)
+  socketStart(client,redis,pub)
   //如果发现wechat已经设置为移动座席就直接调用
-  socketStart(client3,redis,pub)
+  // socketStart(client3,redis,pub)
 }
 
 // No need to catch redis connection error, just ws connection error
@@ -60,6 +60,9 @@ sub.on("message", function (channel:string, message:string){
       setTimeout(()=>{
         socketStart(client3,redis,pub)
       },60*1000)
+    } else {
+      log(`local redis, token check: ${process.env.TOKEN_CHECK}, so test stops`)
+      stop()
     }
   }
 })
