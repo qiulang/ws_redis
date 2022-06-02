@@ -115,7 +115,7 @@ io.on('connection', async function (socket) {
     function forceLogoff(notify:string) {
       if (typeof fn === 'function') fn({ user_id: notify, ver: 'xxxxxx' })
       //BS 客户端连上来带了 fn ,这个修改本来就是为了防止别人来连我们的 ws，他们应该就不会带fn
-      warn(`Close ws connection to reject client re-login. [${user_id}:${token}:${notify}]`)
+      warn(`Close ws connection to reject client login. [${user_id}:${notify}:${token}]`)
       socket.disconnect(true)
       // setTimeout(() => socket.disconnect(true), 3000)
     }
@@ -285,12 +285,19 @@ async function mobileSettingCheck(token:string,uid:string) {
     return false
   }
   let mobile_seat = result?.data?.is_mobile_seat
-  if (!mobile_seat || mobile_seat == 'N') {
-    debug(`${uid} 目前不是移动坐席`)
-    return false
-  } else {
-    debug(`${uid} 目前为移动坐席`)
+  let status =result?.data?.state?.state_id
+  if (mobile_seat == 'Y') {
+    debug(`${uid} 目前是移动坐席,返回true，这样小程序需要再次签入`)
     return true
+  } else {
+    debug(`${uid} 目前不是移动坐席`)
+  }
+  if (status ==1) {
+    debug(`${uid} 目前离线，也返回true，这样小程序需要再次签入`)
+    return true
+  } else {
+    debug(`${uid} 目前在线状态:${status}:${result?.data?.state?.state_name}`)
+    return false
   }
 }
 
