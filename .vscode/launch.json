@@ -5,6 +5,17 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "debug ts",
+      "program": "${workspaceFolder}/src/index.ts",
+      "preLaunchTask": "tsc: build - tsconfig.json",
+      "outFiles": ["${workspaceFolder}/build/**/*.js"],
+      "request": "launch",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "type": "node"
+    },
+    {
       "name": "Python: 当前文件",
       "type": "python",
       "request": "launch",
@@ -43,8 +54,7 @@
       "request": "launch",
       "name": "pubsub",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run-script", "pubsub"],
-      "port": 9229
+      "runtimeArgs": ["run-script", "pubsub"]
     }
   ]
 }

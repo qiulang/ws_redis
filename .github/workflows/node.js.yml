@@ -55,6 +55,8 @@ jobs:
 
     - name: "Start Socket.io Client to test ws connect & redis pubsub"
       run: npm run test
+      env:
+        TOKEN_CHECK: 0
 
     - name: Build the Docker image
       run: docker build . --file Dockerfile --tag ws-pubsub:${{ env.TIME_TAG }}
