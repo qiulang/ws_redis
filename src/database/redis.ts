@@ -1,5 +1,5 @@
 require('dotenv-flow').config()
-var Redis = require('ioredis')
+const Redis = require('ioredis')
 // import Redis from 'ioredis'
 var { info, warn } = require('../logger')
 var debug = require('debug')('app:redis:debug')

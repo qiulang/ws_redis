@@ -1,3 +1,5 @@
+// export {}
+// import {debug as log} from 'debug'
 const log = require('debug')
 let debug = log('app:debug')
 //https://www.npmjs.com/package/debug#output-streams ,写到stdout
