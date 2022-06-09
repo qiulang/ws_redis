@@ -271,32 +271,39 @@ async function mobileSettingCheck(token:string,uid:string) {
   if (!process.env.REST_SERVER || process.env.TOKEN_CHECK === '0') {
     return false
   }
+  //https://axios-http.com/docs/req_config
   const axiosReq = axios.create({
     baseURL: process.env.REST_SERVER,
     headers: { source: 'client.wechat',token },
+    timeout: 30000, // default is `0` (no timeout)，同在一个内部网30秒够了
   })
-  let result = await axiosReq({
-    url: 'wechat/seat/seatInfo',
-    method:'get'
-  })
-  result = result.data
-  debug(result?.data)
-  if (result?.code != 200) {
-    return false
-  }
-  let mobile_seat = result?.data?.is_mobile_seat
-  let status =result?.data?.state?.state_id
-  if (mobile_seat == 'Y') {
-    debug(`${uid} 目前是移动坐席,返回true，这样小程序需要再次签入`)
-    return true
-  } else {
-    debug(`${uid} 目前不是移动坐席`)
-  }
-  if (status ==1) {
-    debug(`${uid} 目前离线，也返回true，这样小程序需要再次签入`)
-    return true
-  } else {
-    debug(`${uid} 目前在线状态:${status}:${result?.data?.state?.state_name}`)
+  try {
+    let result = await axiosReq({
+      url: '/wechat/seat/seatInfo',
+      method:'get'
+    })
+    result = result.data
+    debug(result?.data)
+    if (result?.code != 200) {
+      return false
+    }
+    let mobile_seat = result?.data?.is_mobile_seat
+    let status =result?.data?.state?.state_id
+    if (mobile_seat == 'Y') {
+      debug(`${uid} 目前是移动坐席,返回true，这样小程序需要再次签入`)
+      return true
+    } else {
+      debug(`${uid} 目前不是移动坐席`)
+    }
+    if (status ==1) {
+      debug(`${uid} 目前离线，也返回true，这样小程序需要再次签入`)
+      return true
+    } else {
+      debug(`${uid} 目前在线状态:${status}:${result?.data?.state?.state_name}`)
+      return false
+    }
+  } catch(err) {
+    warn(`request /wechat/seat/seatInfo failed we just return false ${JSON.stringify(err)}`)
     return false
   }
 }

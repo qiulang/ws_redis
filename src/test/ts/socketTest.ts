@@ -16,7 +16,7 @@ var redis = new Redis(setting)
 var pub = new Redis(setting)
 
 const [client,client2,client3] = ['nodejs','client.bs','client.wechat']
-
+let mobileCheck = 0
 
 async function start() {
   log(`sub to test-result channel and start the test`)
@@ -56,14 +56,17 @@ sub.on("message", function (channel:string, message:string){
       stop()
     }
     if (process.env.TOKEN_CHECK != '0' && !tmp[1].endsWith('2')) {
-      log(`Now check for wechat mobile setting, but we need to wait for 1 minute`)
-      setTimeout(()=>{
-        socketStart(client3,redis,pub)
-      },60*1000)
-    } else {
-      log(`local redis, token check: ${process.env.TOKEN_CHECK}, so test stops`)
-      stop()
+      mobileCheck +=1
+      if (mobileCheck ==1) {
+        log(`Now check for wechat mobile setting, but we need to wait for 1 minute for ws server to check us out`)
+        setTimeout(()=>{
+          socketStart(client3,redis,pub)
+        },60*1000)
+        return
+      }
     }
+    log(`local redis, token check: ${process.env.TOKEN_CHECK}, test stops`)
+    stop()
   }
 })
 
