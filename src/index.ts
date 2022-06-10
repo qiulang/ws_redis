@@ -28,6 +28,7 @@ startServer()
 // https://stackoverflow.com/questions/37233735/interfaces-vs-types-in-typescript
 
 type Client =  'client.bs' | 'client.wechat'
+type mobileCheckT = 'login' | 'mobile' //fail the check also return login
 
 interface baseData {
   user_id:string,
@@ -142,10 +143,7 @@ io.on('connection', async function (socket) {
     }
     let loginRes = 'login'
     if (client == 'client.wechat') { //判断此时是否变为移动坐席
-      let m = await mobileSettingCheck(token,user_id)
-      if (m) {    
-        loginRes = 'mobile'
-      }
+      loginRes = await mobileSettingCheck(token,user_id)
     }
     let exist = await dupCheck({ user_id, client, socket_id:socket.id,uniqueId },fn)
     if (exist) {
@@ -266,10 +264,10 @@ sub.on('message', async function (channel:string, message:string) {
   }
 })
 
-async function mobileSettingCheck(token:string,uid:string) {
+async function mobileSettingCheck(token:string,uid:string):Promise<mobileCheckT> {
   debug(`query ${process.env.REST_SERVER}/wechat/seat/seatInfo`)
   if (!process.env.REST_SERVER || process.env.TOKEN_CHECK === '0') {
-    return false
+    return 'login'
   }
   //https://axios-http.com/docs/req_config
   const axiosReq = axios.create({
@@ -285,26 +283,32 @@ async function mobileSettingCheck(token:string,uid:string) {
     result = result.data
     debug(result?.data)
     if (result?.code != 200) {
-      return false
+      debug(`/wechat/seat/seatInfo 相应非200 ${JSON.stringify(result)}，走正常(原有)登录流程`)
+      return 'login'
     }
     let mobile_seat = result?.data?.is_mobile_seat
     let status =result?.data?.state?.state_id
+    let mobile_verified = result?.data?.mobile_verified
+    if (mobile_verified == 'N') {
+      debug(`${uid} 手机号未验证，走正常(原有)登录流程`)
+      return 'login'      
+    }
     if (mobile_seat == 'Y') {
-      debug(`${uid} 目前是移动坐席,返回true，这样小程序需要再次签入`)
-      return true
+      debug(`${uid} 目前是移动坐席,返回mobile，这样小程序需要再次签入`)
+      return 'mobile'
     } else {
       debug(`${uid} 目前不是移动坐席`)
     }
     if (status ==1) {
-      debug(`${uid} 目前离线，也返回true，这样小程序需要再次签入`)
-      return true
+      debug(`${uid} 目前离线，也返回mobile，这样小程序需要再次签入`)
+      return 'mobile'
     } else {
       debug(`${uid} 目前在线状态:${status}:${result?.data?.state?.state_name}`)
-      return false
+      return 'login'
     }
   } catch(err) {
-    warn(`request /wechat/seat/seatInfo failed we just return false ${JSON.stringify(err)}`)
-    return false
+    warn(`request /wechat/seat/seatInfo failed we just return ${JSON.stringify(err)}`)
+    return 'login'
   }
 }
 
