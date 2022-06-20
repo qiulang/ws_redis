@@ -5,6 +5,7 @@ docker-compose*
 .dockerignore
 .git
 .gitignore
+dump.rdb
 
 # local .env* files
 .env.local

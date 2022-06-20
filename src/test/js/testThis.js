@@ -60,3 +60,14 @@ let testThis = {
 }
 
 testThis.test3()
+
+// 'use strict';
+// With the introduction of computed property names, making duplication possible at runtime, 
+// ECMAScript 2015 removed that restriction.
+let o = { p: 1, p: 2 } //
+console.log(o)
+
+o = {}
+for (let k in o) {
+    console.log(k)
+} 
