@@ -496,6 +496,11 @@ function msgTimeout(onSuccess:(this: void,...args:any[]) => void, onTimeout:(thi
 //https://pm2.io/docs/runtime/best-practices/graceful-shutdown/
 //We don't clear redis records so no much point to intercept the SIGINT signal currently
 // process.on('SIGINT', function() {
-//   debug("Caught interrupt signal");
+//   debug("Caught SIGINT signal");
+//   process.exit(0)
+// });
+
+// process.on('SIGTERM', function() {
+//   debug("Caught SIGTERM signal");
 //   process.exit(0)
 // });

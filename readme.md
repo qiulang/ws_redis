@@ -435,7 +435,7 @@ OK
 
    
 
-4. IE 11 问题， debug没转码，[给bablel开的问题单回复了](https://github.com/babel/babel/issues/10707)，但debug的维护者一直很不耐烦
+4. IE 11 问题， debug没转码，[给babel开的问题单回复了](https://github.com/babel/babel/issues/10707)，但debug的维护者一直很不耐烦
 
 5. channel 是否需要unsubscribe 实际生产环境肯定需要。[根据这个SO](https://stackoverflow.com/questions/10142246/how-to-design-redis-pub-sub-for-an-instant-messaging-system) 连接达到上限就不再接受新连接：
 
