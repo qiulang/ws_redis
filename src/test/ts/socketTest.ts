@@ -2,14 +2,13 @@ require('dotenv-flow').config()
 import {socketStart} from "./socketConnect"
 var log = require('debug')('test:Main')
 var Redis = require('ioredis')
-let setting = {port:'6379',host:'localhost',password:''}
+let setting = {
+  port: process.env.REDIS_PORT || '6379',
+  host: process.env.REDIS_HOST || 'localhost',
+  password:process.env.REDIS_PASS || ''
+}
 if (process.env.TOKEN_CHECK != '0') {
   log(`should connect to remote redis ${process.env.REDIS_HOST}`)
-  setting = {
-    port: process.env.REDIS_PORT || '6379',
-    host: process.env.REDIS_HOST || 'localhost',
-    password:process.env.REDIS_PASS || ''
-  }
 }
 var sub = new Redis(setting)
 var redis = new Redis(setting)
@@ -19,7 +18,7 @@ const [client,client2,client3] = ['nodejs','client.bs','client.wechat']
 let mobileCheck = 0
 
 async function start() {
-  log(`sub to test-result channel and start the test`)
+  log(`sub to test-result channel and start the test,${JSON.stringify(setting)}`)
   await sub.subscribe(`test-result`)
   socketStart(client,redis,pub)
   //如果发现wechat已经设置为移动座席就直接调用
@@ -44,15 +43,15 @@ sub.on("message", function (channel:string, message:string){
     socketStart(client3,redis,pub)
   }
   if (tmp[0] == client3) {
-    log(`Finished ${message} and all tests, close redis event loop so the process can exit`)
+    log(`Finished ${message}`)
     if (tmp[1].endsWith('1')) {
-      log('logoff test succeed')
+      log('logoff test succeed and kicked off client.bs')
     } 
     if (tmp[1].endsWith('0')) {
       log(`failed to kick off client.bs`)
     }
     if (tmp[1].endsWith('2')) {
-      log('希望这是移动座席场景，ws服务器主动把连接踢下线')
+      log('微信小程序场景，ws服务器提示小程序再次迁入或是移动座席设置')
       stop()
     }
     if (process.env.TOKEN_CHECK != '0' && !tmp[1].endsWith('2')) {
@@ -62,18 +61,22 @@ sub.on("message", function (channel:string, message:string){
         setTimeout(()=>{
           socketStart(client3,redis,pub)
         },60*1000)
-        return
+      } else {
+        stop()
       }
+    } else {
+      stop()
     }
-    log(`local redis, token check: ${process.env.TOKEN_CHECK}, test stops`)
-    stop()
   }
 })
 
 function stop() {
+  log(`close redis event loop so the process can exit`)
   sub.disconnect()
   pub.disconnect()
   redis.disconnect()
+  log(`client.bs ws may still connect, so process.exit here`)
+  process.exit(0)
 }
 
 start()

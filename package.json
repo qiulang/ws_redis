@@ -30,7 +30,6 @@
     "pm2log": "pm2 set pm2-logrotate:workerInterval 150",
     "prepm2.5": "redis-server /etc/redis.conf &",
     "pm2.5": "pm2-runtime ecosystem.config.js",
-    "pretest": "src/shell/redis_check.sh",
     "test": "DEBUG=test:* ts-node src/test/ts/socketTest.ts",
     "testwc": "DEBUG=wechat:* node src/test/wechat/token.js"
   },
