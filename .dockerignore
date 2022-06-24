@@ -1,4 +1,4 @@
-node_modules
+node_modules/
 .DS_Store
 npm-debug.log
 docker-compose*
@@ -6,6 +6,7 @@ docker-compose*
 .git
 .gitignore
 dump.rdb
+doc/
 
 # local .env* files
 .env.local
