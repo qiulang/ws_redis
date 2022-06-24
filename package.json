@@ -17,7 +17,7 @@
     "7. test is the client code to verify the server works, github action also uses it"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "npx tsc",
     "pub": "DEBUG=app:* node src/test/js/pubsub.js",
     "pubsub": "DEBUG=app:* node --nolazy --inspect-brk=9229 build/index.js",
     "basic": "DEBUG=app:* node src/test/js/json_test.js",
