@@ -7,6 +7,7 @@ RUN npm install
 RUN npm config set unsafe-perm true
 COPY . .
 RUN npm run build
+# RUN rm -r node_modules
 RUN npm prune --production
 
 FROM node:16.14.2-alpine3.15 as prod
@@ -15,8 +16,10 @@ RUN apk add --no-cache --repository https://mirrors.aliyun.com/alpine/v3.15/main
 RUN sed -i 's/bind 127.0.0.1 -::1/# bind 127.0.0.1 -::1/g; s/protected-mode yes/protected-mode no/' /etc/redis.conf
 ENV TZ=Asia/Shanghai
 WORKDIR /app
-COPY --from=build-stage /app /app
-EXPOSE 3000 6379
+# npm 8 will do npm install --only=prod
 ENV NODE_ENV production
+COPY --from=build-stage /app /app
+# RUN npm install --only=prod
+EXPOSE 3000 6379
 CMD ["npm", "run", "pm2.5"]
 # CMD ["npm", "run", "start"]
