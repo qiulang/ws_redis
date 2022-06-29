@@ -265,13 +265,13 @@ sub.on('message', async function (channel:string, message:string) {
 })
 
 async function mobileSettingCheck(token:string,uid:string):Promise<mobileCheckT> {
-  debug(`query ${process.env.REST_SERVER}/wechat/seat/seatInfo`)
-  if (!process.env.REST_SERVER || process.env.TOKEN_CHECK === '0') {
+  debug(`query ${process.env.BACKEND_SVC}/wechat/seat/seatInfo`)
+  if (!process.env.BACKEND_SVC || process.env.TOKEN_CHECK === '0') {
     return 'login'
   }
   //https://axios-http.com/docs/req_config
   const axiosReq = axios.create({
-    baseURL: process.env.REST_SERVER,
+    baseURL: process.env.BACKEND_SVC,
     headers: { source: 'client.wechat',token },
     timeout: 30000, // default is `0` (no timeout)，同在一个内部网30秒够了
   })
