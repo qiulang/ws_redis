@@ -3,6 +3,7 @@ import express from 'express'
 import cors from 'cors'
 import { createServer } from 'http'
 const axios = require('axios').default;
+const { instrument } = require("@socket.io/admin-ui");
 
 var app = express()
 // var http = require('http').Server(app)
@@ -10,6 +11,10 @@ const httpServer = createServer(app);
 var redisAdapter = require('socket.io-redis')
 var io = new Server(httpServer, {
   allowEIO3: true,
+  cors: { //https://socket.io/docs/v4/admin-ui/
+    origin: ["https://admin.socket.io"],
+    credentials: true
+  }
 })
 let unserialize = require('locutus/php/var/unserialize')
 var { info, warn, browserLog } = require('./logger')
@@ -72,6 +77,15 @@ var dup:SocketRecord = {}
 //不在redis只记录本进程处理的，目的是在disconnect里判断要不要unsubscribe
 //从收集到的日志看这种情况是存在的，而且目前看不会有内存泄漏情况
 var user_socket:UserSocket = {}
+
+//https://socket.io/docs/v4/admin-ui/
+instrument(io, {
+  auth: {
+    type: "basic",
+    username: "emicnet",
+    password: "$2b$10$NuoyetcoPc4FY1cnUdRjiesBkhQUbTehAC4NYNm1cV7JZLoNezvdy" // "emicnet123" encrypted with bcrypt
+  },
+});
 
 //https://socket.io/docs/v4/middlewares/#sending-credentials
 io.use(async (socket, next) => {
