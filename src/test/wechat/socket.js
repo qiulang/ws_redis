@@ -10,7 +10,7 @@ function websocket(server, { user_id, seid, ccgeid,token, uniqueId }) {
     log(`${socket.id} aka ${user_id} connected, send login request next`)
     socket.emit('login', { user_id, seid, ccgeid,token, uniqueId,client:"client.wechat" }, function (data) {
       log(data)
-      if (data.user_id != 'login') {
+      if (data.user_id != 'login' && data.user_id != 'mobile') {
         log('websocket server went wrong, login reply is incorrect')
         socket.close()
         return

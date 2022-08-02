@@ -26,7 +26,7 @@ function websocketTest(server, { user_id, seid, ccgeid,token, uniqueId }, { show
     )
     socket.emit('login', { user_id, seid, ccgeid,token, uniqueId }, function (data) {
       console.log(data)
-      if (data.user_id != 'login') {
+      if (data.user_id != 'login' && data.user_id != 'mobile') {
         log.fatal('websocket server went wrong, login reply is incorrect')
         socket.close()
         return
