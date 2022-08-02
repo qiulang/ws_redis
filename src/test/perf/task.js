@@ -49,9 +49,9 @@ async function request({ url, body, headers = {}, method = 'post' }) {
     headers = { token }
   }
   let param = {
-    url: url,
-    method: method,
-    headers: headers,
+    url,
+    method,
+    headers
   }
   //method 不对，服务器返回 405
   if (method == 'post') {
@@ -117,7 +117,7 @@ async function getToken() {
 
 async function lock(call_later) {
     let url = `/preview_task/lockCustomer/${seid}/${ccgeid}/${taskid}/${userid}`
-    result = await request({
+    let result = await request({
       url,
       body:{"call_later":call_later}
     }) 

@@ -32,7 +32,7 @@
     "pm2.5": "pm2-runtime ecosystem.config.js",
     "test": "DEBUG=test:* ts-node src/test/ts/socketTest.ts",
     "testwc": "DEBUG=wechat:* node src/test/wechat/token.js",
-    "perf": "DEBUG=perf:* node src/test/perf/task.js"
+    "perf": "DEBUG=perf:* ts-node src/test/perf/task.ts"
   },
   "author": "qiulang",
   "license": "ISC",
