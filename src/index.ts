@@ -148,8 +148,6 @@ io.on('connection', async function (socket) {
       socket.disconnect(true)
       return
     }
-    //https://stackoverflow.com/questions/5765398/whats-the-best-way-to-convert-a-number-to-a-string-in-javascript
-    user_id = `${user_id}` //测试代码发 number 而不是字符串
     let tcheck = await tokenCheck(user_id, token, client)
     if (!tcheck) {
       forceLogoff('logoff') //bug 13734
@@ -338,7 +336,8 @@ async function tokenCheck(user_id:string, token:string, client:string):Promise<b
       return false
     }
   }
-  let tmp = user_id.split('_')
+  //https://stackoverflow.com/questions/5765398/whats-the-best-way-to-convert-a-number-to-a-string-in-javascript
+  let tmp = `${user_id}`.split('_')  //测试代码发 number 而不是字符串
   if (tmp.length != 3) {
     warn(`user_id should have the format of seid_ccgeid_userid. [${user_id}]`)
     return false

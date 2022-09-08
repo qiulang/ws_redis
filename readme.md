@@ -800,6 +800,8 @@ fetch('https://api.github.com/orgs/axios')
      },
    ```
 
+3. 拦截请求和相应  [Intercept fetch() API requests and responses in JavaScript](https://stackoverflow.com/questions/45425169/intercept-fetch-api-requests-and-responses-in-javascript)
+
 
 
 #### 同一账号重复登录问题
