@@ -79,6 +79,7 @@ var dup:SocketRecord = {}
 var user_socket:UserSocket = {}
 
 //https://socket.io/docs/v4/admin-ui/
+//https://github.com/darrachequesne/notepack/issues/29
 instrument(io, {
   auth: {
     type: "basic",
