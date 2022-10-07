@@ -105,16 +105,20 @@
         socket.on('connect', () => {
           console.log(`connect to server with id ${socket.id} , send my user id 1001`);
           //socket.io 我们自定义消息, login
-          socket.emit('login', {user_id,token:"fake"}, reply => {
-            console.log(`只有收到服务器确认客户端才能确认login成功:${JSON.stringify(reply)}`)
-            //这里只是一个简单示例，服务器返回userid,客户端作比较
-            if (reply.user_id == 'login') {
-              console.log('服务器成功处理login')
-              // wsCB(reply)
-            } else {
-              console.log('服务器返回值不对!')
-            }
-          })//login with my user_id
+          socket.emit('login', {user_id,token:"fake"})
+          // socket.emit('login', {user_id,token:"fake"}, reply => {});
+          // socket.emit('login', {user_id,token:"fake"}, reply => {
+          //   console.log(`只有收到服务器确认客户端才能确认login成功:${JSON.stringify(reply)}`)
+          //   //这里只是一个简单示例，服务器返回userid,客户端作比较
+          //   if (reply.user_id == 'login') {
+          //     console.log('服务器成功处理login')
+          //     // wsCB(reply)
+          //   } else {
+          //     console.log('服务器返回值不对!')
+          //   }
+          //   console.log(`${JSON.stringify(reply)}`)
+          //   console.log("login")
+          // })//login with my user_id
         });
         //刷新浏览器 socket.id会变，但不是reconnect消息
         //reconnect成功后会再触发connect消息
