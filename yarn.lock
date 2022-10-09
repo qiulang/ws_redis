@@ -117,13 +117,13 @@
   "resolved" "https://registry.npmmirror.com/@sindresorhus/is/-/is-0.14.0.tgz"
   "version" "0.14.0"
 
-"@socket.io/admin-ui@^0.4.0":
-  "integrity" "sha512-ZidOoJdlqtL0cP/fdD0KygoobJty/eVKGGtlPff/oZpyskEMvFXZbOhV1e4aQamRptO6l0/qG+TWCCXmXRtG5A=="
-  "resolved" "https://registry.npmmirror.com/@socket.io/admin-ui/-/admin-ui-0.4.0.tgz"
-  "version" "0.4.0"
+"@socket.io/admin-ui@^0.5.1":
+  "integrity" "sha512-1dlGL2FGm6T+uL1e6iDvbo2eCINwvW7iVbjIblwh5kPPRM1SP8lmZrbFZf4QNJ/cqQ+JLcx49eXGM9WAB4TK7w=="
+  "resolved" "https://registry.npmmirror.com/@socket.io/admin-ui/-/admin-ui-0.5.1.tgz"
+  "version" "0.5.1"
   dependencies:
-    "@types/bcrypt" "~3.0.0"
-    "bcrypt" "~5.0.1"
+    "@types/bcryptjs" "^2.4.2"
+    "bcryptjs" "^2.4.3"
     "debug" "~4.3.1"
 
 "@szmarczak/http-timer@^1.1.2":
@@ -158,10 +158,10 @@
   "resolved" "https://registry.npmjs.org/@tsconfig/node16/-/node16-1.0.2.tgz"
   "version" "1.0.2"
 
-"@types/bcrypt@~3.0.0":
-  "integrity" "sha512-SwBrq5wb6jXP0o3O3jStdPWbKpimTImfdFD/OZE3uW+jhGpds/l5wMX9lfYOTDOa5Bod2QmOgo9ln+tMp2XP/w=="
-  "resolved" "https://registry.npmmirror.com/@types/bcrypt/-/bcrypt-3.0.1.tgz"
-  "version" "3.0.1"
+"@types/bcryptjs@^2.4.2":
+  "integrity" "sha512-LiMQ6EOPob/4yUL66SZzu6Yh77cbzJFYll+ZfaPiPPFswtIlA/Fs1MzdKYA7JApHU49zQTbJGX3PDmCpIdDBRQ=="
+  "resolved" "https://registry.npmmirror.com/@types/bcryptjs/-/bcryptjs-2.4.2.tgz"
+  "version" "2.4.2"
 
 "@types/body-parser@*":
   "integrity" "sha512-ALYone6pm6QmwZoAgeyNksccT9Q4AWZQ6PvfwR37GT6r6FWUPguq6sUmNGSMV2Wr761oQoBxwGGa6DR5o1DC9g=="
@@ -443,13 +443,18 @@
   "resolved" "https://registry.npmjs.org/base64id/-/base64id-2.0.0.tgz"
   "version" "2.0.0"
 
-"bcrypt@^5.0.1", "bcrypt@~5.0.1":
+"bcrypt@^5.0.1":
   "integrity" "sha512-9BTgmrhZM2t1bNuDtrtIMVSmmxZBrJ71n8Wg+YgdjHuIWYF7SjjmCPZFB+/5i/o/PIeRpwVJR3P+NrpIItUjqw=="
   "resolved" "https://registry.npmmirror.com/bcrypt/-/bcrypt-5.0.1.tgz"
   "version" "5.0.1"
   dependencies:
     "@mapbox/node-pre-gyp" "^1.0.0"
     "node-addon-api" "^3.1.0"
+
+"bcryptjs@^2.4.3":
+  "integrity" "sha512-V/Hy/X9Vt7f3BbPJEi8BdVFMByHi+jNXrYkW3huaybV/kQ0KJg0Y6PkEMbn+zeT+i+SiKZ/HMqJGIIt4LZDqNQ=="
+  "resolved" "https://registry.npmmirror.com/bcryptjs/-/bcryptjs-2.4.3.tgz"
+  "version" "2.4.3"
 
 "binary-extensions@^2.0.0":
   "integrity" "sha512-jDctJ/IVQbZoJykoeHbhXpOlNBqGNcwXJKJog42E5HDPUwQTSdjCHdihjj0DlnheQ7blbT6dHOafNAiS8ooQKA=="
