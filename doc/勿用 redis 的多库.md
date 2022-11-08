@@ -1,6 +1,6 @@
-# 勿用 redis 的多库
+# 勿用 redis 的多库 ？
 
-[文章出处](http://blog.kankanan.com/article/52ff7528-redis-7684591a5e93.html)
+[文章出处](http://tangxinfa.github.io/article/52ff7528-redis-7684591a5e93.html)
 
 ## 不要将 redis 和 mysql 混为一谈
 
@@ -125,3 +125,9 @@ redis 的数据量或者请求数过高，会导致 redis 不稳定，最终影�
 - [Partitioning: how to split data among multiple Redis instances. – Redis](http://redis.io/topics/partitioning)
 
 - [Redis Presharding](http://oldblog.antirez.com/post/redis-presharding.html)
+
+
+
+## 讨论
+
+https://stackoverflow.com/questions/16221563/whats-the-point-of-multiple-redis-databases 讨论中提到好处基本都集中在管理，云端部署简单。
