@@ -39,7 +39,7 @@ def times(func):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-r", "--redis", default="yes",
+    parser.add_argument("-r", "--redis", default="n",
                         help="add to redis or mysql (if no)")
     args = parser.parse_args()
     toredis = (args.redis == "yes" or args.redis == "y")
@@ -50,7 +50,7 @@ def main():
 
 task_id = 4000
 cc = "qq_pc_103_2024_00000002_1645584073_751667"
-rows = 50000
+rows = 100000
 
 if __name__ == '__main__':
     main()
