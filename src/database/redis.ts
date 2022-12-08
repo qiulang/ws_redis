@@ -1,6 +1,6 @@
 require('dotenv-flow').config()
-const Redis = require('ioredis')
-// import Redis from 'ioredis'
+// const Redis = require('ioredis')
+import Redis from 'ioredis'
 var { info, warn } = require('../logger')
 var debug = require('debug')('app:redis:debug')
 /*
@@ -18,7 +18,7 @@ new Redis("redis://:authpassword@127.0.0.1:6380/4");
 
 //https://stackoverflow.com/questions/12710905/how-do-i-dynamically-assign-properties-to-an-object-in-typescript
 const setting = {
-  port: process.env.REDIS_PORT || 6379,
+  port: +(process.env.REDIS_PORT || 6379),
   host: process.env.REDIS_HOST || 'localhost',
   password:''
 }
