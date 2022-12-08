@@ -3,7 +3,7 @@ import express from 'express'
 import cors from 'cors'
 import { createServer } from 'http'
 const axios = require('axios').default;
-const { instrument } = require("@socket.io/admin-ui");
+import { instrument } from "@socket.io/admin-ui";
 
 var app = express()
 // var http = require('http').Server(app)
@@ -101,7 +101,7 @@ io.use(async (socket, next) => {
   if (Object.keys(socket.handshake.auth).length === 0) {
     const token = socket.handshake.query['token'] as string
     if (!token) {
-      // debug('auth is added in socket.io-client 3+, but the client does not use it')
+      // debug(`auth is added in socket.io-client 3+, but the client does not use it`)
       next();
     } else {
       // debug(`We add query property to socket.io-client 2.x`)
@@ -171,8 +171,9 @@ io.on('connection', async function (socket) {
 
   //用户关闭页面，断网都会触发disconnect消息
   socket.on('disconnect', async function (reason:string) {
-    //https://socket.io/docs/server-api/#Event-%E2%80%98disconnect%E2%80%99
     info(`A ws disconnected. [${socket.id}:${reason}]`)
+    //https://socket.io/docs/v4/server-api/#socketdisconnectclose
+    //客户端显示的原因 "io server disconnect" https://socket.io/docs/v4/client-api/#event-disconnect
     if (reason.includes(`server namespace disconnect`)) {
       debug(`We close the ws, so just return.[${socket.id}]`)
       return
@@ -210,7 +211,7 @@ io.on('connection', async function (socket) {
           if (reason == 'client namespace disconnect') {
             debug(`Assume that user logs off, to fix 16312 we send check_out. [${uid}:${sid}]`)
           } else {
-            debug(`Assume that user closes tab, we need to tell CR. [${uid}:${sid}]`)
+            debug(`Assume that user closes tab or network disconnected, we need to tell CR. [${uid}:${sid}]`)
           }
           await notifyDisconnect(uid)
         } else {

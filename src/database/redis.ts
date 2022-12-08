@@ -43,7 +43,7 @@ redis.on('error', (err:Error) => {
   if (err.message.includes('connect ECONNREFUSED')) {
     warn('Failed to connect redis, redis-server is probably down')
   }
-  warn('REDIS: FAILED， will keep reconnecting, but what next?')
+  warn('REDIS: FAILED, will keep reconnecting, but what next?')
 })
 
 async function cleaup() {
