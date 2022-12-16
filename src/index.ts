@@ -16,15 +16,14 @@ var io = new Server(httpServer, {
     credentials: true
   }
 })
+var { redis, pub, sub } = require('./database/redis')
+io.adapter(redisAdapter({ pubClient: pub, subClient: sub }))
 let unserialize = require('locutus/php/var/unserialize')
 var { info, warn, browserLog } = require('./logger')
 var debug = require('debug')('app:websocket:debug')
-var { redis, pub, sub } = require('./database/redis')
-io.adapter(redisAdapter({ pubClient: pub, subClient: sub }))
 var indexRouter = require('./routes/index')
 const uuidv1 = require('uuid/v1')
 const portfinder = require('portfinder')
-
 let RTIME:number = +(process.env.RTIME || 45)
 
 //入口函数
@@ -78,6 +77,8 @@ var dup:SocketRecord = {}
 //从收集到的日志看这种情况是存在的，而且目前看不会有内存泄漏情况
 var user_socket:UserSocket = {}
 
+//#region socket.io stuff
+
 //https://socket.io/docs/v4/admin-ui/
 //https://github.com/darrachequesne/notepack/issues/29
 instrument(io, {
@@ -89,6 +90,7 @@ instrument(io, {
 });
 
 //https://socket.io/docs/v4/middlewares/#sending-credentials
+//#region socket.io middleware
 io.use(async (socket, next) => {
   async function authCheck({token,uid,client}:Auth) {
     let tcheck = await tokenCheck(uid,token,client)
@@ -106,18 +108,20 @@ io.use(async (socket, next) => {
       // TODO should be totally banned when the client codes update
       next();
     } else {
-      // debug(`We add query property to socket.io-client 2.x`)
       const uid = socket.handshake.query['uid'] as string
       const client = socket.handshake.query['client'] as string
       authCheck({token,uid,client})
+      // debug(`We add query property to socket.io-client 2.x`)
     }
   } else {
-    // debug(`The client uses 4.x auth option`)
     const {token,uid,client} = socket.handshake.auth
     authCheck({token,uid,client})
+    // debug(`The client uses 4.x auth option`)
   }
 })
+//#endregion middle
 
+//#region socket.io event
 //https://socket.io/docs/v4/server-application-structure/
 //connect event is fired by the Socket instance upon connection and reconnection.
 io.on('connection', async function (socket) {
@@ -156,13 +160,13 @@ io.on('connection', async function (socket) {
       forceLogoff('logoff') //bug 13734
       return
     }
-    let loginRes = 'login'
-    if (client == 'client.wechat') { //判断此时是否变为移动坐席
-      loginRes = await mobileSettingCheck(token,user_id)
-    }
     let exist = await dupCheck({ user_id, client, socket_id:socket.id,uniqueId },fn)
     if (exist) {
       return
+    }
+    let loginRes = 'login'
+    if (client == 'client.wechat') { //判断此时是否变为移动坐席
+      loginRes = await mobileSettingCheck(token,user_id)
     }
     await loginResult({ user_id, client, socket_id:socket.id,uniqueId })
     //考虑了半天代码用什么做版本号好，必须是打包代码能自动生成的，不能每次都手动修改
@@ -242,6 +246,10 @@ io.on('connection', async function (socket) {
   })
 })
 
+//#endregion event
+//#endregion
+
+//#region redis pub-sub
 //订购 redis 消息处理，一般是web服务器发给我们的
 sub.on('message', async function (channel:string, message:string) {
   debug(`SUB channel received message. [${channel}:${message}]`)
@@ -279,7 +287,10 @@ sub.on('message', async function (channel:string, message:string) {
     warn(`SUB emit failed. [${message} to ${socketid}:${err}]`)
   }
 })
+//#endregion
 
+//#region helper
+//for wechat mini program
 async function mobileSettingCheck(token:string,uid:string):Promise<mobileCheckT> {
   debug(`query ${process.env.BACKEND_SVC}/wechat/seat/seatInfo`)
   if (!process.env.BACKEND_SVC || process.env.TOKEN_CHECK === '0') {
@@ -420,6 +431,7 @@ async function dupCheck({ user_id, client, socket_id,uniqueId }:socketData, fn:l
   return false //更新 socketid
 }
 
+// ws 成功连接结果
 async function loginResult({ user_id, client, socket_id,uniqueId }:socketData):Promise<void> {
   const loginT = new Date().toLocaleString()
   await redis
@@ -470,8 +482,28 @@ async function notifyDisconnect(user_id:string):Promise<void> {
   debug(`remove websocket:${user_id} from redis`)
 }
 
+// make sure `this` is unusable in this standalone function
+function msgTimeout(onSuccess:(this: void,...args:any[]) => void, onTimeout:(this: void) => void, timeout:number) {
+  let called = false
+
+  const timer = setTimeout(() => {
+    if (called) return
+    called = true
+    onTimeout()
+  }, timeout)
+
+  return (...args:any[]) => {
+    if (called) return
+    called = true
+    clearTimeout(timer)
+    onSuccess(args)
+  }
+}
+
+//#endregion
+
 async function startServer() {
-  var port = process.env.PORT || 3000
+  let port = process.env.PORT || 3000
   //调试用
   if (process.env.NGINX) {
     debug('use nginx to provide static file; port 3000 is free in docker')
@@ -490,24 +522,6 @@ async function startServer() {
   app.use(express.urlencoded({ extended: false }))
   app.use(cors())
   app.use('/', indexRouter)
-}
-
-// make sure `this` is unusable in this standalone function
-function msgTimeout(onSuccess:(this: void,...args:any[]) => void, onTimeout:(this: void) => void, timeout:number) {
-  let called = false
-
-  const timer = setTimeout(() => {
-    if (called) return
-    called = true
-    onTimeout()
-  }, timeout)
-
-  return (...args:any[]) => {
-    if (called) return
-    called = true
-    clearTimeout(timer)
-    onSuccess(args)
-  }
 }
 
 //https://pm2.io/docs/runtime/best-practices/graceful-shutdown/
