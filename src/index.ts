@@ -99,9 +99,11 @@ io.use(async (socket, next) => {
     }
   }
   if (Object.keys(socket.handshake.auth).length === 0) {
+    // debug(`auth is added in socket.io-client 3+, but the client does not use it`)
     const token = socket.handshake.query['token'] as string
     if (!token) {
-      // debug(`auth is added in socket.io-client 3+, but the client does not use it`)
+      // debug(`Current BS client does NOT use query property`)
+      // TODO should be totally banned when the client codes update
       next();
     } else {
       // debug(`We add query property to socket.io-client 2.x`)
