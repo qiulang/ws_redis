@@ -130,4 +130,7 @@ redis 的数据量或者请求数过高，会导致 redis 不稳定，最终影�
 
 ## 讨论
 
-https://stackoverflow.com/questions/16221563/whats-the-point-of-multiple-redis-databases 讨论中提到好处基本都集中在管理，云端部署简单。
+https://stackoverflow.com/questions/16221563/whats-the-point-of-multiple-redis-databases 讨论中提到好处基本都集中在管理，云端部署简单。 ”Let the access pattern determine how to structure your data rather than store it “， 可能合适使用情况包括：
+
+1. 管理相对方便 There's one clear advantage of using redis databases in the same redis instance, and that's management. 
+2. 使用云端服务省钱的方法 If you use a "cloud Redis" from your favourite cloud provider, you probably have a minimum memory size and will pay for what you allocate. If however your dataset is smaller than that, then you'll be wasting a bit of the allocation, and so wasting a bit of money.
