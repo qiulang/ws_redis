@@ -4,31 +4,49 @@ let WebSocket = require('ws')
 let io = require('socket.io-client')
 let log = require('debug')('test:ws-client')
 const server = 'ws://localhost:8080'
-const ws = new WebSocket(server);
+// const ws = new WebSocket(server);
 
-ws.on('open', function open() {
-  log(`connet to ws://localhost:8080`)
-  ws.send('something');
-});
+// ws.on('open', function open() {
+//   log(`connet to ws://localhost:8080`)
+//   ws.send('something');
+// });
 
-ws.on('message', function message(data) {
-  log('received: %s', data);
-});
+// ws.on('message', function message(data) {
+//   log('received: %s', data);
+// });
 
 //https://socket.io/docs/v4/memory-usage/
 //为了证实 socket.io-client 没法直接和ws服务器相连
-let socket = io(server, { transports: ['websocket'] })
-socket.on('connect', function () {
-    log(`socket.io client connects to ws server`)
-})
+// let socket = io(server, { transports: ['websocket'] })
+// socket.on('connect', function () {
+//     log(`socket.io client connects to ws server`)
+// })
 
-socket.on('connect_error', (err) => {
-    log(`${socket.id}:connect_error due to ${err}`)
-})
+// socket.on('connect_error', (err) => {
+//     log(`${socket.id}:connect_error due to ${err}`)
+// })
 
-socket.on('error',(err) => {
-    log(`${socket.id}: error due to ${err}`)
-})
-socket.on('disconnect', function () {
-    log(`disconnected ${socket.id}`)
-})
+// socket.on('error',(err) => {
+//     log(`${socket.id}: error due to ${err}`)
+// })
+// socket.on('disconnect', function () {
+//     log(`disconnected ${socket.id}`)
+// })
+
+let SockJS = require('sockjs-client')
+// sockjs-client 不能用 ws://
+// var sock = new SockJS(`http://localhost:8080`);
+let sock = new SockJS(`ws://localhost:8080`);
+ sock.onopen = function() {
+     log('sockjs open');
+     sock.send('test');
+ };
+
+ sock.onmessage = function(e) {
+     log('sockjs message', e.data);
+     sock.close();
+ };
+
+ sock.onclose = function() {
+     log('sockjs close');
+ };
