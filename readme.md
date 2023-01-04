@@ -39,15 +39,16 @@ redis-cli -h host -p port -a password
 
 Socket.io + redis pubsub
 
-1. https://stackoverflow.com/questions/10557826/node-js-socket-io-redis-pub-sub-high-volume-low-latency-difficulties?rq=1
-2. https://stackoverflow.com/questions/6192177/redis-pub-sub-with-reliability?rq=1
-3. https://stackoverflow.com/questions/5903328/pub-sub-implementation-in-nodejs?rq=1
+1. [Node.js, Socket.io, Redis pub/sub high volume, low latency difficulties](https://stackoverflow.com/questions/10557826/node-js-socket-io-redis-pub-sub-high-volume-low-latency-difficulties)
+2. [Redis Pub/Sub with Reliability](https://stackoverflow.com/questions/6192177/redis-pub-sub-with-reliability)
+3. [Pub/sub implementation in nodeJS](https://stackoverflow.com/questions/5903328/pub-sub-implementation-in-nodejs)
 
 
 
 开始写socket.io + redis pubsub 如果需要可以借鉴下 
 1. https://github.com/steffenwt/nodejs-pub-sub-chat-demo
 2. https://scalegrid.io/blog/using-redis-with-node-js-and-socket-io/
+3. https://github.com/dwyl/hapi-socketio-redis-chat-example
 
 
 
@@ -246,7 +247,8 @@ http 服务器和websocket 服务器监听不同端口的方法暂时没试出�
 9. [如何确认nginx 在运行](https://stackoverflow.com/questions/35220654/how-to-verify-if-nginx-is-running-or-not) , mac 下最简单的方法 `brew services list` 
 10. [扫描某个端口使用情况](https://askubuntu.com/questions/538208/how-to-check-opened-closed-ports-on-my-computer) 几条命令，容易忘。（1） `netstat -an | grep 3000` -a all -n number 有些版本有 -p看是哪个进程，但mac版本没有，所以mac我更倾向于用 (2) `lsof -i :3000` (3) nc做端口扫描,比如`nc -zv localhost 3000-3010` 扫描 3000到 3010
 11. lsof -i :3000 显示 [*:hbci 表示 "Home Banking Computer Interface"](https://unix.stackexchange.com/questions/346060/tcp-hbci-listen-what-does-hbci-mean?noredirect=1&lq=1) 可以改用`lsof -P -i :3000` 
-12. gzip 之前一直没开启，这是要开启，[参见](https://betterexplained.com/articles/how-to-optimize-your-site-with-gzip-compression/)。
+12. [Find (and kill) process locking port 3000 on Mac](https://stackoverflow.com/questions/3855127/find-and-kill-process-locking-port-3000-on-mac)
+13. gzip 之前一直没开启，这是要开启，[参见](https://betterexplained.com/articles/how-to-optimize-your-site-with-gzip-compression/)。
 
 注： nginx 配置文件不含ssl 部分，这块原本 nginx配置一个难点，但因为我们在阿里云的ssl配置在统一在最外层的负载均衡器（slb），[slb转发到我们容器机器时候已经不加密的数据](https://help.aliyun.com/document_detail/89151.html?spm=a2c4g.11186623.6.750.55291f8bxeHlNG) 。
 

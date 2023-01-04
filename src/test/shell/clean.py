@@ -86,7 +86,8 @@ if __name__ == '__main__':
     supplyment = args.supplyment != "no"
     # rshost = 'r-2ze2ojuacmdgvwevj3pd.redis.rds.aliyuncs.com'
     # rspass = 'uSeisaa1bier'
-    rshost = 'r-2ze0b3b5fcea8914pd.redis.rds.aliyuncs.com'
+    # rshost = 'r-2ze0b3b5fcea8914pd.redis.rds.aliyuncs.com'
+    rshost = 'r-uf62f9d141fc2124pd.redis.rds.aliyuncs.com'
     rspass = 'Sinicnet123456'
     rs = redis.Redis(
         host=rshost, password=rspass)
