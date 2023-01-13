@@ -62,7 +62,7 @@ chat 例子一开始没跑起应该 socket.io client版本问题。另，开了�
 
 [Moving from socket.io to raw websockets?](https://stackoverflow.com/questions/38546496/moving-from-socket-io-to-raw-websockets) 回答其实是列出socket.io 比原生websocket提供的功能
 
-[Which websocket library to use with Node.js?](https://stackoverflow.com/questions/16392260/which-websocket-library-to-use-with-node-js)
+[Which websocket library to use with Node.js?](https://stackoverflow.com/questions/16392260/which-websocket-library-to-use-with-node-js) 这个问题被关闭，但comments里的抱怨很好
 
 [8 Node.js Web Socket Libraries for 2019](https://blog.bitsrc.io/8-node-js-web-socket-libraries-for-2018-818e7e5b67cf)
 

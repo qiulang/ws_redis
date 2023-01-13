@@ -21,7 +21,8 @@
       "request": "launch",
       "program": "${file}",
       "console": "integratedTerminal",
-      "logToFile": true
+      "logToFile": true,
+      "args":["-s","yes"]
     },
     {
       "type": "node",

@@ -53,34 +53,47 @@ def supply(rs, mock):
     pipe.hkeys(sukey)
     [users, ss] = pipe.execute()
     ss = set(ss)
+    # https://stackoverflow.com/questions/1207406/how-to-remove-items-from-a-list-while-iterating/
     for user in users:
         pipe.hget(user, 'socketid')
     sids = pipe.execute()
     u2 = dict(zip(sids, users))
+    #sid <--> user pair
     for sid,u in u2.items():
-        if sid == None:  # "websocket:socket_user"
-            continue
-        if sid in ss:
-            continue
         user = u.decode("utf-8").replace('websocket:', '')
-        loginTime = rs.hget(u,'loginTime')
+        if u == b"websocket:socket_user":
+            continue
+        if sid == None:  # "websocket:socket_user"
+            print(f"No {chalk.cyan('socketid')} for {user}")
+            pipe.delete(u)
+            continue
+        data = rs.hgetall(u)
+        if len(data) != 4:
+           print(f"Incorrect data {chalk.cyan(data)} for {user}")
+           pipe.delete(u)
+           continue
+        # loginTime = rs.hget(u,'loginTime')
+        if sid in ss:
+            print(f"{chalk.yellow(user)} has correct data")
+            continue
+        loginTime = data[b'loginTime']
         if loginTime == None:
             print(f"No loginTime for {user}")
             loginTime = "Unknown"
         else:
             loginTime = loginTime.decode("utf-8")
         tmp = user + "@" + loginTime
-        print(f"why you are not in {chalk.green(user)}: {sid} : {tmp}")
+        print(f"why you are not in {chalk.green(user)}: websocket:socket_user")
         mock or pipe.hset(sukey, sid, tmp)
-    pipe.execute()
+    mock or pipe.execute()
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--delete", default="no",
-                        help="whether to add/del the useless data in redis， default is no")
+                        help="whether to add/del the useless data in redis, default is no")
     parser.add_argument("-s", "--supplyment", default="no",
-                        help="whether to add websocket:user data to websocket:socket_user， default is no")
+                        help="whether to add websocket:user data to websocket:socket_user, default is no")
     args = parser.parse_args()
     mock = args.delete == "no"
     supplyment = args.supplyment != "no"
