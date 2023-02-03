@@ -27,11 +27,18 @@ ws.on('open', function open() {
   // ws.send(JSON.stringify([seid, ccgeid, userid]))
   // ws.send(cb.toString())
   // ws.send((ack => { console.log(`This is arrow function ${ack}`)}).toString())
-  let msg = {
-    data:"hi",
-    res: ack => { console.log(`This is arrow function ${ack}`)}
-  }
-  ws.send(JSONfn.stringify(msg))
+  // let msg = {
+  //   data:"hi",
+  //   res: ack => { console.log(`This is arrow function ${ack}`)}
+  // }
+  // ws.send(JSONfn.stringify(msg))
+  let event = new MessageEvent('message', {
+    data: "hi with lastEventId",
+    // origin: socket.url,
+    lastEventId: '101'
+  });
+  console.log(`let's emit`)
+  ws.emit('lastEventId',event);
 })
 
 ws.on('message', function incoming(evn) {

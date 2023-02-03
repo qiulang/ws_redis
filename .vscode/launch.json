@@ -41,7 +41,7 @@
       "type": "node",
       "request": "launch",
       "name": "Launch test script",
-      "program": "${workspaceFolder}/src/test/js/reduceTest.js"
+      "program": "${workspaceFolder}/src/test/js/wsServer.js"
     },
     {
       "type": "node",
