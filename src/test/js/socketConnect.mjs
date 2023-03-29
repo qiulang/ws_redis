@@ -1,5 +1,7 @@
 // const io = require('socket.io-client')
-import  {io}  from 'socket.io-client'
+// import  {io}  from 'socket.io-client'
+// 必须跑在浏览器里,所以单独再写一个 wsBrowser.mjs文件
+import { io } from "../basic-websocket-client/src/index.js";
 const server = 'http://localhost:3000'
 var socket = io(server, { transports: ['websocket'], autoConnect: false })
 // var log = require('debug')('client:test')

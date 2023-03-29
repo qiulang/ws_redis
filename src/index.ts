@@ -509,7 +509,9 @@ async function startServer() {
     debug('use nginx to provide static file; port 3000 is free in docker')
   } else {
     debug('use express to provide static file, e.g. index.html')
+    //the path that you provide to the express.static function is relative to the directory from where you launch your node process.
     app.use(express.static('public'))
+    app.use('/scripts', express.static('src'))
     //nginx规则是location / 用express作为fallback，所以这个路由设置应该没效果了
     app.use('/rep', indexRouter) //本地 nginx 测试，实际部署不需要
     portfinder.basePort = port

@@ -84,3 +84,4 @@ SyntaxError: Cannot use import statement outside a module
 
 
 
+注意  the path that you provide to the `express.static` function is relative to the directory from where you launch your `node` process. 所以直接在浏览器里用url http://localhost:3000/
