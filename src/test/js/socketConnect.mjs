@@ -1,12 +1,16 @@
-const io = require('socket.io-client')
+// const io = require('socket.io-client')
+import  {io}  from 'socket.io-client'
 const server = 'http://localhost:3000'
 var socket = io(server, { transports: ['websocket'], autoConnect: false })
-var log = require('debug')('client:test')
-var Redis = require('ioredis')
+// var log = require('debug')('client:test')
+// var Redis = require('ioredis')
+import debugModule from "debug";
+let log = debugModule('client:test')
+import Redis from 'ioredis'
 var redis = new Redis()
 var pub = new Redis()
 
-const [user_id, seid, ccgeid, token, client] = ['1_2_1000', '1', '2', 'xxxxx', 'nodejs']
+const [user_id, seid, ccgeid, token, client] = ['1_2_1000', '1', '2', 'xxxxx', 'client.bs']
 const pubsubMsg = JSON.stringify({ msg: 'Can you hear me' }) //Need to be json string
 let pubsubBit = false
 let wsBit = false
@@ -31,13 +35,15 @@ socket.on('connect', function () {
       await loginCheck(reply, socket.id)
     }
     if (status == 'logoff' || status == 'upgrade') {
+      log("why ??")
+      bye(0)
     }
   })
 })
 
 socket.on('cr_msg', (msg, fn) => {
   if (msg == pubsubMsg) {
-    log('WS got the message we just pub on redis.')
+    log(`WS got the message we just pub on redis -- "${msg}"`)
     fn('Got you!')
     pubsubBit = true
   } else {

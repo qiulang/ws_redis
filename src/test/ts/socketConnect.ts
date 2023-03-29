@@ -1,5 +1,9 @@
 const { Manager,Socket } = require('socket.io-client')
 const io = require('socket.io-client')
+// import { Manager,Socket } from 'socket.io-client'
+// import { io } from "../basic-websocket-client/src/index";
+// 为了测试 basic-websocket-client 做了修改，发现实在跑不通，因为它用 ES modules 没法和 CJS 混用
+
 // var socket: typeof io !!! wrong, io is the default export function that return Socket
 // var socket = io(server, { transports: ['websocket'], autoConnect: false, /*forceNew: true*/ })
 const server = 'http://localhost:3000'
@@ -34,6 +38,7 @@ interface socketRedis {
 type wsCB = (arg:string) => void
 
 let sockets:{ [key: string]: typeof Socket } = {}
+// let sockets:{ [key: string]: any } = {}
 
 function start(c:string,r: typeof Redis, p: typeof Redis) {
   [client,redis,pub,pubsubBit,wsBit] = [c,r,p,false,false]
@@ -69,7 +74,10 @@ function setupWS(c:string) { //b/c client is updated in logoff event in the 3rd 
   sockets[client] = socket
   socket.on('connect', function () {
     wsBit = true
+    // socket.emit('login', { user_id, seid, ccgeid, token, client })
+    // return
     socket.emit('login', { user_id, seid, ccgeid, token, client }, async (reply:loginRep) => {
+      //{"user_id":"login","ver":"xxxxxx"}
       log(`ws login response:${JSON.stringify(reply)}:${socket.id}`)
       let status = reply.user_id
       if (status == 'login') {
@@ -111,7 +119,8 @@ function setupWS(c:string) { //b/c client is updated in logoff event in the 3rd 
 
   socket.on('logoff', (msg:string) => {
     log(`${socket.id}:${c}: should be kicked off for: ${msg}`)
-    socket.close()
+    // socket.close()
+    socket.disconnect()
     logoffBit = 1
   })
 

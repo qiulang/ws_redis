@@ -10,11 +10,10 @@
   "//": [
     "1. different scripts for different use cases:",
     "2. prod use pm2 is our deployment case and github action also uses it",
-    "3. tss is for docker image build step to verify the server can start, so it needs to exit",
-    "4. pm2.5 is our docker entrypoint using pm2-runtime even though we don't really use this image",
-    "5. debug is supposed for vscode debug but we havn't used for a while",
-    "6. start uses nodemon for daily development, with ctrl+c to exit nodemon & redis together",
-    "7. test is the client code to verify the server works, github action also uses it"
+    "3. pm2.5 is our docker entrypoint using pm2-runtime even though we don't really use this image",
+    "4. debug is supposed for vscode debug but we havn't used for a while",
+    "5. start uses nodemon for daily development, with ctrl+c to exit nodemon & redis together",
+    "6. test is the client code to verify the server works(so need npm start first), github action also uses it"
   ],
   "scripts": {
     "build": "npx tsc",
@@ -32,6 +31,7 @@
     "pm2.5": "pm2-runtime ecosystem.config.js",
     "test": "DEBUG=test:* ts-node src/test/ts/socketTest.ts",
     "testwc": "DEBUG=wechat:* node src/test/wechat/token.js",
+    "testm":"DEBUG=client:* node src/test/js/socketConnect.mjs",
     "perf": "DEBUG=perf:* ts-node src/test/perf/task.ts"
   },
   "author": "qiulang",
@@ -63,7 +63,7 @@
     "pino": "^7.9.1",
     "ramda": "^0.27.2",
     "randomstring": "^1.1.5",
-    "socket.io-client": "^2.5.0",
+    "socket.io-client": "^4.6.1",
     "sockjs": "^0.3.24",
     "sockjs-client": "^1.6.1",
     "ts-node": "^10.4.0",
