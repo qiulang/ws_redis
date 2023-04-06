@@ -5,10 +5,15 @@ let socket:typeof Socket
 let client:string,wsBit = false
 let wsTimeout:NodeJS.Timeout
 
+// comment this function setupWS 
 function setupWS(c:string) {
-  // var socket = io(server, { transports: ['websocket'], autoUnref: true })
-  let socket = io(server, { transports: ['websocket'] })
-  socket = io(server, { transports: ['websocket'] })
+  var socket = io(server, { transports: ['websocket'], autoUnref: true })
+  // 1st error case as readme said, answered in SO
+  // socket = io(server, { transports: ['websocket'] })
+  // 2nd error case, wsBit set to false for 2nd connection, but the messages are correct.
+  // var socket = io(server, { transports: ['websocket'] })
+  // 3rd error case, the same as the 2nd cass
+  // let socket = io(server, { transports: ['websocket'] })
   socket.on('connect', function () {
     wsBit = true
     console.log(`Connected to local ws server with ${socket.id}`)
@@ -23,7 +28,7 @@ function setupWS(c:string) {
     console.log(`connect_error due to ${err.message}`)
   })
   socket.on('disconnect',(msg:string) =>{
-    console.log(`${socket.id}: disconnect: ${msg}`)
+    console.log(`${socket.id}:${c}: disconnect: ${msg}`)
     wsBit = false
   })
 }
@@ -42,14 +47,16 @@ function start(c:string) {
 }
 
 function main() {
-  start('nodejs')
+  start('client.bs')
   setTimeout(()=> {
     console.log('open another connection in 5 seconds')
-    start("browser")
+    start("client.wechat")
   },5000)
 }
 
 main()
-//https://stackoverflow.com/questions/71852823/global-variables-in-asynchronous-code-socket-io-show-an-error-in-an-unexpected
 
 export {}
+
+
+

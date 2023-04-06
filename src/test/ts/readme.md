@@ -36,9 +36,10 @@ D7[close all redis clients] --> D8
 D8[check logoff test result] --> O[end]
 ```
 
-`socketConnectBug.ts` 的原因
+`socketConnectBug.ts` 有两个问题
 
-[Global variables in asynchronous code (socket.io) show an error in an unexpected way](https://stackoverflow.com/questions/71852823/global-variables-in-asynchronous-code-socket-io-show-an-error-in-an-unexpected)
+1. [Global variables in asynchronous code (socket.io) show an error in an unexpected way](https://stackoverflow.com/questions/71852823/global-variables-in-asynchronous-code-socket-io-show-an-error-in-an-unexpected)
+2. `    wsBit ` 这个变量会被两个连接改串了，第一个连接被踢下线后，在 `socket.on('disconnect'` 修改了，从而影响第二个连接的判断
 
 
 

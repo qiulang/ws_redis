@@ -32,7 +32,8 @@
     "test": "DEBUG=test:* ts-node src/test/ts/socketTest.ts",
     "testwc": "DEBUG=wechat:* node src/test/wechat/token.js",
     "testm":"DEBUG=client:* node src/test/js/socketConnect.mjs",
-    "perf": "DEBUG=perf:* ts-node src/test/perf/task.ts"
+    "perf": "DEBUG=perf:* ts-node src/test/perf/task.ts",
+    "ai": "ts-node src/test/ts/socketConnectBug.ts"
   },
   "author": "qiulang",
   "license": "ISC",
