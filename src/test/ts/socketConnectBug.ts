@@ -5,7 +5,6 @@ let socket:typeof Socket
 let client:string,wsBit = false
 let wsTimeout:NodeJS.Timeout
 
-// comment this function setupWS 
 function setupWS(c:string) {
   var socket = io(server, { transports: ['websocket'], autoUnref: true })
   // 1st error case as readme said, answered in SO
