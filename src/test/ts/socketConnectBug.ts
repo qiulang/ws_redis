@@ -6,13 +6,12 @@ let client:string,wsBit = false
 let wsTimeout:NodeJS.Timeout
 
 function setupWS(c:string) {
-  var socket = io(server, { transports: ['websocket'], autoUnref: true })
+  // var socket = io(server, { transports: ['websocket'], autoUnref: true })
+  // let socket = io(server, { transports: ['websocket'] })
   // 1st error case as readme said, answered in SO
-  // socket = io(server, { transports: ['websocket'] })
+  socket = io(server, { transports: ['websocket'] })
   // 2nd error case, wsBit set to false for 2nd connection, but the messages are correct.
   // var socket = io(server, { transports: ['websocket'] })
-  // 3rd error case, the same as the 2nd cass
-  // let socket = io(server, { transports: ['websocket'] })
   socket.on('connect', function () {
     wsBit = true
     console.log(`Connected to local ws server with ${socket.id}`)
