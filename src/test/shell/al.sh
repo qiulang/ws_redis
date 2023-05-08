@@ -3,7 +3,7 @@ set timeout 60
 # https://stackoverflow.com/questions/16229643/how-to-expect-multiple-prompts-correctly
 set prompt "(%|#|>|\\$ )"
 # https://www.iclarified.com/87910/how-to-fix-no-matching-host-key-type-found-on-mac
-spawn /opt/local/bin/sshpass -p "Qiulang0405@nj" ssh qiulang@192.168.1.16 -p 2222 -oHostKeyAlgorithms=+ssh-rsa
+spawn /opt/local/bin/sshpass -p "Qiulang0405@xm" ssh qiulang@192.168.1.16 -p 2222 -oHostKeyAlgorithms=+ssh-rsa
 expect -re $prompt
 send "p\r"
 expect -re $prompt
