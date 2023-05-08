@@ -4,7 +4,11 @@ let segments = segmenterZH.segment(str)
 for (let segment of segments) {
     // console.log(`${segment.index}:${segment.segment}`)
     // if (/\p{P}(?<=[\u3000-\u303F\uFF00-\uFFEF])/u.test(segment.segment)) {
-    if (/\p{P}(?<=[\u3000-\u303F])/u.test(segment.segment)) {
+    // https://stackoverflow.com/questions/76070986/get-chinese-punctuation-in-a-string
+    //if (/\p{P}(?<=[\u3000-\u303F])/u.test(segment.segment)) {
+    if (/\p{P}(?<=[\uFF00-\uFFEF])/u.test(segment.segment)) {
+    // if (/\p{sc=Han}/u.test(segment.segment)) {
+    // if (/\p{scx=Han}/u.test(segment.segment)) {
         console.log(`${segment.index}:${segment.segment}`)
     }
 }
