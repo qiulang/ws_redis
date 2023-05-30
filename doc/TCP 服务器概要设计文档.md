@@ -8,7 +8,7 @@ CM后端可以只订购一个redis**公关通道**用来接收所有TCP客户端
 
 根据目前需求文档，每家酒店都要部署一套我们系统，那实际还不存在不同客户共用TCP 服务和redis pubsub 服务的情况，所以目前先采用TCP服务器和CM服务器**都只订购一个**redis公关通道方式来实现消息交互。这是和websocket服务器设计不同地方，websocket服务器为每个坐席都单独订购一个通道。
 
-TCP 服务器相当于中间人作用，把FCS发来消息转发给Web服务器，它自己不直接把接收消息存入MySQL数据库。
+TCP 服务器相当于中间人作用，把FCS发来消息转发给Web服务器，它自己不直接把接收消息存入MySQL数据库或和数据库交互。
 
 ### TCP 服务和 FCS 交互的协议分析
 
@@ -76,7 +76,7 @@ TCP 服务器->>TCP 客户端: 发送XML消息
 Web 服务器 -->> TCP 客户端 : Web服务器发送XML消息到TCP客户端过程
 ```
 
-redis pubsub方式发送的数据是不保留的，如果没有处理就被丢弃。 Redis 5针对这种问题引入 [stream](https://redis.io/docs/data-types/streams/) 但我们目前还用pubsub，通过 pussub 发送数据可以是完整的XML数据包，也可以是 XML "**摘要**", 实际的数据存在redis里。当收到sub 通知，接收方再从 redis中读出完整数据，通过这样来保证数据丢失。但是采用这个方法双方需要约定好处理完数据就要它从redis清除，不然会造成冗余、过时数据。
+redis pubsub方式发送的数据是不保留的，如果sub方没有处理就被丢弃。 Redis 5针对这种问题引入 [stream](https://redis.io/docs/data-types/streams/) 但我们目前还用pubsub，通过 pubsub 发送数据可以是完整的XML数据包，也可以是 XML "**摘要**", 实际的数据存在redis里。当收到sub 通知，接收方再从 redis中读出完整数据，通过这样来保证数据丢失。但是采用这个方法**双方**（TCP服务器和Web服务器）需要约定好处理完数据就要它从redis清除，不然会造成冗余、过时数据。
 
 根据下面对消息类型的分析，有几个消息是包含请求和响应对；对于数据同步请求还需要一对开始和结束消息对来包裹需要同步数据，对应数据同步的流程需要再细化。
 
@@ -84,11 +84,17 @@ redis pubsub方式发送的数据是不保留的，如果没有处理就被丢�
 
 ### 消息定义
 
+我们系统和FCS对接主要用于客房状态同步和计费功能。对接接口大致可以分3部分 ：
+
+1. FCS --> 呼叫中心，主要用于同步客房状态。
+2. 呼叫中心 -->FCS，用于对客房客户计费。
+3. 语言信箱对接。 
+
 FCS 定义的消息格式有**不严谨**的地方，解析XML需要注意。比如**除了**我们发往FCS的查询 job状态消息 `JobEnquiry`消息和它的相应 `JobEnquiry Respond`，其他**所有**消息都含有**消息唯一ID** `GUID`和消息发送时间 `SysDaTi` ，保活消息`STAY ALIVE` 只有 `GUID`和`SysDati`
 
 GUID 没有明确定义消息格式，但从示例看应该是 **UUID**格式，36个字符，32个字符+ 4个`-`分隔符： [8个字符-4个字符-4个字符-4个字符-12个字符] ，消息发送时间格式除了 **JobEnquiry**，其他都定义为 `yyyy/mm/dd hh:mm:ss`
 
-除了保活消息`STAY ALIVE`   **其他所有消息都带** `PId` Property ID 但它格式不明确。但是 FCS 又定义 `ErrorMessage` 必须含 `GUID`和`SysDaTi`，但`PId`不是必填。
+除了保活消息`STAY ALIVE`   **其他所有消息都带** `PId` Property ID 但它格式不明确。但是 FCS 又定义 `ErrorMessage` 必须含 `GUID`和`SysDaTi`，但`PId`不是必填。`ErrorMessage`是FCS处理我们消息出错时候的回应，具体什么情况FCS发 `ErrorMessage`还需要进一步确认。
 
 `JobEnquiry` 示例如下， 唯一没有 `GUID` 的消息，时间格式和别的消息不同：
 
@@ -101,6 +107,8 @@ GUID 没有明确定义消息格式，但从示例看应该是 **UUID**格式，
 ```
 <StayAlive >><SysDaTi>2012/8/4 08:11:07</SysDaTi><GUID>E1A35954-41CC-40f7-BDF1- A7B2CE1EE5B6</GUID></StayAlive >
 ```
+
+
 
 #### 由我们系统发往FCS消息目前定义如下
 
@@ -127,9 +135,9 @@ JobEnquiry
 
 除了数据库同步请求 `DBSwap` 和 临时消息 `SendAdHocMsg`只带PId ，其他消息都必须带**房间号和分机号**  `Ex ` 和 `Rm` 
 
-##### 数据库同步消息和临时消息
+##### 数据库同步消息和临时消息 (AdHoc Message)
 
-数据库同步消息示例： `Request Database Synchronization`  The external system will transmit this message when there is a need to synchronize information between the PMS and external system. 数据库同步消息使用详见下面数据库同步相应的描述。
+数据库同步消息示例： `Request Database Synchronization`  The external system will transmit this message when there is a need to synchronize information between the PMS and external system. 数据库同步消息使用详见 FCS 数据库同步响应的描述。
 
 ```
 <DBSwap><PId>1</PId><Flag>RQ</Flag><SysDaTi>2012/12/15 07:00:17</SysDaTi><GUID>E1A35954- 41CC-40f7-BDF1-A7B2CE1EE5B6</GUID></ DBSwap >
@@ -143,7 +151,9 @@ JobEnquiry
 
 
 
-##### job 消息
+##### Job 消息
+
+Job 消息我们系统或许不会用到，不然Job消息定义有一些不严谨地方，需要和FCS进一步确认。
 
 创建Job对  **房间号和分机号**  `Ex ` 和 `Rm` 有单独要求：
 
@@ -155,7 +165,7 @@ JobEnquiry
 1. Either Ex or Rm must exist
 2. Either Rm or JobId or JobNo is required. If set to Room, then system will update all the jobs
 
-但给的示例有矛盾地方，根据第二条有 JobId 可以没有 Rm，但是没有Rm 按第一条就必须有Ex,但是示例没有
+但给的示例有矛盾地方，根据第二条有 JobId 可以没有 Rm，但是没有Rm 按第一条就必须有Ex, 但是示例没有
 
 ```
 <UpdateJob>><JobAction>Ack</JobAction><UserName>fcs</UserName><Password>pwd</Password>< PId>1</PId><ItemCode>10100</ItemCode><JobId>123</JobId><SysDaTi>2012/8/4 08:11:07</SysDaTi><GUID>E1A35954-41CC-40f7-BDF1-A7B2CE1EE5B6</GUID></UpdateJob >
@@ -226,8 +236,6 @@ FCS will transmit `UpdateJob` message back to the sender upon its `<UpdateJob>` 
 <ModifyJob><Rm>100</Rm><Ex>8100</Ex><PId>1</PId><JobNo>21001</JobNo><JobDetail>Check in welcome drinks</JobDetail><EscLevel>0</EscLevel><ItemCode>100011</ItemCode><ItemName>Welcome Drink</ItemName><AssignedTo>ABC</AssignedTo>< Deadline>2012/8/4 08:30:00</Deadline><GuestName >Mr.Dolp</GuestName><LocationName>Room</LocationName><Job Status>Pending</JobStatus><ACKStatus>1</ACKStatus><Sender>GSS2</Sender><SysDaTi>2012/8/4 08:11:07</SysDaTi><GUID>E1A35954-41CC-40f7-BDF1-A7B2CE1EE5B6</GUID></ModifyJob>
 ```
 
-
-
 ##### Error Message
 
 This message will contain the error message as a result of invalid message being received
@@ -261,8 +269,9 @@ NF 标识 Feature not enabled or checkout process not running 但这是对哪些
 1. TCP消息包解析处理。
    1. 接收消息处理正确 STX/ETX对，解析他们包含的XML包，回复ACK/NACK
    2. 发送消息处理 ACK/NACK，以及无响应重发
-2. XML 消息解析处理，对于缺少required节点处理，未知节点处理
-3. 对于FCS定义请求相应对的处理，特别是数据同步请求响应`<DBSwap>`和 Job请求响应对，需要多个XML消息的处理。
+   3. Redis pubsub 正确接收和发送XML消息
+2. XML 消息解析处理，对于缺少required节点处理，未知节点处理。但要注意 FCS文档只定义了他们的回复消息有 ErrorMessage用来处理他们认为是错误的XML消息，但没有定义我们如果收到错误XML消息是回复 ErrorMessage，还是 NACK，还是别的方式。
+3. FCS定义请求相应对的处理，特别是数据同步请求响应`<DBSwap>`和 Job请求响应对，需要多个XML消息的处理。如果我们暂时不用上Job，可以先不处理Job消息。
 
 概要设计会进一步补充，尤其是对请求响应处理。
 
