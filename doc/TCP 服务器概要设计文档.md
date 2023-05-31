@@ -2,31 +2,35 @@
 
 ## TCP 服务器/客户端实现
 
-TCP 服务器/客户端用和FCS消息交互， 它基于[nodejs 提供系统库 Net](https://nodejs.org/api/net.html) 来实现TCP服务，解析xml 数据包采用开源 [fast-xml-parser](https://github.com/NaturalIntelligence/fast-xml-parser) ，并借鉴目前的websocket 服务器设计，它和CM后端交互同样通过 **redis pubsub** 来实现 。
+根据FCS 接口文档，我们和它通信通过TCP服务来接收和发送XML消息。 我们基于[nodejs 提供系统库 Net](https://nodejs.org/api/net.html) 来实现TCP服务，解析xml 数据包采用开源 [fast-xml-parser](https://github.com/NaturalIntelligence/fast-xml-parser) ，并借鉴目前的websocket 服务器设计，TCP服务器和CM后端交互同样通过 **redis pubsub** 来实现 。
+
+TCP 服务器相当于中间人作用，把FCS发来消息转发给Web服务器，它自己不直接和MySQL数据库交互，不直接把接收消息存入数据库。
 
 CM后端可以只订购一个redis**公关通道**用来接收所有TCP客户端消息，然后通过代码逻辑区分不同客户端消息；也可以为每个TCP客户端订购一个通道，通过它单独接收TCP服务器发来的该客户端消息， 但仍然需要订购一个公共通道用来接收初始消息。 同理， TCP 服务器也可以只订购一个redis公关通道用来接收所有CM后端发来消息，通过代码逻辑区分不同客户端消息；也可以为每个TCP客户端订购单独一个通道接收CM后端发来的该客户端消息。
 
 根据目前需求文档，每家酒店都要部署一套我们系统，那实际还不存在不同客户共用TCP 服务和redis pubsub 服务的情况，所以目前先采用TCP服务器和CM服务器**都只订购一个**redis公关通道方式来实现消息交互。这是和websocket服务器设计不同地方，websocket服务器为每个坐席都单独订购一个通道。
 
-TCP 服务器相当于中间人作用，把FCS发来消息转发给Web服务器，它自己不直接把接收消息存入MySQL数据库或和数据库交互。
+注：FCS 文档描述 In usual cases, **FCS Unicorn would be the client** while the external system would be the host, however, Unicorn also can be configured as the tcp server if required. 所以FCS通常作为TCP的客户端，我们作为TCP服务器，但我们同时也会实现TCP client 
 
 ### TCP 服务和 FCS 交互的协议分析
 
-它和FCS 通信根据FCS 接口文档，交互的协议有以下几个实现要求：
+TCP 数据包处理有两个注意点：
 
-1. In usual cases, **FCS Unicorn would be the client** while the external system would be the host, however, Unicorn also can be configured as the tcp server if required. 所以FCS通常作为TCP的客户端，我们作为TCP服务器，但我们同时也会实现TCP client 
+1. 在TCP 层面没法标记数据的开始和结束，需要在应用层面来做。常见办法有在应用层标记**数据包长度(length)**，比如http/websocket 采用此方法；或者用**特殊字符**来比较开始结束，FCS采用这种方法(**STX/ETX**对)。对于特殊字符对就可能需要等待几个包，所以进一步分析如下：
 
-2. Each message exchanged between FCS Unicorn and external system will need to be encapsulated as  **STX** (ASCII 2)  + MESSAGE BODY + **ETX** (ASCII 3) .  The MESSAGE BODY is of XML message, the root element defines the record type. 所以每个和 FCS 交互的消息都是 XML 字符串，并用 STX 和 ETX 作为头尾字符。当收到 tcp 包数据需要检查 STX/ETX 对，判断方法有很多：比如可以先判断缓存数据里是否已经有 STX, 如果有就需要在收到 tcp 包数据查找ETX; 如果没有需要先查找STX再查找ETX，如果缓存和收到数据包**都没有STX**，我们可以简单认为是无效数据回复NAK，或者再引入更复杂的处理算法，这在以后文档更新中补充。如果已有STX但是没有ETX可把收到数据包继续缓存，连续几个包都没有ETX（极端情况）要如何处理会再以后文档更新中补充。
+2. TCP 数据包理论上限值是64k，但实际的size上限值由最大传输单元MTU决定，经验值通常在 [1400bytes左右](https://stackoverflow.com/questions/2613734/maximum-packet-size-for-a-tcp-connection) ，根据FCS文档列出交互数据示例，都远小于这个值。为了保险起见，也兼顾设计的复杂度，我们对每次接收到数据包的处理算法在下面描述。
 
-3. All messages received by both parties need to be replied with an ACK (ASCII 6) or NAK (ASCII 21). If an ACK is not received within a defined timeout period, the sender will retransmit the message again. This continues until a maximum retry has been reached. The message will be discarded after that and **the next message in the queue will be sent.** 每发送一个消息都要等接受方发来ack ，如果在规定的超时时间内没收到ack 就要重发该消息直到收到ack或者达到最大重试次数。主要协议里说 the next message in the queue will be sent，这就意味着消息是**串行处理**，一条消息处理完（成功收到ack或者达到最大重试次数）才会再处理下一条消息；也意味着一个TCP数据包不可能含两个XML消息；但一个XML消息可能在一个TCP包或跨数个TCP。
+我们的TCP服务和FCS 通信根据FCS 接口文档，交互的协议有以下几个实现要求：
 
-4. **NAK** indicates that the external system had received a message, which it does not understand. Upon receiving NAK, FCS Unicorn will **retransmit the last message** till the maximum retry had been reached.  如果收到消息没法解析成事先约定好的XML消息类型，需要回复NAK，如果收到NAK需要重发刚才那条消息直到收到ack或者达到最大重试次数。NAK消息应该是为了容错和以后的扩展，比如因为消息丢包，接收方没法正确解析XML消息，回复NAK，发送方就重发该消息；如果能解析XML消息，但是不是事先约定好的消息类型（就是文档说的不能 **understand**的消息），那回复NAK在目前意义可能不大，因为重发的消息可能还是不能understand. 但对于NAK消息需要有统计，以便以后分析它发生的原因。
+1. Each message exchanged between FCS Unicorn and external system will need to be encapsulated as  **STX** (ASCII 2)  + MESSAGE BODY + **ETX** (ASCII 3) .  The MESSAGE BODY is of XML message, the root element defines the record type. 所以每个和 FCS 交互的消息都是 XML 字符串用 STX 和 ETX 作为头尾字符。而且根据下面一条串行处理逻辑，**STX必须在包头，ETX必须在包尾**。  我们每次都到数据包都判断包内是否有 STX和ETX对，如果有解析其中的XML数据；如果STX但没有ETX，认为是一条消息被拆包了，但根据上面描述这种情况罕见，我们最多再等一个包（暂不引入更复杂处理）；如果没有STX但是有ETX，查看目前缓存数据是否有STX，没有即认为无效数据回复NAK，如果合并数据包解析XML. 目前只采用这几组条件做判断，如果收到一个tcp包，包头不是STX而且包尾也不是ETX，只可能是一个超长XML被截成至少三段，而这是中间一段，但是考虑到实际FCS包长度，我们暂时不考虑这种情况，即包头不以STX开始包尾不以ETX结束即认为是**非法包**，回复NACK，如果以后实际碰到更复杂情况再修改此处判断逻辑。
 
-5. Data resent after timeout expired if sender do not receive any replies from the receiver. Data will be drop after exceed numbers of retries. 发送消息后需要等待相应，如果**等待响应超时**就重发消息直到收到相应或者达到重发上限。注：极端情况是重发数次后收到NACK （或者NACK重发后没有响应），如果重发次数少于重发上限值，根据NACK处理接着重发直到重发上限值，也就是重发次数对超时和NACK统一计数（做简单处理），不针对他们中任何一种情况单独计数。
+2. All messages received by both parties need to be replied with an ACK (ASCII 6) or NAK (ASCII 21). If an ACK is not received within a defined timeout period, the sender will retransmit the message again. This continues until a maximum retry has been reached. The message will be discarded after that and **the next message in the queue will be sent.** 每发送一个消息都要等接受方发来ack ，如果在规定的超时时间内没收到ack 就要重发该消息直到收到ack或者达到最大重试次数。主要协议里说 the next message in the queue will be sent，这就意味着消息是**串行处理**，一条消息处理完（成功收到ack或者达到最大重试次数）才会再处理下一条消息；也意味着一个TCP数据包不可能含两个XML消息；但一个XML消息可能在一个TCP包或跨数个TCP。
+
+3. **NAK** indicates that the external system had received a message, which it does not understand. Upon receiving NAK, FCS Unicorn will **retransmit the last message** till the maximum retry had been reached.  如果收到消息没法解析成事先约定好的XML消息类型，需要回复NAK，如果收到NAK需要重发刚才那条消息直到收到ack或者达到最大重试次数。NAK消息应该是为了容错和以后的扩展，比如因为消息丢包，接收方没法正确解析XML消息，回复NAK，发送方就重发该消息；如果能解析XML消息，但是不是事先约定好的消息类型（就是文档说的不能 **understand**的消息），那回复NAK在目前意义可能不大，因为重发的消息可能还是不能understand. 但对于NAK消息需要有统计，以便以后分析它发生的原因。
+
+4. Data resent after timeout expired if sender do not receive any replies from the receiver. Data will be drop after exceed numbers of retries. 发送消息后需要等待相应，如果**等待响应超时**就重发消息直到收到相应或者达到重发上限。注：极端情况是重发数次后收到NACK （或者NACK重发后没有响应），如果重发次数少于重发上限值，根据NACK处理接着重发直到重发上限值，也就是重发次数对超时和NACK统一计数（做简单处理），不针对他们中任何一种情况单独计数。
 
    
-
-注1：在TCP 层面没法标记数据的开始和结束，需要在应用层面来做。常见办法有在应用层标记数据包长度，比如http/websocket 采用此方法；或者用特殊字符来比较开始结束，FCS采用这种方法。
 
 #### FCS 定义的 ACK/NACK/无响应 交互图
 
@@ -78,17 +82,50 @@ Web 服务器 -->> TCP 客户端 : Web服务器发送XML消息到TCP客户端过
 
 redis pubsub方式发送的数据是不保留的，如果sub方没有处理就被丢弃。 Redis 5针对这种问题引入 [stream](https://redis.io/docs/data-types/streams/) 但我们目前还用pubsub，通过 pubsub 发送数据可以是完整的XML数据包，也可以是 XML "**摘要**", 实际的数据存在redis里。当收到sub 通知，接收方再从 redis中读出完整数据，通过这样来保证数据丢失。但是采用这个方法**双方**（TCP服务器和Web服务器）需要约定好处理完数据就要它从redis清除，不然会造成冗余、过时数据。
 
-根据下面对消息类型的分析，有几个消息是包含请求和响应对；对于数据同步请求还需要一对开始和结束消息对来包裹需要同步数据，对应数据同步的流程需要再细化。
+### 收发消息伪代码示例
+
+根据以上定义到处理逻辑，我们对发送消息和接收消息分别做如下定义。
+
+```
+//sendMessage 来自我们Web系统，通过pubsub接收，主要有这些属性
+sendMessage { 
+  data //具体xml内容
+  response //FCS 客户端到响应情况， ACK/NACK/No response
+  retry //重试次数,针对NACK和No response
+  status //成功发送，即收到ACK 或者失败。失败最终都是因为超过重试上限，但是要记录是因为NACK 还是 No response
+}
+
+//对于接收消息 STX/ETX 对判断逻辑示例，判断顺序不一定和下面完全一致
+//关键的是基于上面分析，没头没尾的包直接判断为非法；如果允许没头没尾包存在，就没判断需要等待几个包
+if NOT (STX || ETX) return invalid //直接判断非法数据
+if NOT ETX //没有尾（但有头），表示数据未完，缓存数据，返回
+//有尾，标识数据结束，进一步判断如下
+if STX { //有头有尾，这是一个独立、完整的tcp包
+   // 解析其中XML数据
+} else { // 表示这是一个被截断的数据包，包头在上一包里，已经缓存
+  // 合并缓存，解析XML消息
+}
+// 没有别的情况
+
+receiveMessage { 主要有这些属性
+  isValid //true:包头STX或者包尾是ETX;都不是直接判断非法,设置false，回复NACK
+  isComplete //true: 一对STX/ETX,可以解析其中数据； 有STX，没有ETX，再等一个包，目前数据缓存
+  buffer //目前缓存数据
+  data //具体xml内容
+}
+```
 
 
 
-### 消息定义
+### FCS消息定义
 
 我们系统和FCS对接主要用于客房状态同步和计费功能。对接接口大致可以分3部分 ：
 
 1. FCS --> 呼叫中心，主要用于同步客房状态。
 2. 呼叫中心 -->FCS，用于对客房客户计费。
 3. 语言信箱对接。 
+
+根据FCS定义的消息类型的分析，有几个消息是属于请求和响应对；对于数据同步请求还需要一对开始和结束消息对来包裹需要同步数据，对应数据同步的流程会在实现中进一步细化。
 
 FCS 定义的消息格式有**不严谨**的地方，解析XML需要注意。比如**除了**我们发往FCS的查询 job状态消息 `JobEnquiry`消息和它的相应 `JobEnquiry Respond`，其他**所有**消息都含有**消息唯一ID** `GUID`和消息发送时间 `SysDaTi` ，保活消息`STAY ALIVE` 只有 `GUID`和`SysDati`
 
