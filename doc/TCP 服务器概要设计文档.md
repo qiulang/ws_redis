@@ -22,7 +22,7 @@ TCP 数据包处理有两个注意点：
 
 我们的TCP服务和FCS 通信根据FCS 接口文档，交互的协议有以下几个实现要求：
 
-1. Each message exchanged between FCS Unicorn and external system will need to be encapsulated as  **STX** (ASCII 2)  + MESSAGE BODY + **ETX** (ASCII 3) .  The MESSAGE BODY is of XML message, the root element defines the record type. 所以每个和 FCS 交互的消息都是 XML 字符串用 STX 和 ETX 作为头尾字符。而且根据下面一条串行处理逻辑，**STX必须在包头，ETX必须在包尾**。  我们每次都到数据包都判断包内是否有 STX和ETX对，如果有解析其中的XML数据；如果STX但没有ETX，认为是一条消息被拆包了，但根据上面描述这种情况罕见，我们最多再等一个包（暂不引入更复杂处理）；如果没有STX但是有ETX，查看目前缓存数据是否有STX，没有即认为无效数据回复NAK，如果合并数据包解析XML. 目前只采用这几组条件做判断，如果收到一个tcp包，包头不是STX而且包尾也不是ETX，只可能是一个超长XML被截成至少三段，而这是中间一段，但是考虑到实际FCS包长度，我们暂时不考虑这种情况，即包头不以STX开始包尾不以ETX结束即认为是**非法包**，回复NACK，如果以后实际碰到更复杂情况再修改此处判断逻辑。
+1. Each message exchanged between FCS Unicorn and external system will need to be encapsulated as  **STX** (ASCII 2)  + MESSAGE BODY + **ETX** (ASCII 3) .  The MESSAGE BODY is of XML message, the root element defines the record type. 所以每个和 FCS 交互的消息都是 XML 字符串用 STX 和 ETX 作为头尾字符，而且根据下面一条串行处理逻辑，当发完一个XML消息发送需要等待相应才会再发下一个XML消息。一个XML消息通常在一个tcp包里，STX是包头，ETX是包尾，但考虑极端情况，一个XML消息可能被拆成两个甚至多个tcp包，所以接收算法是每收到一个包就判断包尾是否为ETX字符，如果不是认为数据还没发送完，把收到和数据和之前数据合并；如果包尾是ETX认为本次数据发送完成，把之前所有缓存数据合并再进一步判断，如果数据头不是STX就做非法数据处理发送NAK，如果STX就解析XML数据。
 
 2. All messages received by both parties need to be replied with an ACK (ASCII 6) or NAK (ASCII 21). If an ACK is not received within a defined timeout period, the sender will retransmit the message again. This continues until a maximum retry has been reached. The message will be discarded after that and **the next message in the queue will be sent.** 每发送一个消息都要等接受方发来ack ，如果在规定的超时时间内没收到ack 就要重发该消息直到收到ack或者达到最大重试次数。主要协议里说 the next message in the queue will be sent，这就意味着消息是**串行处理**，一条消息处理完（成功收到ack或者达到最大重试次数）才会再处理下一条消息；也意味着一个TCP数据包不可能含两个XML消息；但一个XML消息可能在一个TCP包或跨数个TCP。
 
@@ -95,21 +95,18 @@ sendMessage {
   status //成功发送，即收到ACK 或者失败。失败最终都是因为超过重试上限，但是要记录是因为NACK 还是 No response
 }
 
-//对于接收消息 STX/ETX 对判断逻辑示例，判断顺序不一定和下面完全一致
-//关键的是基于上面分析，没头没尾的包直接判断为非法；如果允许没头没尾包存在，就没判断需要等待几个包
-if NOT (STX || ETX) return invalid //直接判断非法数据
-if NOT ETX //没有尾（但有头），表示数据未完，缓存数据，返回
-//有尾，标识数据结束，进一步判断如下
-if STX { //有头有尾，这是一个独立、完整的tcp包
-   // 解析其中XML数据
-} else { // 表示这是一个被截断的数据包，包头在上一包里，已经缓存
-  // 合并缓存，解析XML消息
+//每接收一个tcp包的判断示例
+if NOT endWith ETX {
+   没有以ETX结束表示数据未接收完整，合并缓存数据，返回
 }
-// 没有别的情况
+//接收完整结束，对缓存数据做判断
+if NOT beginWith STX return invalid //判断非法数据
+//有头有尾, 解析其中XML数据
+parseXML(...)
 
 receiveMessage { 主要有这些属性
-  isValid //true:包头STX或者包尾是ETX;都不是直接判断非法,设置false，回复NACK
-  isComplete //true: 一对STX/ETX,可以解析其中数据； 有STX，没有ETX，再等一个包，目前数据缓存
+  isComplete //是否收到 ETX 结束符
+  isValid //true: isComplete 情况下，buffer头STX，尾是ETX; 否则设置false，回复NACK
   buffer //目前缓存数据
   data //具体xml内容
 }
