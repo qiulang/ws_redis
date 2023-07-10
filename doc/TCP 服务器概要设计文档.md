@@ -24,7 +24,7 @@ TCP 数据包处理有两个注意点：
 
 1. Each message exchanged between FCS Unicorn and external system will need to be encapsulated as  **STX** (ASCII 2)  + MESSAGE BODY + **ETX** (ASCII 3) .  The MESSAGE BODY is of XML message, the root element defines the record type. 所以每个和 FCS 交互的消息都是 XML 字符串用 STX 和 ETX 作为头尾字符，而且根据下面一条串行处理逻辑，当发完一个XML消息发送需要等待相应才会再发下一个XML消息。一个XML消息通常在一个tcp包里，STX是包头，ETX是包尾，但考虑极端情况，一个XML消息可能被拆成两个甚至多个tcp包，所以接收算法是每收到一个包就判断包尾是否为ETX字符，如果不是认为数据还没发送完，把收到和数据和之前数据合并；如果包尾是ETX认为本次数据发送完成，把之前所有缓存数据合并再进一步判断，如果数据头不是STX就做非法数据处理发送NAK，如果STX就解析XML数据。
 
-2. All messages received by both parties need to be replied with an ACK (ASCII 6) or NAK (ASCII 21). If an ACK is not received within a defined timeout period, the sender will retransmit the message again. This continues until a maximum retry has been reached. The message will be discarded after that and **the next message in the queue will be sent.** 每发送一个消息都要等接受方发来ack ，如果在规定的超时时间内没收到ack 就要重发该消息直到收到ack或者达到最大重试次数。注意协议里说 the next message in the queue will be sent，这就意味着消息是**串行处理**，一条消息处理完（成功收到ack或者达到最大重试次数）才会再处理下一条消息；也意味着一个TCP数据包不可能含两个XML消息；但一个XML消息可能在一个TCP包或跨数个TCP。
+2. All messages received by both parties need to be replied with an ACK (ASCII 6) or NAK (ASCII 21). If an ACK is not received within a defined timeout period, the sender will retransmit the message again. This continues until a maximum retry has been reached. The message will be discarded after that and **the next message in the queue will be sent.** 每发送一个消息都要等接受方发来ack ，如果在规定的超时时间内没收到ack 就要重发该消息直到收到ack或者达到最大重试次数。注意协议里说 the next message in the queue will be sent，这就意味着消息是**串行处理**，一条消息处理完（成功收到ack或者达到最大重试次数）才会再处理下一条消息；也意味着一个TCP数据包不可能含两个XML消息；但一个XML消息可能在一个TCP包或跨数个TCP，所以我们每次接收截止的判断依据就是看是否接受到 ETX，具体处理详见下面的伪代码。
 
 3. **NAK** indicates that the external system had received a message, which it does not understand. Upon receiving NAK, FCS Unicorn will **retransmit the last message** till the maximum retry had been reached.  如果收到消息没法解析成事先约定好的XML消息类型，需要回复NAK，如果收到NAK需要重发刚才那条消息直到收到ack或者达到最大重试次数。NAK消息应该是为了容错和以后的扩展，比如因为消息丢包，接收方没法正确解析XML消息，回复NAK，发送方就重发该消息；如果能解析XML消息，但是不是事先约定好的消息类型（就是文档说的不能 **understand**的消息），那回复NAK在目前意义可能不大，因为重发的消息可能还是不能understand. 但对于NAK消息需要有统计，以便以后分析它发生的原因。
 
@@ -112,7 +112,7 @@ receiveMessage { 主要有这些属性
 }
 ```
 
-以ETX结尾作为一次收包结束，可能会有这样极端情况：一个被拆分的XML包，ETX结尾的包丢失；发送方没有等到ACK确认，超时再发送一次，这次正确接收。这样再缓存数据里就有两段STX头，考虑这种极端情况就要对多余STX做处理，记录错误，丢弃多余STX头再解析。
+以ETX结尾作为一次收包结束，可能会有这样极端情况：一个被拆分的XML包，ETX结尾的包丢失；发送方没有等到ACK确认，超时再发送一次，这次正确接收。这样在缓存数据里就有两段STX头，考虑这种极端情况就要对多余STX做处理，记录错误，丢弃多余STX头再解析。
 
 
 
@@ -310,6 +310,8 @@ NF 标识 Feature not enabled or checkout process not running 但这是对哪些
 3. FCS定义请求相应对的处理，特别是数据同步请求响应`<DBSwap>`和 Job请求响应对，需要多个XML消息的处理。如果我们暂时不用上Job，可以先不处理Job消息。
 
 概要设计会进一步补充，尤其是对请求响应处理。
+
+**测试代码用python开发，特意没有nodejs，保证在TCP层面能互通就行**
 
 ### 测试方案
 
