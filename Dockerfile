@@ -1,4 +1,4 @@
-FROM node:16.14.2-alpine3.15 as build-stage
+FROM node:18.16-alpine3.18 as build-stage
 WORKDIR /app
 COPY package.json ./
 # COPY yarn.lock ./
@@ -10,9 +10,9 @@ RUN npm run build
 # RUN rm -r node_modules
 RUN npm prune --production
 
-FROM node:16.14.2-alpine3.15 as prod
+FROM node:18.16-alpine3.18 as prod
 # RUN apk add --no-cache --repository https://mirrors.aliyun.com/alpine/v3.14/main/ redis bash tzdata inotify-tools supervisor
-RUN apk add --no-cache --repository https://mirrors.aliyun.com/alpine/v3.15/main/ redis bash tzdata
+RUN apk add --no-cache --repository https://mirrors.aliyun.com/alpine/v3.18/main/ redis bash tzdata
 RUN sed -i 's/bind 127.0.0.1 -::1/# bind 127.0.0.1 -::1/g; s/protected-mode yes/protected-mode no/' /etc/redis.conf
 ENV TZ=Asia/Shanghai
 WORKDIR /app
