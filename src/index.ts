@@ -43,12 +43,14 @@ interface baseData {
 
 interface loginData extends baseData{ //v5 needs token not v4
   token:string,
-  client?:Client
+  client?:Client,
+  browser?:string
 }
 
 interface socketData extends baseData{
   socket_id:string,
-  client:Client
+  client:Client,
+  browser?:string
 }
 
 type loginCBData = {
@@ -129,11 +131,10 @@ io.on('connection', async function (socket) {
   //   next();
   // });
   //客户端连接成功后会主动发login消息，redis记录 user 到 socketio.id的对应
-  socket.on('login', async function ({ user_id, seid, ccgeid, token, uniqueId ='none', client = 'client.bs' }:loginData, fn:loginCB) {
+  socket.on('login', async function ({ user_id, seid, ccgeid, token, uniqueId ='none', client = 'client.bs', browser }:loginData, fn:loginCB) {
     info(
       `A new login. [user:${user_id}, socket:${socket.id}, token:${token}, fingerprintjs:${uniqueId}, ${seid}_${ccgeid}_${client}]`
     )
-
     function forceLogoff(notify:string) {
       if (typeof fn === 'function') fn({ user_id: notify, ver: 'xxxxxx' })
       //BS 客户端连上来带了 fn ,这个修改本来就是为了防止别人来连我们的 ws，他们应该就不会带fn
@@ -168,7 +169,7 @@ io.on('connection', async function (socket) {
     if (client == 'client.wechat') { //判断此时是否变为移动坐席
       loginRes = await mobileSettingCheck(token,user_id)
     }
-    await loginResult({ user_id, client, socket_id:socket.id,uniqueId })
+    await loginResult({ user_id, client, socket_id:socket.id,uniqueId,browser })
     //考虑了半天代码用什么做版本号好，必须是打包代码能自动生成的，不能每次都手动修改
     //一开始考虑commit id，但是commit id 没法比较代码的新旧，暂定 time stamp
     if (typeof fn === 'function') fn({ user_id: loginRes, ver: 'xxxxxx' })
@@ -432,8 +433,8 @@ async function dupCheck({ user_id, client, socket_id,uniqueId }:socketData, fn:l
 }
 
 // ws 成功连接结果
-async function loginResult({ user_id, client, socket_id,uniqueId }:socketData):Promise<void> {
-  const loginT = new Date().toLocaleString()
+async function loginResult({ user_id, client, socket_id,uniqueId,browser }:socketData):Promise<void> {
+  const [loginT, bi] = await browserInfo(user_id, browser)
   await redis
     .multi()
     .hset('websocket:socket_user', socket_id, `${user_id}@${loginT}`) //socket.io 状态变化取到对用用户
@@ -446,7 +447,9 @@ async function loginResult({ user_id, client, socket_id,uniqueId }:socketData):P
       'loginTime',
       loginT,
       'client',
-      client
+      client,
+      'browser',
+      bi
     )
     .exec()
   delete dup[socket_id]
@@ -498,6 +501,67 @@ function msgTimeout(onSuccess:(this: void,...args:any[]) => void, onTimeout:(thi
     clearTimeout(timer)
     onSuccess(args)
   }
+}
+
+async function browserInfo(id: string, userAgent: string|undefined):Promise<[string, string]> {
+  const loginT = new Date().toLocaleString()
+  let type = 'unknown'
+  let version = 'unknown'
+  if (!userAgent) return [loginT,`${type}@${version}`]
+  const regexList = [
+    { type: 'Edge', regex: /(Edg|Edge)\/(\d{1,}\.\d+)/ },//edg最新内核 edge 低版本Edge浏览器
+    { type: 'Firefox', regex: /(Firefox)\/((\d{1,}\.*)+)/ },//火狐浏览器
+    { type: 'OPR', regex: /(OPR)\/((\d{1,}.)+)/ },//Opera浏览器
+    { type: 'IE', regex: /(MSIE)\s(\d{1,}\.\d+)/ },//IE低版本
+    { type: 'IE11', regex: /(rv):(\d{1,}\.\d+)/ },//IE11
+    { type: 'SouGou', regex: /(MetaSr )((\d{1,}.*)+)/ },//搜狗浏览器
+    { type: 'QQBrowser', regex: /(QQBrowser)\/((\d{1,}.)+)/ },//QQ浏览器
+    { type: 'UCBrowser', regex: /(UCBrowser)\/((\d{1,}.)+)/ },//UC浏览器
+    { type: 'WebChatBrowser', regex: /(MicroMessenger)\/((\d{1,}.)+)/ },//微信浏览器
+    { type: 'Chrome', regex: /(Chrome)\/((\d{1,}(\.)?)+)/ },//谷歌浏览器放最后，担心各种杂牌浏览器都带Chrome头，就被匹配成Chrome了,另外360单独处理
+  ]
+  const matchResult = regexList.some(regexItem => {
+    const match = userAgent.match(regexItem.regex);
+    if (match) {
+      type = regexItem.type
+      version = match[2]
+      return true
+    }
+  })
+  if (!matchResult) {
+    //因为 Safari的 version 串位置跟别人都不一样，所以单独处理
+    //但其实没人会用 Safari 进入我们的系统
+    if (userAgent.indexOf("Safari") != -1 && userAgent.indexOf("Chrome") == -1) {
+      type = 'Safari'
+      const matchVersion = userAgent.match(/Version\/(\d+\.\d+\.\d+)/)
+      if (matchVersion) {
+        version = matchVersion[1]
+      }
+    }
+  } else {
+    if (type === 'Chrome' && userAgent.indexOf("360") != -1) {
+      //原来360EE表示360极速浏览器，360SE表示360安全浏览器
+      //不知从哪个版本开始没有360SE了，只有360EE
+      type = '360'
+    }
+  }
+  //`websocket:${user_id}` checkout 时候被删除，所以这里通过查询 user_id
+  let old:string  = await redis.hget(`websocket:browserDetails`, id)
+  let sameBrowser = () => {
+    if (old) {
+      let tmp = old.split('@')
+      if (tmp[0] == type) {
+        //浏览器不变，版本先不管，需要更新登录时间
+        return true
+      }
+    }
+    return false
+  }
+  if (!sameBrowser()) {
+    await redis.hincrby(`websocket:browserStats`, type, 1)
+  }
+  await redis.hset(`websocket:browserDetails`, id, `${type}@${version} - ${loginT}`)
+  return [loginT,`${type}@${version}`]
 }
 
 //#endregion

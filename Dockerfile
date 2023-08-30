@@ -1,10 +1,10 @@
 FROM node:18.16-alpine3.18 as build-stage
 WORKDIR /app
-COPY package.json ./
+COPY package*.json ./
 # COPY yarn.lock ./
 COPY .npmrc ./
-RUN npm install
-RUN npm config set unsafe-perm true
+RUN npm ci
+# RUN npm config set unsafe-perm true
 COPY . .
 RUN npm run build
 # RUN rm -r node_modules
