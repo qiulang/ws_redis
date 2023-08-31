@@ -3,7 +3,7 @@ set timeout 30
 # https://github.com/jumpserver/jumpserver/issues/4189
 # https://github.com/jumpserver/jumpserver/issues/4775
 set prompt "(%|#|>|\\$ )"
-spawn /opt/local/bin/sshpass -p "Qiulang0405@xm" ssh qiulang@192.168.1.16 -p 2222 -oHostKeyAlgorithms=+ssh-rsa
+spawn /opt/local/bin/sshpass -p "Qiulang0405@sh" ssh qiulang@192.168.1.16 -p 2222 -oHostKeyAlgorithms=+ssh-rsa
 expect -re $prompt
 send "p\r"
 expect -re $prompt
