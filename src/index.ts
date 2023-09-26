@@ -1,5 +1,5 @@
 import { Server } from 'socket.io'
-import express from 'express'
+import express, {Response} from 'express';
 import cors from 'cors'
 import { createServer } from 'http'
 const axios = require('axios').default;
@@ -21,7 +21,8 @@ io.adapter(redisAdapter({ pubClient: pub, subClient: sub }))
 let unserialize = require('locutus/php/var/unserialize')
 var { info, warn, browserLog } = require('./logger')
 var debug = require('debug')('app:websocket:debug')
-var indexRouter = require('./routes/index')
+// var indexRouter = require('./routes/index')
+let {router:indexRouter, sseClients} = require('./routes/index')
 const uuidv1 = require('uuid/v1')
 const portfinder = require('portfinder')
 let RTIME:number = +(process.env.RTIME || 45)
@@ -133,7 +134,7 @@ io.on('connection', async function (socket) {
   //客户端连接成功后会主动发login消息，redis记录 user 到 socketio.id的对应
   socket.on('login', async function ({ user_id, seid, ccgeid, token, uniqueId ='none', client = 'client.bs', browser }:loginData, fn:loginCB) {
     info(
-      `A new login. [user:${user_id}, socket:${socket.id}, token:${token}, fingerprintjs:${uniqueId}, ${seid}_${ccgeid}_${client}]`
+      `A new login. [user:${user_id}, socket:${socket.id}, token:${token}, fingerprintjs:${uniqueId}, ${browser}]`
     )
     function forceLogoff(notify:string) {
       if (typeof fn === 'function') fn({ user_id: notify, ver: 'xxxxxx' })
@@ -455,7 +456,15 @@ async function loginResult({ user_id, client, socket_id,uniqueId,browser }:socke
   delete dup[socket_id]
   user_socket[user_id] = socket_id
   await sub.subscribe(user_id)
-  info(`Login succeed AND SUB subscribe. [${user_id} => ${socket_id}]`)
+  info(`Login succeed AND SUB subscribe using:${bi}. [${user_id} => ${socket_id}]`)
+  for (let i in sseClients) {
+    let res:Response = sseClients[i]
+    if (i == user_id) {
+      res?.write(`data: ${user_id}:${socket_id}:${bi} just connected. We have ${Object.keys(sseClients).length} connection(s).\n\n`)
+    } else {
+      res?.write(`data: Hi ${i}: we have ${Object.keys(sseClients).length} connection(s) now.\n\n`)
+    }
+  }
 }
 
 async function checkout(user_id:string,client?:string):Promise<void> {
@@ -513,7 +522,7 @@ async function browserInfo(id: string, userAgent: string|undefined):Promise<[str
     { type: 'Firefox', regex: /(Firefox)\/((\d{1,}\.*)+)/ },//火狐浏览器
     { type: 'OPR', regex: /(OPR)\/((\d{1,}.)+)/ },//Opera浏览器
     { type: 'IE', regex: /(MSIE)\s(\d{1,}\.\d+)/ },//IE低版本
-    { type: 'IE11', regex: /(rv):(\d{1,}\.\d+)/ },//IE11
+    { type: 'IE11', regex: /(rv):(\d{1,}\.\d+)/ },//IE11, mac firefox 居然也含有 rv，所以 FF放在前面
     { type: 'SouGou', regex: /(MetaSr )((\d{1,}.*)+)/ },//搜狗浏览器
     { type: 'QQBrowser', regex: /(QQBrowser)\/((\d{1,}.)+)/ },//QQ浏览器
     { type: 'UCBrowser', regex: /(UCBrowser)\/((\d{1,}.)+)/ },//UC浏览器
@@ -533,7 +542,7 @@ async function browserInfo(id: string, userAgent: string|undefined):Promise<[str
     //但其实没人会用 Safari 进入我们的系统
     if (userAgent.indexOf("Safari") != -1 && userAgent.indexOf("Chrome") == -1) {
       type = 'Safari'
-      const matchVersion = userAgent.match(/Version\/(\d+\.\d+\.\d+)/)
+      const matchVersion = userAgent.match(/Version\/((\d{1,}.)+)/)
       if (matchVersion) {
         version = matchVersion[1]
       }
