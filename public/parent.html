@@ -1,0 +1,56 @@
+<html>
+  <head>
+    <title>PLAYGROUND</title>
+
+    <style>
+      .bold {
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bold">parent.html</div>
+    <div style="margin-bottom: 20px">
+      -> iframily initialized in <span class="bold">window.parentIframily</span>
+    </div>
+    <div class="app-container">
+      <iframe
+        id="myiframe"
+        src="http://localhost:9528/tps/monitor?token=82fe2e6fe44ea43c2dcc55c3d7dcc570813d2dcc6cec591dad4bbb42a4dcc30a&ccgeid=557"
+        scrolling="no"
+        border="0"
+        width="1200"
+        height="600"
+      />
+      <!-- <iframe id="myiframe" src="/playground/child.html" style="width: 400px;"></iframe> -->
+    </div>
+
+    <script>
+      console.log("In parent, addEventListener");
+      window.addEventListener(
+        "message",
+        function (event) {
+          // We could verify that the message's origin is trusted
+          // if (event.origin !== 'http://example.com') return;
+
+          console.log(
+            "In parent, received response:  ",
+            event.data,
+            event.origin
+          );
+        },
+        false
+      );
+      var iframeP = document.getElementById("myiframe");
+      var iframeWin = iframeP.contentWindow;
+      iframeP.onload = function () {
+        //iframeWin.onload = function() {
+        //console.log('iframeWin at onload?', iframeWin)
+        iframeWin.postMessage("Hello from parent onload", "*");
+        setTimeout(() => {
+          iframeWin.postMessage("Hello from parent 2 seconds later", "*");
+        }, 2000);
+      };
+    </script>
+  </body>
+</html>

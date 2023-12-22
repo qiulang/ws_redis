@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Hello World!</title>
+  </head>
+  <body>
+    <div class="app-container">
+      <iframe
+        id="myiframe"
+        src="http://localhost:3000"
+        scrolling="no"
+        border="0"
+        width="1200"
+        height="600"
+      />
+      <!-- <iframe id="myiframe" src="/playground/child.html" style="width: 400px;"></iframe> -->
+    </div>
+
+    <script>
+      console.log("--- In parent, addEventListener ---");
+      window.addEventListener(
+        "message",
+        function (event) {
+          // We could verify that the message's origin is trusted
+          // if (event.origin !== 'http://example.com') return;
+
+          console.log(
+            "In parent, received response:  ",
+            event.data,
+            event.origin
+          );
+        },
+        false
+      );
+      var iframeP = document.getElementById("myiframe");
+      var iframeWin = iframeP.contentWindow;
+      iframeP.onload = function () {
+        //iframeWin.onload = function() {
+        //console.log('iframeWin at onload?', iframeWin)
+        iframeWin.postMessage("Hello from parent onload", "*");
+        setTimeout(() => {
+          iframeWin.postMessage("Hello from parent 2 seconds later", "*");
+        }, 2000);
+      };
+    </script>
+  </body>
+</html>

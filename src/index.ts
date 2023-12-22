@@ -503,6 +503,12 @@ function msgTimeout(onSuccess:(this: void,...args:any[]) => void, onTimeout:(thi
   }
 }
 
+/**
+ * Returns the browser type and version based on the user agent string.
+ * @param id - The user ID.
+ * @param userAgent - The user agent string.
+ * @returns A Promise that resolves to an array containing the login time and the browser type and version in the format "type@version".
+ */
 async function browserInfo(id: string, userAgent: string|undefined):Promise<[string, string]> {
   const loginT = new Date().toLocaleString()
   let type = 'unknown'
