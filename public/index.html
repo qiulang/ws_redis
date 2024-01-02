@@ -4,43 +4,23 @@
     <meta charset="UTF-8" />
     <title>Hello World!</title>
   </head>
-
   <body>
     <div>
       <h1> hello </h1>
     </div>
     <div>
       <iframe
-      id="myiframe"
+      id="myiframe2"
       src="http://localhost:3000"
       scrolling="no"
       border="0"
       width="800"
       height="600"
-    />
+      >
+      </iframe>
     </div>
     <script>
       console.log('--- In parent, addEventListener---')
-      window.addEventListener(
-        'message',
-        function (event) {
-          // We could verify that the message's origin is trusted
-          // if (event.origin !== 'http://example.com') return;
-  
-          console.log('In parent, received response:  ', event.data, event.origin)
-        },
-        false
-      )
-      var iframeP = document.getElementById('myiframe')
-      var iframeWin = iframeP.contentWindow
-      //frameWin.postMessage('Hello from parent on mounted', '*')
-      iframeP.onload = function () {
-        console.log('iframeWin at onload?', iframeWin)
-        iframeWin.postMessage('Hello from parent onload', '*')
-        setTimeout(() => {
-          iframeWin.postMessage('Hello from parent 2 seconds later', '*')
-        }, 2000)
-      }
     </script>
   </body>
 </html>
