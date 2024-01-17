@@ -9,6 +9,12 @@ var { redis, pub } = require('../database/redis')
 
 /* 测试 publish 有没有问题. */
 
+interface SSERecord { //key value pair
+  [key: string]: Response;
+}
+
+const sseClients: SSERecord = {};
+
 /* 两级路由就取不到body内容，没有深入研究为什么*/
 router.post('/dpub', async function (req:Request, res:Response) {
   //for debug only
@@ -102,7 +108,8 @@ router.get('/failme', function (req:Request, res:Response) {
 })
 
 router.get('/login', function (req:Request, res:Response) {
-  res.send({ ws: 'proceed', user: '1001' })
+  let tmp = Math.floor(Math.random() * 10)+1000;
+  res.send({ ws: 'proceed', user: `${tmp}` })
 })
 
 router.post('/pcclient', function (req:Request, res:Response) {
@@ -114,4 +121,27 @@ function enableNS(namespaces:string, res:Response) {
   debug(`enable ${namespaces}`)
   res.send(`Enable ${namespaces}\n`)
 }
-module.exports = router
+
+router.get('/SSE/:id', function (req:Request, res:Response) {
+  const headers = {
+    'Content-Type': 'text/event-stream',
+    'Connection': 'keep-alive',
+    'Cache-Control': 'no-cache'
+  };
+  res.writeHead(200, headers);
+  //这是 open 事件，然后紧跟第一个 message 事件，消息提写什么都可以
+  const data = `data: ${JSON.stringify({msg: 'hello SSE'})}\n\n`;
+  res.write(data);
+  const clientId = req.params.id;
+  res.locals.clientId = clientId;
+  sseClients[clientId] = res;
+  req.on('close', () => {
+    debug(`${clientId} Connection closed`);
+    delete sseClients[clientId];
+    for (let i in sseClients) {
+      let res:Response = sseClients[i]
+        res?.write(`data: Hi ${i}: we have ${Object.keys(sseClients).length} connection(s) now.\n\n`)
+    }
+  });
+})
+module.exports = {router,sseClients}

@@ -4,7 +4,7 @@
   "description": "try socketio & redis pubsub",
   "repository": {
     "type": "git",
-    "url": "ssh://git@git.emicloud.com:22221/webcc/ws_redis.git"
+    "url": "https://github.com/qiulang/ws_redis.git"
   },
   "main": "index.js",
   "//": [

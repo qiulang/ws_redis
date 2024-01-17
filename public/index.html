@@ -1,14 +1,67 @@
 <!doctype html>
 <html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>Hello World!</title>
-  </head>
-  <body>
-    <div>
-      <h1> hello </h1>
-    </div>
-    <div>
+<head>
+  <meta charset="utf-8" />
+  <title>Socket.IO chat</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font: 13px Helvetica, Arial;
+    }
+
+    form {
+      background: #000;
+      padding: 3px;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+    }
+
+    form input {
+      border: 0;
+      padding: 10px;
+      width: 90%;
+      margin-right: .5%;
+    }
+
+    form button {
+      width: 9%;
+      background: rgb(130, 224, 255);
+      border: none;
+      padding: 10px;
+    }
+
+    #messages {
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    #messages li {
+      padding: 5px 10px;
+    }
+
+    #messages li:nth-child(odd) {
+      background: #eee;
+    }
+
+    #messages {
+      margin-bottom: 40px
+    }
+  </style>
+</head>
+
+<body>
+  <ul id="messages"></ul>
+  <form action="">
+    <input id="m" autocomplete="off" /><button>Send</button>
+  </form>
+  <div>
       <iframe
       id="myiframe2"
       src="http://localhost:3000"
@@ -18,9 +71,130 @@
       height="600"
       >
       </iframe>
-    </div>
-    <script>
-      console.log('--- In parent, addEventListener---')
-    </script>
-  </body>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+  <script src=https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.2/axios.min.js></script>
+  <!-- <script async src="//cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"
+    onload="initFingerprintJS()"></script> -->
+  <script>
+    const searchParams = new URLSearchParams(window.location.search);
+    // Iterating the search parameters
+    for (const p of searchParams) {
+      console.log(p);
+    }
+  </script>
+  <script>
+      fetch('login').then(response => response.json()).then(data => {
+        console.log(` ${JSON.stringify(data)}`)
+        let user_id = data.user;//模拟一个userid
+        // Server side event sample code
+        let eventSource = new EventSource(`http://localhost:3000/SSE/${user_id}`);
+        eventSource.addEventListener('message', function(e) {
+          console.log(`We got SSE message : ${e.data}`);
+          });
+          
+        eventSource.addEventListener('open', function(e) {
+        // Connection was opened.
+          console.log('After we open SSE connection, we can connect to ws server!!')
+          wsSample()
+        });
+          
+        eventSource.addEventListener('error', function(e) {
+          if (e.readyState == EventSource.CLOSED) {
+          // Connection was closed.
+          }
+        });
+
+        // use browser websocket, check readme #websocket client section
+        // var ws = new WebSocket("ws://localhost:3000/socket.io/?EIO=3&transport=websocket");
+        // // var ws = new WebSocket("ws://localhost:3000")
+        // ws.onopen = function () {
+        //   console.log('connect to ws server!!')
+        //   // Web Socket is connected, send data using send()
+        // };
+
+        // ws.onmessage = function (evt) {
+        //   var received_msg = evt.data;
+        //   console.log(`Message is received...  ${received_msg}`);
+        //   // if (received_msg == '40') ws.send('login');
+        //   if (received_msg) ws.send('login');
+        // };
+
+        // ws.onclose = function () {
+        //   // websocket is closed.
+        //   console.log("Connection is closed...");
+        // };
+
+        // use socket.io client
+        // let wsCB = undefined;
+        function wsSample() {
+          let socket = io({ transports: ['websocket'] });
+          $('form').submit(function () {
+            socket.emit('chat-message', $('#m').val());
+            $('#m').val('');
+            return false;
+          });
+          //socket.io系统消息
+          socket.on('connect', () => {
+            console.log(`connect to server with id ${socket.id} , send my user id ${user_id}`);
+            //socket.io 我们自定义消息, login
+            //socket.emit('login', {user_id,token:"fake"})
+            socket.emit('login', {user_id,token:"fake",browser:navigator.userAgent}, reply => {});
+          });
+          socket.on('disconnect', (reason) => {
+            console.log(`disconnect reason ${reason}`)
+          })
+          socket.on('cr_msg', (msg, fn) => {
+            console.log(`收到服务器消息 ${msg}`)
+            const data = JSON.parse(msg)
+            let m = `超级企业 ${data.seid} 企业 ${data.ccgeid} 坐席${data.uid} 消息类型 ${data.op_code}
+            具体数据 ${JSON.stringify(data.data)}`
+            //data.data是需要具体分析
+            $('#messages').append($('<li>').text(m));
+          });
+          //这个现在示例作用不大了，可以不用
+          socket.on('incoming_msg', (msg, fn) => {
+            let m = "incoming message " + msg
+            $('#messages').append($('<li>').text(m));
+            window.scrollTo(0, document.body.scrollHeight);
+            fn(`${msg} received`)
+          });
+        }
+      })
+    // function initFingerprintJS() {
+    //   // Initialize an agent at application startup.
+    //   const fpPromise = FingerprintJS.load()
+
+    //   // Get the visitor identifier when you need it.
+    //   fpPromise
+    //     .then(fp => fp.get())
+    //     .then(result => {
+    //       // This is the visitor identifier:
+    //       const visitorId = result.visitorId
+    //       console.log(`show my id ${visitorId}`)
+    //     })
+    //   // var fingerprint = new Fingerprint().get();
+    //   // console.log(`show my id ${fingerprint}`)
+    // }
+  </script>
+  <script>
+    console.log('test axios for etag')
+    // const user = 'qiulang'
+    // const token = 'bc0c626de8a069b42e79d2ca312d5498dbfc9018'
+    // const axiosReq = axios.create({ baseURL: `https://${user}:${token}@api.github.com` })
+    const axiosReq = axios.create({ baseURL: 'http://10.0.0.132:3000' })
+    async function cacheTest() {
+      let result = await axiosReq({ url: '/ghtoken' })
+      console.log(JSON.stringify(result))
+      result = await await axiosReq({ url: '/ghtoken' })
+      console.log(JSON.stringify(result))
+    }
+    // cacheTest()
+  </script>
+  <!-- <script type="module" src="../src/test/js/athis.js"></script> -->
+  <!-- <script type="module" src="/scripts/test/js/wsBrowser.mjs"></script> -->
+  <!-- <script src="src/test/js/athis.js"></script> -->
+</body>
+
 </html>
